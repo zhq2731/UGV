@@ -1,0 +1,11 @@
+#YAML1.2
+
+  can_interface: can1
+  filters: 0X00,0X01  
+  interval_sec: 0.5
+  latitude: 0.0
+  longitude: 0.0
+  altitude: 0.0
+  init_set: false
+  is_intel_format: false
+  

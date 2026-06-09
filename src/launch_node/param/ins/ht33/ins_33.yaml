@@ -1,0 +1,5 @@
+#YAML1.2
+
+  port: 32000
+
+  record: true

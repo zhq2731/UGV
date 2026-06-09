@@ -1,0 +1,7 @@
+#YAML1.2
+
+  can_interface: can2
+  dbc_file_name: J6F_2021-08-23.dbc
+  filters: 0X00,0X01  
+  interval_sec: 0.5
+  

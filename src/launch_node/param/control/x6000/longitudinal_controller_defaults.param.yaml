@@ -1,0 +1,122 @@
+name: longitudinal_controller # 速度油门PID控制器
+
+active_controllers: # 速度油门PID控制器
+  - tank_controller   # 前进油门PID，刹车加速度PID
+  # - howo_controller # 轻卡
+  # - semi_controller # 半挂车
+
+enable_csv_debug: false  # 使能记录调试信息
+enable_info_terminal: false  # 终端打印信息
+enable_slope_offset: true # ---------------------使能坡度补偿                          
+slope_offset_coefficient: 20.0  # 坡度补偿系数
+is_deceleration_to_brake: false #----------------底盘是否使用减速度进行制动          
+
+vehicle_params:
+  weight: 1000.0 # 车辆质量
+  wheel_rolling_radius: 0.3  # 车轮滚动半径
+
+lon_controller_conf:  # 纵向控制参数
+  is_calibration: false  # ----------------标定模式                                    
+  calibration_throttle: 40 # --------------标定时的固定油门                            
+  calibration_speed_to_stop: 11.11 # ------达到此速度时，标定表强制停止标定并保存
+  ts: 0.05  # 控制周期
+  preview_window: 30 # 预览时间
+  throttle_deadzone: 0.0  # 车辆最小油门
+  brake_deadzone: 0.0     # 车辆最小刹车
+
+  speed_controller_input_limit: 6.0       # 速度误差限幅(速度控制器输入)
+  max_speed_error_for_brake: -0.2         # 使用刹车减速的最大速度误差(期望速度-实际速度)
+  max_reverse_speed_error_for_brake: -0.2 # 倒车使用刹车减速的最大速度误差(期望速度-实际速度)
+
+  overspeed_acceleration: -0.8
+  deceleration_deadzone: -0.4 # 刹车最大加速度(有符号)
+
+  standstill_brake: -0.9   # 保持停车的制动减速度                     
+  overspeed_light_brake: 6 # 超速刹车开度
+  off_throttle_acc: -0.05  # ---------------发动机制动减速度                                                                           
+  point_size_to_end: 6 #--------------------距离终点多少路径点时强制停车(距离= point_size_to_end * 0.2)       
+  path_to_stop: 20 #------------------------停车动作开始距离                                                    
+  is_simulation: false #---------------------是否是仿真                                                       
+
+
+  switch_speed: 1.0 # pid参数切换阈值
+
+  enable_escape_mode: false       # 是否使能脱困模式                  
+  escape_determine_times: 10      # 脱困判断次数
+  escape_mean_speed_threhold: 1.0 # 脱困判断平均速度阈值
+  escape_stdev_threhold: 0.5      # 脱困补偿
+  escape_compensate: 1.0          # 脱困判断标准差阈值
+
+  low_speed_pid_conf:        # 低速PID参数
+    integrator_enable: true  # 积分使能
+    integrator_saturation_level: 15.3 # 积分饱和线
+    kp: 6.0
+    ki: 2.0
+    kd: 0.0
+  
+  high_speed_pid_conf:       # 高速PID参数
+    integrator_enable: true  # 积分使能
+    integrator_saturation_level: 15.0 # 积分饱和线
+    kp: 8.0
+    ki: 0.8
+    kd: 0.0
+
+  back_pid_conf:             # 倒车PID参数
+    integrator_enable: true  # 积分使能
+    integrator_saturation_level: 15.0 # 积分饱和线
+    kp: 1.0
+    ki: 0.2
+    kd: 0.0
+
+  acc_pid_conf:              # 刹车PID参数
+    integrator_enable: true  # 积分使能
+    integrator_saturation_level: 3.0 # 积分饱和线
+    kp: 0.6
+    ki: 0.02
+    kd: 0.0
+
+  pitch_angle_filter_conf:
+    cutoff_freq: 5
+
+  calibration_table:                       #------------------
+    -
+      speed: 0.0
+      command: 0.0
+    -
+      speed: 2.3
+      command: 10.0
+    -
+      speed: 6.1
+      command: 13.0
+    -
+      speed: 7.7
+      command: 15.0
+    -
+      speed: 9.7
+      command: 20.0
+    -
+      speed: 12.5
+      command: 25.0
+    -
+      speed: 13.0
+      command: 26.0
+    -
+      speed: 14.0
+      command: 27.0
+    -
+      speed: 15.0
+      command: 28.0
+    -
+      speed: 16.0
+      command: 29.0
+
+  deceleration_table:
+    -
+      deceleration: 0
+      command: 0
+    -
+      deceleration: -0.6
+      command: 10
+    -
+      deceleration: -6
+      command: 100

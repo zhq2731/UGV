@@ -1,0 +1,3003 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>platoondlg</class>
+ <widget class="QDialog" name="platoondlg">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QGroupBox" name="groupBox_11">
+   <property name="geometry">
+    <rect>
+     <x>12</x>
+     <y>2</y>
+     <width>1250</width>
+     <height>580</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>320</width>
+     <height>151</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QGroupBox{background-color:rgb(50,50,50);border:1px solid rgb(21,197,212);margin-top:10px;font-family:仿宋;font:bold 13pt;}
+QGroupBox::title{subcontrol-origin:margin;left:0px;margin-left:0px;padding 0 0px;color:rgb(21,197,212)}</string>
+   </property>
+   <property name="title">
+    <string>编队控制</string>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
+   <widget class="QLabel" name="carnum_1">
+    <property name="geometry">
+     <rect>
+      <x>152</x>
+      <y>30</y>
+      <width>70</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>70</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:16pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆1</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="carlable_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>71</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carlable_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>71</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆编号</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionX_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>127</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionX_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>127</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标X</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionY_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>183</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionY_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>183</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标Y</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="heading_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>239</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="heading_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>239</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>朝向</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="linear_velocity_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>295</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="linear_velocity_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>295</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>速度</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="spacing_distance_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>352</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="spacing_distance_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>352</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车间距</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="gear_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>408</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gear_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>408</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>挡位</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="driving_mode_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>464</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="driving_mode_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>464</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>驾驶模式</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="command_type_display_1">
+    <property name="geometry">
+     <rect>
+      <x>157</x>
+      <y>520</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="command_type_1">
+    <property name="geometry">
+     <rect>
+      <x>87</x>
+      <y>520</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>组队状态</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="command_type_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>520</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="heading_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>239</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>朝向</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="heading_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>239</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionX_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>127</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carlable_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>71</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>100</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆编号</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="linear_velocity_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>295</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>速度</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="spacing_distance_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>352</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionY_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>183</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标Y</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionX_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>127</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标X</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="spacing_distance_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>352</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车间距</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="driving_mode_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>464</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>100</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>驾驶模式</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="carlable_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>71</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="command_type_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>520</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>100</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>组队状态</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carnum_2">
+    <property name="geometry">
+     <rect>
+      <x>452</x>
+      <y>30</y>
+      <width>70</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>70</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:16pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆2</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionY_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>183</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="linear_velocity_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>295</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="driving_mode_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>464</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="gear_display_2">
+    <property name="geometry">
+     <rect>
+      <x>457</x>
+      <y>408</y>
+      <width>136</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gear_2">
+    <property name="geometry">
+     <rect>
+      <x>387</x>
+      <y>408</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>50</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>挡位</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="command_type_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>520</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="driving_mode_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>464</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>驾驶模式</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionX_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>127</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标X</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionY_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>183</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionY_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>183</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标Y</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="heading_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>239</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionX_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>127</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="spacing_distance_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>352</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车间距</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carlable_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>71</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆编号</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="driving_mode_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>464</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="gear_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>408</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gear_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>408</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>挡位</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="linear_velocity_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>295</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>速度</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="command_type_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>520</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>组队状态</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="heading_3">
+    <property name="geometry">
+     <rect>
+      <x>687</x>
+      <y>239</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>朝向</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="linear_velocity_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>295</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="spacing_distance_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>352</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="carlable_display_3">
+    <property name="geometry">
+     <rect>
+      <x>757</x>
+      <y>71</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="command_type_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>520</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="gear_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>408</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="linear_velocity_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>295</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>速度</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gear_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>408</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>挡位</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionX_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>127</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标X</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="driving_mode_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>464</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="positionY_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>183</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>坐标Y</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="spacing_distance_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>352</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionX_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>127</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="command_type_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>520</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>组队状态</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="driving_mode_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>464</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>驾驶模式</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="heading_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>239</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>朝向</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="heading_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>239</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="spacing_distance_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>352</y>
+      <width>50</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车间距</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carlable_4">
+    <property name="geometry">
+     <rect>
+      <x>987</x>
+      <y>71</y>
+      <width>64</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>50</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>80</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:12pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆编号</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="linear_velocity_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>295</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="carlable_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>71</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="positionY_display_4">
+    <property name="geometry">
+     <rect>
+      <x>1057</x>
+      <y>183</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>60</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>200</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font:12pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carnum_3">
+    <property name="geometry">
+     <rect>
+      <x>752</x>
+      <y>30</y>
+      <width>70</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>70</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:16pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆3</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="carnum_4">
+    <property name="geometry">
+     <rect>
+      <x>1052</x>
+      <y>30</y>
+      <width>70</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>70</width>
+      <height>16777215</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{font:16pt '仿宋' bold; color:rgb(255,255,255);}</string>
+    </property>
+    <property name="text">
+     <string>车辆4</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="btnBuild">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>600</y>
+     <width>180</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:20pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>构建</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDisslove">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>600</y>
+     <width>180</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:20pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>解散</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnColumn">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>600</y>
+     <width>180</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:20pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>纵队</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnJoin">
+   <property name="geometry">
+    <rect>
+     <x>860</x>
+     <y>640</y>
+     <width>160</width>
+     <height>60</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>入队</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnLeave">
+   <property name="geometry">
+    <rect>
+     <x>1060</x>
+     <y>640</y>
+     <width>160</width>
+     <height>60</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>出队</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDiamond">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>600</y>
+     <width>180</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>120</width>
+     <height>40</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>300</width>
+     <height>200</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton{font:20pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+   </property>
+   <property name="text">
+    <string>菱形</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="radioButton">
+   <property name="geometry">
+    <rect>
+     <x>830</x>
+     <y>600</y>
+     <width>141</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QRadioButton{font:16pt '仿宋' bold; color:rgb(255,255,255);}
+QRadioButton::indicator{width: 30px;height: 30px;border-radius:15px;}
+QRadioButton::indicator::checked{background-color:red;}
+QRadioButton::indicator::unchecked{background-color:white;}</string>
+   </property>
+   <property name="text">
+    <string>跟随车1</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="radioButton_2">
+   <property name="geometry">
+    <rect>
+     <x>980</x>
+     <y>600</y>
+     <width>121</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QRadioButton{font:16pt '仿宋' bold; color:rgb(255,255,255);}
+QRadioButton::indicator{width: 30px;height: 30px;border-radius:15px;}
+QRadioButton::indicator::checked{background-color:red;}
+QRadioButton::indicator::unchecked{background-color:white;}</string>
+   </property>
+   <property name="text">
+    <string>跟随车2</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="radioButton_3">
+   <property name="geometry">
+    <rect>
+     <x>1130</x>
+     <y>600</y>
+     <width>121</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QRadioButton{font:16pt '仿宋' bold; color:rgb(255,255,255);}QRadioButton::indicator{width: 30px;height: 30px;border-radius:15px;}
+QRadioButton::indicator::checked{background-color:red;}
+QRadioButton::indicator::unchecked{background-color:white;}</string>
+   </property>
+   <property name="text">
+    <string>跟随车3</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

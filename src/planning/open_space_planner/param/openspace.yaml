@@ -1,0 +1,14 @@
+car_length: 5.0
+car_width: 3.0
+reverse_brake: -1.0
+reverse_speed: 0.45
+safe_reverse_dis: 0
+steering_angle: 36.0
+steering_angle_discrete_num: 6
+wheel_base: 3.3
+segment_length: 2.0
+segment_length_discrete_num: 5
+steering_penalty: 25.0
+steering_change_penalty: 10.0
+reversing_penalty: 25.0
+shot_distance: 30

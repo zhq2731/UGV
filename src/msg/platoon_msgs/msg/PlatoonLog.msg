@@ -1,0 +1,3 @@
+float64 desiredDistance
+float64 realDistance
+float64 errorDistance

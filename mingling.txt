@@ -1,0 +1,64 @@
+rosparam set  /reference_line_node/is_forward_shift false
+
+rosparam set  /reference_line_node/is_forward_shift true
+
+rosparam set  /trajectory_follower/simulate_velocity -3.0
+
+rosparam set  /reference_line_node/task_area "road_obstacle_area"   #"start_area","normal_area","park_area","weapon","over_taking_area","collect_info_area","car_meeting_area","road_obstacle_area","smoke_road_area"
+
+rosparam set  /planner/duixing 1
+
+roslaunch launch_node platoon-simulate.launch vehicle_type:=zhito
+
+rostopic pub  /PlatoonConfig  platoon_msgs/PlatoonConfig  "{policy: 1, time: 2.0, distance: 6.0, lateral_offset: 1.5 ,use_path_planning: 0}"
+
+rostopic pub  /PlatoonMember  platoon_msgs/PlatoonMember  "{id: "vehicle_1", num: 1, gear: 4,position : { x: 1,y: 1} }"
+rostopic pub  /PlatoonMember  platoon_msgs/PlatoonMember  "{id: "vehicle_2", num: 2, gear: 4,position : {x: 2,y: 2}}"
+rostopic pub  /PlatoonMember  platoon_msgs/PlatoonMember  "{id: "vehicle_3", num: 3, gear: 4,position : {x: 3,y: 3}}"
+
+rostopic pub  /PlatoonMission  platoon_msgs/PlatoonMission  "{command_type: 1, time: 2.0, distance: 6.0, lateral_offset: 1.5 ,use_path_planning: 0}"
+
+
+  NONE , //0
+  BUILD, //构建 1
+  JOIN,  //入队 2
+  LEAVE, //出队 3
+  DISSOLVE, //解散 4
+  COLUMN,   //纵队 5
+  DIAMOND   //菱形 6
+  RUNNING   //运动开始 7
+
+
+/platoon_opt platoon_msgs/PlatoonOpt 
+
+构建
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt "{cmd: 1,num: 0}"   
+
+运动开始
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt "{cmd: 7,num: 0}"  
+
+纵队
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt  "{cmd: 5,num: 0}"   
+
+菱形
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt  "{cmd: 6,num: 0}"   
+
+出队
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt  "{cmd: 2,num: 3}"  
+
+入队
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt  "{cmd: 3,num: 3}"   
+
+解散
+rostopic pub  /platoon_opt platoon_msgs/PlatoonOpt  "{cmd: 4,num: 0}"   
+
+
+roslaunch launch_node  platoon-simulate.launch vehicle_type:=zhito
+
+
+
+rostopic pub /A/platoon_opt  platoon_msgs/PlatoonOpt  "{cmd: 7,num: 0}"   
+
+rostopic pub /A/platoon_opt  platoon_msgs/PlatoonOpt  "{cmd: 8,num: 0}"   
+
+rostopic pub /A/platoon_opt  platoon_msgs/PlatoonOpt  "{cmd: 9,num: 0}"   

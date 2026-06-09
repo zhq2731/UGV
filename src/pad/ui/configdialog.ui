@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ConfigDialog</class>
+ <widget class="QDialog" name="ConfigDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>648</width>
+    <height>272</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>参数配置</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_8">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>最高右转向角度</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>车轴距</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QLineEdit" name="leMinTurnAngle">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QLineEdit" name="leMaxTurnAngle">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="leVehWheelBase">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLabel" name="label_9">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>最高左转向角度</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>车质量</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLineEdit" name="leControlPeriod">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_7">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>底盘运动控制周期</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="leVehMass">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="leSimulation">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>仿真</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>车长</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="leVehLength">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="QLabel" name="label_10">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>最大线速度</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QLineEdit" name="leMaxLineSpeed">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>车宽</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="3">
+        <widget class="QLineEdit" name="leAccG">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="2">
+        <widget class="QLabel" name="label_12">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>重力加速度</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLineEdit" name="leVehWidth">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <widget class="QLabel" name="label_11">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>最大角速度</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="3">
+        <widget class="QLineEdit" name="leTurnAngleSpeed">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>车高</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLineEdit" name="leVehHeight">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QLineEdit" name="leElecWidth">
+         <property name="styleSheet">
+          <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="label_13">
+         <property name="styleSheet">
+          <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+         </property>
+         <property name="text">
+          <string>电子围栏宽度</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QPushButton" name="btModify">
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+         </property>
+         <property name="text">
+          <string>配置文件修改</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btConfirm">
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+         </property>
+         <property name="text">
+          <string>配置文件确认</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btUpDate">
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+         </property>
+         <property name="text">
+          <string>配置文件更新</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btSave">
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+         </property>
+         <property name="text">
+          <string>配置文件保存</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>btModify</tabstop>
+  <tabstop>btConfirm</tabstop>
+  <tabstop>btUpDate</tabstop>
+  <tabstop>btSave</tabstop>
+  <tabstop>leSimulation</tabstop>
+  <tabstop>leVehMass</tabstop>
+  <tabstop>leVehWheelBase</tabstop>
+  <tabstop>leVehLength</tabstop>
+  <tabstop>leVehWidth</tabstop>
+  <tabstop>leVehHeight</tabstop>
+  <tabstop>leControlPeriod</tabstop>
+  <tabstop>leMaxTurnAngle</tabstop>
+  <tabstop>leMinTurnAngle</tabstop>
+  <tabstop>leMaxLineSpeed</tabstop>
+  <tabstop>leTurnAngleSpeed</tabstop>
+  <tabstop>leAccG</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

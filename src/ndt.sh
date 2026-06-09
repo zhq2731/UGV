@@ -1,0 +1,1 @@
+gnome-terminal --title="ndt"   -x bash -c "source /home/cf206/Desktop/ndt_localizer-master-new/devel/setup.bash; roslaunch ndt_localizer ndt_localizer.launch;exec bash"

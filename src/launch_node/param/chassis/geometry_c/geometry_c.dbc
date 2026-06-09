@@ -1,0 +1,204 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: PLUSOG_AUTO_SYS
+VAL_TABLE_ GEARVALUE 4 "D档" 3 "N档" 2 "R档" 1 "预留" 0 "预留" ;
+VAL_TABLE_ GEER_VALUE 2 "R档" 1 "D档" 0 "N档" ;
+VAL_TABLE_ ENABLE 1 "使能" 0 "不使能" ;
+VAL_TABLE_ vehicle_mode 2 "干预模式" 1 "自动驾驶模式" 0 "人工模式" ;
+VAL_TABLE_ EBS_M_Diagnose_Value_Table 3 "chassis can error" 2 "master can bus error" 1 "disconnected with the actuator" 0 "module not work" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ turn_leftbeam_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_Intervention_Enable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_Power_Ctl_Enable_1 : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Control_Parameter_Choose : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Check_Brake_Switch_AD_Exchange : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ switch_eeprom_data_write_enable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Check_Estop_Switch_AD_Exchange : 0|1@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ Check_Start_Switch_AD_Exchange : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Check_Auto_Switch_AD_Exchange : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ thro_eeprom_data_write_enable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ hvcs_eeprom_data_write_enable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SteerSpeed : 0|8@1+ (4,0) [0|255] "" Vector__XXX
+ SG_ brake_takeover_disable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ems_throttle_iic_value : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ ems_throttle_offset : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ PC_Control_Command_Flag : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Master_Brakeboard_Control_Error : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Sweeper_Battery_Voltage : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ Estop_Sw : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ One_Click_Start_Sw : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ steerMotorPWM : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ StrWhlToq : 0|16@1+ (1,0) [0|2000] "" Vector__XXX
+ SG_ ebs_intervention_type : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ EBS_AutoMode : 0|2@1+ (1,0) [0|2] "" Vector__XXX
+ SG_ BrakeCounterLimit : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ BrakeCounter : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ BrakeSwitch : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_Rear_Brake_Target : 0|8@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ C_Brake_Quit_Eanble : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_Gear_Target : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ C_Steer_Target : 0|16@1- (0.1,0) [-900|900] "" Vector__XXX
+ SG_ C_SteerEnable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HighBeamLight : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ LowBeamLight : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Horn : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ WidthLight : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BrakeMode : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ StrWhlMode : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AccelPedMode : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_Pressure : 0|8@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ C_Throttle : 0|8@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ low_beam_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ wiper_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ rear_fog_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ turn_rightbeam_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ turn_leftbeam_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ front_fog_ctrl : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_WidthLamp : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SteerTorque : 0|8@1+ (0.1,-12.8) [0|0] "Nm" Vector__XXX
+ SG_ LeftTurnLight : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ RightTurnLight : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ModelSwitch : 0|2@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_AccEnable : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AccStatus : 0|16@0- (0.01,-20) [-10|10] "m/s2" Vector__XXX
+ SG_ C_Acc_Control : 0|16@0- (0.01,0) [-10|10] "m/s2" Vector__XXX
+ SG_ engine_speed : 0|13@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ bukehuifu : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ kehuifu : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 501 VEHICLE_GEAR_INFO: 8 Vector__XXX
+ SG_ VehicleGearStatus : 24|8@1+ (1,0) [0|4] "" Vector__XXX
+
+BO_ 842 REAR_SPEED_INFO: 8 Vector__XXX
+ SG_ Rear_right_wheel_speed : 23|16@0+ (0.02,0) [0|225] "km/h" Vector__XXX
+ SG_ Rear_left_wheel_speed : 7|16@0+ (0.02,0) [0|225] "km/h" Vector__XXX
+
+BO_ 840 FRONT_SPEED_INFO: 8 Vector__XXX
+ SG_ Front_right_wheel_speed : 23|16@0+ (0.02,0) [0|225] "km/h" Vector__XXX
+ SG_ Front_left_wheel_speed : 7|16@0+ (0.02,0) [0|225] "km/h" Vector__XXX
+
+BO_ 51 EPS_STATUS_INFO: 6 Vector__XXX
+ SG_ SteerSpeed : 32|8@1+ (1,0) [0|255] "deg/s" Vector__XXX
+ SG_ SteerAngle : 16|16@1- (0.1,-1000) [-700|700] "deg" Vector__XXX
+
+BO_ 48 EBS_STATUS_INFO: 8 Vector__XXX
+ SG_ SysMode : 56|2@1+ (1,0) [0|2] "" Vector__XXX
+ SG_ AutoSwitch : 58|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BrakePressure : 0|16@1+ (1,0) [0|100] "" Vector__XXX
+
+BO_ 224 PAS_LAMP_CONTROL: 8 PLUSOG_AUTO_SYS
+ SG_ C_LowBeamLight : 31|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_WindShieldWiper : 7|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_RightBeamLight : 55|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_LeftBeamLight : 47|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_BrkBeamLight : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_HighBeamLight : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_Horn : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 226 PAS_BYWIRE_CONTROL: 7 PLUSOG_AUTO_SYS
+ SG_ C_Brake_Target : 16|8@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ C_Throttle_Target : 8|8@1+ (1,0) [0|100] "" Vector__XXX
+ SG_ C_ThrottleEnable : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_StrEnable : 6|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_SteerAng_Speed : 48|16@1+ (1,0) [20|512] "deg/s" Vector__XXX
+ SG_ C_SteerAng : 24|16@1- (0.1,0) [-700|700] "deg" Vector__XXX
+ SG_ C_AutoEnable : 3|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ C_Gear_Value : 0|2@1+ (1,0) [0|2] "" Vector__XXX
+ SG_ C_GearEnable : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ C_BrkEnable : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 54 SYS_STATUS_INFO: 8 Vector__XXX
+ SG_ C_AutoMode : 2|2@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SysMode : 0|2@1+ (1,0) [0|2] "" Vector__XXX
+
+
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+CM_ SG_ 3221225472 C_Intervention_Enable "0：正常干预功能
+1：屏蔽干预功能";
+CM_ SG_ 3221225472 C_Power_Ctl_Enable_1 "电源板控制使能";
+CM_ SG_ 3221225472 Control_Parameter_Choose ":该信号用来选择制动板是使用默认参数还是eeprom中的参数。0：选择默认参数；1选择eeprom中的参数";
+CM_ SG_ 3221225472 Check_Brake_Switch_AD_Exchange "该信号用来切换判断 采集制动开关AD量的方向。0 ： <=  
+                                                                 1 ：  > ";
+CM_ SG_ 3221225472 switch_eeprom_data_write_enable "表示制动板中e'e'prom的开关参数修改使能，1：写入 0 ：不写入";
+CM_ SG_ 3221225472 Check_Estop_Switch_AD_Exchange "该信号用来切换判断 采集急停按钮开关AD量的方向。0 ： <=  
+                                                                       1 ：  > ";
+CM_ SG_ 3221225472 Check_Start_Switch_AD_Exchange "该信号用来切换判断 采集一键启动按钮AD量的方向。0 ： <=  
+                                                                        1 :   >   ";
+CM_ SG_ 3221225472 Check_Auto_Switch_AD_Exchange "该信号用来切换判断 采集模式开关AD量的方向。0 ： <=  
+                                                                  1 :   >   ";
+CM_ SG_ 3221225472 thro_eeprom_data_write_enable "表示制动板中e'e'prom的油门参数修改使能，1：写入 0 ：不写入";
+CM_ SG_ 3221225472 PC_Control_Command_Flag "上位机发现主制动板失联，请求接管副制动板控制制动";
+CM_ SG_ 3221225472 Master_Brakeboard_Control_Error "主制动板发现压力控制异常，请求副制动板来控制";
+CM_ SG_ 3221225472 C_Rear_Brake_Target "后挂阀制动控制";
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType";
+BA_DEF_ BU_  "NmStationAddress" HEX 0 0;
+BA_DEF_  "DBName" STRING ;
+BA_DEF_ SG_  "GenSigInactiveValue" INT 0 0;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 0;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic","not_used","not_used","not_used","not_used","Cyclic","not_used","IfActive","NoMsgSendType";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_DEF_  "GenSigSendType" "Cyclic";
+BA_DEF_DEF_  "NmStationAddress" 0;
+BA_DEF_DEF_  "DBName" "";
+BA_DEF_DEF_  "GenSigInactiveValue" 0;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "GenMsgSendType" "NoMsgSendType";
+BA_DEF_DEF_  "BusType" "";
+BA_ "DBName" "bywirediagnose";
+BA_ "NmStationAddress" BU_ PLUSOG_AUTO_SYS 1;
+VAL_ 3221225472 C_SteerEnable 1 "使能" 0 "不使能" ;
+VAL_ 3221225472 C_AccEnable 1 "使能" 0 "不使能" ;
+VAL_ 501 VehicleGearStatus 4 "D档" 3 "N档" 2 "R档" 1 "预留" 0 "预留" ;
+VAL_ 48 SysMode 2 "干预模式" 1 "自动驾驶模式" 0 "人工模式" ;
+VAL_ 48 AutoSwitch 1 "使能" 0 "不使能" ;
+VAL_ 224 C_LowBeamLight 1 "使能" 0 "不使能" ;
+VAL_ 224 C_WindShieldWiper 1 "使能" 0 "不使能" ;
+VAL_ 224 C_RightBeamLight 1 "使能" 0 "不使能" ;
+VAL_ 224 C_LeftBeamLight 1 "使能" 0 "不使能" ;
+VAL_ 224 C_BrkBeamLight 1 "使能" 0 "不使能" ;
+VAL_ 224 C_HighBeamLight 1 "使能" 0 "不使能" ;
+VAL_ 224 C_Horn 1 "使能" 0 "不使能" ;
+VAL_ 226 C_ThrottleEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_StrEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_AutoEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_Gear_Value 2 "R档" 1 "D档" 0 "N档" ;
+VAL_ 226 C_GearEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_BrkEnable 1 "使能" 0 "不使能" ;
+VAL_ 54 SysMode 2 "干预模式" 1 "自动驾驶模式" 0 "人工模式" ;
+

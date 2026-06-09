@@ -1,0 +1,151 @@
+#名字与vehicle_platform.yaml中的id对应
+zhitong: 
+    local_ip: 192.168.10.100
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679    
+zhito_A: 
+    local_ip: 192.168.1.114
+    local_port: 7002
+    cloud_single_ip: 192.168.1.148
+    cloud_single_port: 7001
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 7001
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679     
+    
+zhito_B: 
+    local_ip: 192.168.10.229
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679    
+tank500: 
+    local_ip: 192.168.10.222
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679     
+sanzhou: 
+    local_ip: 192.168.10.230
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679     
+zw: 
+    local_ip: 192.168.10.100
+    local_port: 6789
+    
+x2306_1: 
+    local_ip: 192.168.5.123
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679     
+x2306_2: 
+    local_ip: 192.168.5.133
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679     
+x2306_3: 
+    local_ip: 192.168.5.143
+    local_port: 6789
+    cloud_single_ip: 192.168.10.226
+    cloud_single_port: 6789
+    cloud_multi_ip: 224.0.1.129
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.1.128
+    info_multi_port: 5679 
+
+
+x2306_0101: 
+    local_ip: 192.168.0.31
+    local_port: 6789
+    cloud_single_ip: 192.168.0.51
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.41
+    rtk_port: 2700
+
+x2306_0102: 
+    local_ip: 192.168.0.32
+    local_port: 6789
+    cloud_single_ip: 192.168.0.52
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.42
+    rtk_port: 2700 
+    
+x2306_0103: 
+    local_ip: 192.168.0.33
+    local_port: 6789
+    cloud_single_ip: 192.168.0.53
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.43
+    rtk_port: 2700
+    
+x2306_0104: 
+    local_ip: 192.168.0.34
+    local_port: 6789
+    cloud_single_ip: 192.168.0.54
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.44
+    rtk_port: 2700
+    
+x2306_0105: 
+    local_ip: 192.168.0.35
+    local_port: 6789
+    cloud_single_ip: 192.168.0.55
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.45
+    rtk_port: 2700
+    
+x2306_0106: 
+    local_ip: 192.168.0.36
+    local_port: 6789
+    cloud_single_ip: 192.168.0.56
+    cloud_single_port: 6789
+    cloud_multi_ip: 230.0.0.11
+    cloud_multi_port: 6789
+    info_multi_ip: 224.0.2.2
+    info_multi_port: 5001 
+    rtk_ip: 192.168.0.46
+    rtk_port: 2700

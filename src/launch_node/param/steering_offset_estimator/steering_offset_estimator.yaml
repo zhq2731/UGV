@@ -1,0 +1,4 @@
+average_num: 1000
+vel_thres: 4.0
+steer_thres: 0.05
+offset_limit: 100

@@ -1,0 +1,7 @@
+<launch>
+　　<node pkg="trajectory_follower" type="trajectory_follower" name="trajectory_follower" output="screen">
+　　　　<rosparam file="$(find trajectory_follower)/param/lateral_controller_defaults.param.yaml"/>
+　　</node>
+　　<node pkg="trajectory_follower" type="sendCmdFromCtrl" name="sendCmdFromCtrl" output="screen">
+　　</node>
+</launch>

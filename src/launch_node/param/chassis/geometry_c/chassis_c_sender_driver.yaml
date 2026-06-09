@@ -1,0 +1,15 @@
+#YAML1.2
+  can_interface: can2
+  dbc_file_name: geometry_c.dbc
+  filters: 0X00,0X01  
+  timeout_sec: 0.1
+  enable_eps: true
+  enable_eps_debug: false
+  enable_bcm: true
+  enable_bcm_debug: false
+  enable_xbr: true
+  enable_xbr_debug: false
+  enable_adu: true
+  enable_adu_debug: false
+  enable_epb: true
+  enable_epb_debug: false

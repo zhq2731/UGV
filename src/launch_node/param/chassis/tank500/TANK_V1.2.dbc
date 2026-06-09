@@ -1,0 +1,157 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ADC VEHICLE
+VAL_TABLE_ switch_throttle 1 "使能" 0 "不使能" ;
+VAL_TABLE_ AccModeChange_Table 1 "速度接口控制模式" 0 "踏板行程控制模式" ;
+VAL_TABLE_ s_automode 2 "干预" 1 "自动驾驶" 0 "人工" ;
+VAL_TABLE_ c_gear_value 2 "R档" 1 "D档" 0 "预留" ;
+VAL_TABLE_ isenable 1 "使能" 0 "不使能" ;
+VAL_TABLE_ EBS_M_Diagnose_Value_Table 3 "chassis can error" 2 "master can bus error" 1 "disconnected with the actuator" 0 "module not work" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ AutoMode : 0|2@1+ (1,0) [0|2] "" Vector__XXX
+
+BO_ 416 PAS_Remote_Control: 8 Vector__XXX
+ SG_ Remote_Control : 0|8@1+ (1,0) [0|8] "" Vector__XXX
+
+BO_ 842 REAR_SPEED_INFO: 8 Vector__XXX
+ SG_ Rear_right_wheel_speed : 23|16@0+ (0.03125,0) [0|255] "km/h" Vector__XXX
+ SG_ Rear_left_wheel_speed : 7|16@0+ (0.03125,0) [0|255] "km/h" Vector__XXX
+
+BO_ 501 VEHICLE_GEAR_INFO: 8 VEHICLE
+ SG_ VehicleGearStatus : 24|8@1+ (1,0) [0|4] ""  ADC
+
+BO_ 840 FRONT_SPEED_INFO: 8 VEHICLE
+ SG_ Front_right_wheel_speed : 23|16@0+ (0.03125,0) [0|255] "km/h"  ADC
+ SG_ Front_left_wheel_speed : 7|16@0+ (0.03125,0) [0|255] "km/h"  ADC
+
+BO_ 51 EPS_STATUS_INFO: 8 VEHICLE
+ SG_ SteerSpeed : 32|8@1+ (1,0) [20|250] "deg/s"  ADC
+ SG_ SteerAngle : 16|16@1- (0.1,-1000) [-665|637] "deg"  ADC
+
+BO_ 48 EBS_STATUS_INFO: 2 VEHICLE
+ SG_ BrakePressure : 0|16@1+ (1,0) [0|100] "bar"  ADC
+
+BO_ 224 PAS_LAMP_CONTROL: 8 ADC
+ SG_ Low_Beam_Control : 31|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Horn_Control : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ High_Beam_Control : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ turn_leftbeam_Control : 47|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ turn_rightbeam_Control : 55|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 226 PAS_BYWIRE_CONTROL: 8 ADC
+ SG_ C_Throttle_Target : 8|8@1+ (1,0) [0|100] "%"  VEHICLE
+ SG_ C_Brake_Target : 16|8@1+ (1,0) [0|100] "bar"  VEHICLE
+ SG_ C_StrEnable : 6|1@1+ (1,0) [0|1] ""  VEHICLE
+ SG_ C_SteerAng_Speed : 48|16@1+ (1,0) [20|250] ""  VEHICLE
+ SG_ C_SteerAng : 24|16@1- (0.1,0) [-600|600] "deg"  VEHICLE
+ SG_ C_ModeCtrl : 3|1@1+ (1,0) [0|1] ""  VEHICLE
+ SG_ C_Gear_Value : 0|2@1+ (1,0) [0|2] ""  VEHICLE
+ SG_ C_ThrottleEnable : 5|1@1+ (1,0) [0|1] ""  VEHICLE
+ SG_ C_GearEnable : 2|1@1+ (1,0) [0|1] ""  VEHICLE
+ SG_ C_BrkEnable : 7|1@1+ (1,0) [0|1] ""  VEHICLE
+
+BO_ 54 SYS_STATUS_INFO: 8 VEHICLE
+ SG_ timeout_status : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ steer_intervene : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ estop_intervene : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ estop_button_status : 32|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ brake_intervene : 26|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ switch_throttle : 5|1@1+ (1,0) [0|1] ""  ADC
+ SG_ throttle_value : 8|8@1+ (1,0) [0|165] "" Vector__XXX
+ SG_ switch_brake : 7|1@1+ (1,0) [0|1] ""  ADC
+ SG_ switch_steer : 6|1@1+ (1,0) [0|1] ""  ADC
+ SG_ ModeSwitch : 4|1@1+ (1,0) [0|1] ""  ADC
+ SG_ SysMode : 0|2@1+ (1,0) [0|2] ""  ADC
+
+
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+CM_ SG_ 54 timeout_status "控制通讯超时标志位  0为正常  1为超时";
+CM_ SG_ 54 steer_intervene "转向干预标志位，0为正常，1为转向干预";
+CM_ SG_ 54 estop_intervene "急停干预状态，0为正常，1为因急停按钮导致干预";
+CM_ SG_ 54 estop_button_status "急停按钮状态，0为未按下，1为按下";
+CM_ SG_ 54 brake_intervene "刹车干预标志位，0为正常，1为刹车干预";
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType";
+BA_DEF_ BU_  "NmStationAddress" HEX 0 0;
+BA_DEF_  "DBName" STRING ;
+BA_DEF_ SG_  "GenSigInactiveValue" INT 0 0;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 0;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic","not_used","not_used","not_used","not_used","Cyclic","not_used","IfActive","NoMsgSendType";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_DEF_  "GenSigSendType" "Cyclic";
+BA_DEF_DEF_  "NmStationAddress" 0;
+BA_DEF_DEF_  "DBName" "";
+BA_DEF_DEF_  "GenSigInactiveValue" 0;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "GenMsgSendType" "NoMsgSendType";
+BA_DEF_DEF_  "BusType" "";
+BA_ "DBName" "bywirediagnose";
+BA_ "NmStationAddress" BU_ VEHICLE 1;
+BA_ "GenMsgSendType" BO_ 501 0;
+BA_ "GenMsgCycleTime" BO_ 501 20;
+BA_ "GenMsgSendType" BO_ 840 0;
+BA_ "GenMsgCycleTime" BO_ 840 20;
+BA_ "GenMsgSendType" BO_ 51 0;
+BA_ "GenMsgCycleTime" BO_ 51 20;
+BA_ "GenMsgSendType" BO_ 48 0;
+BA_ "GenMsgCycleTime" BO_ 48 20;
+BA_ "GenMsgSendType" BO_ 224 0;
+BA_ "GenMsgCycleTime" BO_ 224 100;
+BA_ "GenMsgSendType" BO_ 226 0;
+BA_ "GenMsgCycleTime" BO_ 226 10;
+BA_ "GenMsgSendType" BO_ 54 0;
+BA_ "GenMsgCycleTime" BO_ 54 20;
+VAL_ 3221225472 AutoMode 2 "干预" 1 "自动驾驶" 0 "人工" ;
+VAL_ 501 VehicleGearStatus 4 "D档" 3 "N档" 2 "R档" 1 "P档" 0 "预留" ;
+VAL_ 224 Low_Beam_Control 1 "使能" 0 "不使能" ;
+VAL_ 224 Horn_Control 1 "使能" 0 "不使能" ;
+VAL_ 224 High_Beam_Control 1 "使能" 0 "不使能" ;
+VAL_ 224 turn_leftbeam_Control 1 "使能" 0 "不使能" ;
+VAL_ 224 turn_rightbeam_Control 1 "使能" 0 "不使能" ;
+VAL_ 226 C_StrEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_ModeCtrl 1 "自动驾驶模式请求" 0 "人工模式请求" ;
+VAL_ 226 C_Gear_Value 3 "P档" 2 "R档" 1 "D档" 0 "N档" ;
+VAL_ 226 C_ThrottleEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_GearEnable 1 "使能" 0 "不使能" ;
+VAL_ 226 C_BrkEnable 1 "使能" 0 "不使能" ;
+VAL_ 54 switch_throttle 1 "使能" 0 "不使能" ;
+VAL_ 54 switch_brake 1 "使能" 0 "不使能" ;
+VAL_ 54 switch_steer 1 "使能" 0 "不使能" ;
+VAL_ 54 ModeSwitch 1 "模式开关按下" 0 "模式开关松开" ;
+VAL_ 54 SysMode 2 "干预" 1 "自动驾驶" 0 "人工" ;
+

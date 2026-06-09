@@ -1,0 +1,14 @@
+string task_area
+int8 is_forward
+int8 open_concave_obs_det
+int8 open_dynamic_obs_det
+int8 open_foggy_det
+int8 open_water_det
+int8 foggy_area
+int8 lawn_area
+int8 water_area
+int8 wall_area
+int8 ditch_area
+float64 vel_limit
+float64 road_width
+Node[] points

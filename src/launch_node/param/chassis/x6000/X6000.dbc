@@ -1,0 +1,393 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_:
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ BBMLiftReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ EPBOffline : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TransmissionRequestedGear : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ VehicleState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ VehicleState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SteeringAngle : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ RemoteWorkState : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ AutoCtr2_Err : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AutoSteerCtr_Err : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AutoCtr_Err : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ DriverTorque : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ SteeringAngle : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ Mbox_CtrHBeamSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Mbox_CrtLowBeamSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Gear : 0|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Drive : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_EPB : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Brake : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Steer : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_ACC : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_WiperWashSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_WiperLowGear : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_WiperHighGear : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_WindowSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_SteerSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_SideLightStatus : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_RhTurnSwtSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_Result : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_PTOState : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_LowBeamLightStatus : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_LhTurnSwtSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_HornState : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_HighBeamLightStatus : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_GearSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_FogLightSwtSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_EPBSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_DriveSt : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_DoorLockSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DID_BrakeSt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ LowbeamLightStatus : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ PosLgSwtSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ HighBeamRgSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LhTurnSwtSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RhTurnSwtRqSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ BBMReturnReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BBMLiftReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ SaddleCtr : 0|3@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ HornReserved : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WiperWashSwt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WiperModeLowSwt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WiperModeHighSwt : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AutoDriveStatus : 0|3@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ SeatShakeSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ PosLgSwtSig : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ RhTurnSwtSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LhTurnSwtSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RemoteWorkState : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ AngleX_s : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AngleX_L : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AngleX_H : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AngleX_D : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ U_BATT : 0|14@1+ (0.001953125,0) [0|0] "" Vector__XXX
+ SG_ ControlPriorityXBR : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ EMStorque_or_Torque_limit : 0|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ TSC1_ControlPurpose : 0|5@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Requested_torque_or_Torque_limit : 0|8@1+ (1,-125) [0|0] "" Vector__XXX
+ SG_ Requested_speed_or_Speed_limit : 0|16@1+ (0.125,0) [0|0] "" Vector__XXX
+ SG_ Override_control_mode_Priority : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ RequestedSpeedControlConditions : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Override_control_modes : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TyreID : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ TyrePressure : 0|8@1+ (8,0) [0|2040] "" Vector__XXX
+ SG_ TyreTemp : 0|16@1+ (0.03125,-273) [-273|1774.97] "" Vector__XXX
+ SG_ Leakrate : 0|16@1+ (0.1,0) [0|6553.5] "" Vector__XXX
+ SG_ TireStatae : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ TotalVehicleDistance : 0|32@1+ (5,0) [0|21474800000] "" Vector__XXX
+ SG_ CatalystTankLevel : 0|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ EngineCollantTemperqture : 0|8@1+ (1,-40) [-40|215] "" Vector__XXX
+ SG_ EngreferenceTorque_EngCfg : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ EngineInstantaneousFuelEconomy : 0|16@1+ (0.001953,0) [0|127.99] "" Vector__XXX
+ SG_ MotorTorqueReq : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ SteeringAngleReq : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ FBFTorqieReq : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ ExtControlModeReq : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ MC : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ CRC : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ ActiveReturnWeightReq : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AngleCtrlWeightReq : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AngleCtrlTorqueLimReq : 0|8@1+ (0.05,0) [0|12.75] "" Vector__XXX
+ SG_ MC : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ CRC : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ SteeringWheelVibrationModeReq : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SteeringWheelVibrationLV : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SteerFeelVariant : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ MC : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ CRC : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ HighVolCtrReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ RemoteAcceleratorPedalPosition : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ EngineTqRequest : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ ControlMode : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ POTSWReq : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ ManualAutomaticSW : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ SelectGear : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ RemoteWorkState : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ CtrDrWdOpn : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ CtrDrWdCls : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ MMIctrDrLockOpen : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ TransmissionRequestedGear : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ UDS_FrtFogLgt_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Brake_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DriveTq_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DriveSpd_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DrivePedal_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DriveFault_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_GearR_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_GearN_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_GearFault_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_GearD_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_EPBRelease_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_EPBPull_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_EPBFault_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_SteerR_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_SteerM_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_SteerL_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_SteerFault_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WinUp_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WinFault_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WinDwon_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_DrSw_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_PTO_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_Horn_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WiperWash_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WiperModeL_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_WiperModeH_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_RTurnLgt_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_PosLgt_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_LTurnLgt_Step : 0|1@1- (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_LBeam_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ UDS_HBeam_Step : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AutoCheck : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ OverTime_TorqueCheck : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ OverTime_AutoSteerCtr : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ OverTime_AutoCtr2 : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ OverTime_autoctr : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AccelerationInverention : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BrakeIntervention : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AEBIntervention : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DriverSteerIntervention : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ MMI_Trigger : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ OverTimeFlag : 0|4@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ SteeringAngleSpeed : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ ExtControlMode : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SysState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ VehicleState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ CRC : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ MC : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SysState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ RedStopLamp : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ AmberWarningLamp : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ EmergencySteerStatus : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ ElectricalSteeringSupRedLv : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ SteeringAngleSpeed : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ SteeringAngle : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ CRC : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ MC : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SteeringWheelVibrationMode : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ ExtControlMode : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ HandsOffProbability : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ MotorTorque : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ DriverToeque : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ Remote_SelectGear_R : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Remote_SelectGear_D : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Remote_Ctr : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ EPB_swt_down : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ EPB_swt_up : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Remote_SteeringAngleRqst : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ RemoteAcceleratorPedalPosition : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ WinUDCmd : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ EPB_AutoHold : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DoorLockReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ VehicleBatteryControl : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ TqLimAcc : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TorqueLimReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ MotorTorqueReq : 0|16@1+ (0.000977,-31.374) [-31.374|32.6537] "" Vector__XXX
+ SG_ TorqueValueControl : 0|16@1+ (0.1,-3000) [-3000|3553.5] "" Vector__XXX
+ SG_ SpeedControl : 0|16@1+ (1,-15000) [-15000|50535] "" Vector__XXX
+ SG_ ChargePower : 0|16@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BBMRerReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BBMLiftReq : 0|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ SOC : 0|8@1+ (0.4,0) [0|0] "" Vector__XXX
+
+BO_ 2566852113 VehicleState7: 8 Vector__XXX
+ SG_ EBSOffline : 40|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ParkResponseNormal : 38|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCMOffline : 37|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ EHPSOffline : 36|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BMSOffline : 35|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TCUOffline : 34|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ MCUOffline : 33|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ VCUOffline : 32|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ EPBOffLine : 41|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AccelerationInverention : 30|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BrakeIntervention : 28|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AEBIntervention : 26|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DriverSteerIntervention : 24|2@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2566801923 ETC7: 8 Vector__XXX
+ SG_ TransmissionMode4Indicator : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TransmissionLowAirWarning : 54|2@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2566890002 AutoLight_Ctr: 8 Vector__XXX
+ SG_ MMIFlgRqSig : 4|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ LhTurnSwtRqSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RhTurnSwtRqSig : 2|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LowBeamRqSig : 8|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LampLetRqSig : 6|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ HighBeamRgSig : 10|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WiperGear : 12|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ HornCtrlRq : 16|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WiperWashCtrlRq : 18|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ PTOSwitchRq : 20|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LightCtrlFlag : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GearCtrlFlag : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ParkingBrakeCtrlFlag : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PTOCtrlFlag : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DriveCtrlFlag : 26|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2365563154 Auto_Ctr: 8 Vector__XXX
+ SG_ ManualGearReq : 18|6@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AutoWorkState : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ SelectGear : 8|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ ManualModeGearReq : 13|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ AcceleratorRaw : 24|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ RequestedBrakeCtrSt : 38|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RequestedAcceleration : 40|16@1+ (0.000488,-15.678) [-15.678|16.3031] "" Vector__XXX
+ SG_ MessageChecksum : 56|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ MessageCounter : 60|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ EPB_swtManuOn : 32|2@1+ (1,0) [0|3] "" Vector__XXX
+
+BO_ 2566890258 AutoSteer_Ctr: 8 Vector__XXX
+ SG_ SteeringWheelCtrRqst : 32|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ SteeringAngleRqst : 40|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ MessageChecksum : 56|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ MessageCounter : 60|4@1+ (1,0) [0|15] "" Vector__XXX
+
+BO_ 2566890513 VehicleState1: 8 Vector__XXX
+ SG_ ChargeStatus : 40|3@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ VehicleState : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ VehicleSpeed : 16|16@1+ (0.003906,0) [0|255.98] "" Vector__XXX
+ SG_ Accelerator_Pedal_Position : 32|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ ElecAutoParkingBrakeState : 46|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ ElecParkingBrakeState : 4|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ IgnitionState : 43|3@1+ (1,0) [0|7] "" Vector__XXX
+
+BO_ 2566891025 VehicleState3: 8 Vector__XXX
+ SG_ LhTurnSwtSig : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RhTurnSwtRqSig : 2|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ FrontFogLightStatus : 4|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RearFogLightStatus : 6|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LowbeamLightStatus : 8|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ SidelightStatus : 10|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ HighbeamLightStatus : 12|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WiperGear : 14|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ LDrSwSig : 16|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RDrSwSig : 18|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WiperWashSt : 20|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ RevLgtSt : 22|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ BrkLgtSt : 24|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ AxleDifferentialLockIndicatorLgt : 26|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WheelDifferLockIndicatorLgt : 28|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ CoolantLevelLowAlm : 30|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ PTOState : 36|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ HornState : 38|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BrakeCtrlFlag : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ EPBCtrlFlag : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ LightCtrlFlag : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Switch1State : 42|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ Switch2State : 44|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ Switch3State : 46|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ Switch4State : 48|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ AEBS_State : 32|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ FuelMassSignal : 56|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ DriveCtrlFlag : 50|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2566887697 VehicleState4: 8 Vector__XXX
+ SG_ SteeringAngleSpeed : 0|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ DriverTorque : 16|16@1+ (0.000976,-31.374) [-31.374|32.5882] "" Vector__XXX
+ SG_ MotorTorque : 32|16@1+ (0.000976,-31.374) [-31.374|32.5882] "" Vector__XXX
+ SG_ HandsOffProbability : 48|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ TimeCollisionWithRelevantObject : 56|8@1+ (0.05,0) [0|12.75] "" Vector__XXX
+
+BO_ 2566890769 VehicleState2: 8 Vector__XXX
+ SG_ AutoFlag_steer : 5|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ AutoFlag_Drive : 4|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ST_Stat : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ SteeringAngle : 8|16@1+ (0.1,-3212.7) [-3212.7|3340.8] "" Vector__XXX
+ SG_ LongitudinalAcceleration : 24|8@1+ (0.1,-12.5) [-12.5|13] "" Vector__XXX
+ SG_ YawRate : 32|16@1+ (0.000122,-3.92) [-3.92|4.07527] "" Vector__XXX
+ SG_ LateralAcceleration : 48|16@1+ (0.000488,-15.687) [-15.687|16.2941] "" Vector__XXX
+
+BO_ 2566827568 PsToEBS: 8 Vector__XXX
+ SG_ BrakeAirPress1 : 16|8@1+ (8,0) [0|2040] "" Vector__XXX
+ SG_ BrakeAirPress2 : 24|8@1+ (8,0) [0|2040] "" Vector__XXX
+
+BO_ 2365484270 TCO1: 8 Vector__XXX
+ SG_ TachographVehiclespeed : 48|16@1+ (0.003906,0) [0|255.98] "" Vector__XXX
+
+BO_ 2364539648 EEC2: 8 Vector__XXX
+ SG_ Acceleratot_Pedal_Position_1 : 8|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ RemoteAcceleratorPedalPosition : 24|8@1+ (0.4,0) [0|102] "" Vector__XXX
+
+BO_ 2364539395 ETC1: 8 Vector__XXX
+ SG_ TransmissionShiftInProcess : 4|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ TransmissionOutputShaftSpeed : 8|16@1+ (0.125,0) [0|8191.88] "" Vector__XXX
+ SG_ TransmissionInputShaftSpeed : 40|16@1+ (0.125,0) [0|8191.88] "" Vector__XXX
+
+BO_ 2565866755 ETC2: 8 Vector__XXX
+ SG_ TransmissionSelectedGear : 0|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ TransmissionActualGearRatio : 8|16@1+ (0.001,0) [0|65.535] "" Vector__XXX
+ SG_ TransmissionCurrentGear : 24|8@1+ (1,-125) [-125|130] "" Vector__XXX
+
+BO_ 2364539904 EEC1: 8 Vector__XXX
+ SG_ DriversDemandEnginePercentTorque : 8|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ ActualEngine_PercentTorque : 16|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ EngineSpeed : 24|16@1+ (0.125,0) [0|8191.88] "" Vector__XXX
+
+BO_ 2565865739 EBC1_ABS: 8 Vector__XXX
+ SG_ ABS_active : 4|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ EBS_break_switch : 6|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ break_pedal_position : 8|8@1+ (0.4,0) [0|102] "" Vector__XXX
+ SG_ EBS_RedWarningSignal : 42|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ ABS_or_EBS_amber_warning_state : 44|2@1+ (1,0) [0|3] "" Vector__XXX
+
+BO_ 2566831883 EBC2_ABS: 8 Vector__XXX
+ SG_ FrontAxleSpeed : 0|16@1+ (0.003906,0) [0|255.98] "" Vector__XXX
+ SG_ RelativeSpeedFLWheel : 16|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+ SG_ RelativeSpeedFRWheel : 24|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+ SG_ RelativeSpeedR1LWheel : 32|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+ SG_ RelativeSpeedR1RWheel : 40|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+ SG_ RelativeSpeedR2LWheel : 48|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+ SG_ RelativeSpeedR2RWheel : 56|8@1+ (0.0625,-7.8125) [-7.8125|8.125] "" Vector__XXX
+
+BO_ 2365565458 Auto_Ctr2: 8 Vector__XXX
+ SG_ MessageCounter : 60|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ MessageChecksum : 56|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ ControlMode : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ RUCtorque_or_Torque_limit : 48|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ EMStorque_or_Torque_limit : 40|8@1+ (1,-125) [-125|130] "" Vector__XXX
+ SG_ RCUCtrlFlag : 3|2@1+ (1,0) [0|3] "" Vector__XXX
+
+
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+

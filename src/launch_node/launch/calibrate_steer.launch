@@ -1,0 +1,6 @@
+<launch>	
+   <node pkg="calibrate_steer" type="calibrate_steer" name="calibrate_steer" output="screen">
+        <rosparam file="$(find launch_node)/param/vehicle_param.yaml"/>
+　　</node>
+</launch>
+

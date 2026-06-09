@@ -1,0 +1,39 @@
+#---velocity_planner_param 
+task_type: 0
+#--路径默认长度
+traject_length_default: 45.0
+
+#---curvature_related----
+curv_limit: 0.01 #曲率下限(小于这个数认为直线
+curv_speed_weight: 0.60 #曲率因子(大于0小于1、越小过弯速度越小)
+curv_upper: 0.1 #曲率上限(大于这个数认为弯太急)
+curv_upper_speed: 1.2 #曲率上限速度(在大弯的参考速度)
+curv_upper_boudary: 2.5 #急弯膨胀(越大膨胀越多)
+
+#---vehicle_related---
+car_length: 5.2 #车长
+car_width: 2.0 #车宽
+vision_weight: 0.05 #视界系数(0到0.1之间，越大考虑越宽范围的障碍物)
+
+#--speed_related--
+cruise_speed: 5.0 #巡航速度
+meet_speed: 2.0 #会车速度
+reverse_speed: 1.4  #倒车速度
+acc_max: 3.0 #最大加速度
+acc_min: -4.0 #最大减速s
+reverse_brake: -1.0 #倒车减速度
+
+#--distance_related--
+safe_brake_dis: 1.5 #刹车安全距离
+safe_follow_dis: 5.0 #跟车安全距离
+safe_meet_dis: 5.0 #会车安全距离
+safe_reverse_dis: 0.5 #倒车安全距离
+
+#--weight_related--
+weight_cruise: 180 # 巡航、刹车、跟车、会车 (权重系数不要低于50)  
+weight_brake: 200
+weight_follow: 150
+weight_meet: 150
+weight_car_speed: 0.05 #自车车速权重
+weight_obs_speed: 0.1 #障碍物车速权重(大于0小于1，越大越提前刹车
+debug_self: 0

@@ -1,0 +1,8 @@
+# multicast_ip: "224.0.0.109"
+multicast_ip: "192.168.109.60"
+cloud_ip: "192.168.109.60" 
+cmd_ip: "192.168.109.120"
+image_ip: "192.168.109.111"
+port: "9009"
+timeOutmilliSecond: 100
+

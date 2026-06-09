@@ -1,0 +1,29 @@
+direct_to_control: false #调试横向控制用
+
+open_velocity_planner: true #没有纵向的时候，由于车无法按规划的速度走，会影响横向控制的计算，所以需要禁止掉
+
+open_path_planner: true  #可以用于在调试纵向控制的时候，直接沿原始轨迹进行规划，避免由于路径规划有问题，影响纵向的调试
+
+reverse_path: false  #翻转路径进行调试
+
+open_lat_controller: true 
+open_lon_controller: false
+
+open_simulate: true
+open_simulate_platoon: false
+simulate_velocity: 3.0
+
+heading_compensation_degree: 0.0
+
+lat_use_current_velocity_only: false
+
+reference_from_global: false
+
+is_forward_shift: true #测试倒车的时候，只需要将这里置为false
+
+enable_control_log: true
+
+steer_compensation_degree: 0.0
+
+stop_obs_strategy: true
+

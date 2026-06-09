@@ -1,0 +1,85 @@
+# Catkin / ROS build products
+/build/
+/devel/
+/install/
+/.catkin_tools/
+/logs/
+/log/
+/.ros/
+.catkin_workspace
+catkin_make.cache
+
+# CMake / make generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+CTestConfiguration.ini
+CTestCustom.cmake
+compile_commands.json
+install_manifest.txt
+Testing/
+cmake-build-*/
+
+# C / C++ / linker outputs
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.bin
+*.elf
+*.map
+*.gcda
+*.gcno
+*.gcov
+
+# Qt generated files
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*_autogen/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# ROS runtime data and large generated artifacts
+*.bag
+*.bag.active
+*.db3
+*.mcap
+*.log
+*.pcd
+*.csv
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Editor / IDE / local machine files
+.vscode/
+.idea/
+.cache/
+.clangd/
+.ccls-cache/
+.DS_Store
+*~
+*.swp
+*.swo
+
+# Codex local session metadata
+.agents/
+.codex/

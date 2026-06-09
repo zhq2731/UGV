@@ -1,0 +1,7 @@
+policy: 1     # 0：定时距 1：固定间距
+time: 2.0     # 定时距情况下的时间参数time *v + constant
+distance: 20.0 # 表示固定车间距
+stop_distance: 6.0
+lateral_offset: 2.5 #在菱形或者三角形情况，横向相邻车之间的横向距离
+use_path_planning: false # 是否使用规划，如果规划偏离较大，车队情况下考虑直接使用参考线,false -no planning true -planning
+deceleration: -1.0

@@ -1,0 +1,27 @@
+wheel_base_m: 6.2
+front_overhang_m: 3.311
+rear_overhang_m: 8.32
+
+vehicle_width_m: 3.150
+vehicle_height_m: 1.905 #useless
+
+left_overhang_m: 0.0
+right_overhang_m: 0.0
+
+min_turn_radius: 5.35 #useless
+
+w2s_cubic_coeff: 0.0
+w2s_quadratic_coeff: 0.0
+w2s_primary_coeff: 30.00
+w2s_constant_term_coeff: 0.0
+
+s2w_cubic_coeff: 0.0
+s2w_quadratic_coeff: 0.0
+s2w_primary_coeff: 0.033333
+s2w_constant_term_coeff: 0.0
+
+long_expansion_distance_m: 0.0
+lat_expansion_distance_m: 0.3
+
+steer_rate_lim_dps: 540.0
+max_steer_angle_rad: 17.2787595 # [rad]方向盘的最大转角

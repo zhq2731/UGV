@@ -1,0 +1,4 @@
+<launch>
+　　<node pkg="velocity_planner" type="velocity_planner_node" name="velocity_planner" output="screen">
+　　</node>
+</launch>

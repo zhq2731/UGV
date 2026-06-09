@@ -1,0 +1,4 @@
+can_interface: can0
+filters: "98C00405:1FFFFF00"  
+interval_sec: 0.5
+is_intel_format: true

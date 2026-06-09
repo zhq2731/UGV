@@ -1,0 +1,8 @@
+uint8 left_front_state
+float64 left_front_speed
+uint8 right_front_state
+float64 right_front_speed
+uint8 left_rear_state
+float64 left_rear_speed
+uint8 right_rear_state
+float64 right_rear_speed

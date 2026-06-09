@@ -1,0 +1,8 @@
+float64 left_pressure_back
+float64 right_pressure_back
+uint8 auto_park_state
+uint8 auto_brake_enable
+uint8 system_hot_warn
+uint8 system_error_code
+float64 left_pressure_set
+float64 right_pressure_set

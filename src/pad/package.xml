@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<package format="2">
+  <name>pad</name>
+  <version>1.0.0</version>
+  <description>
+      Cartographer is a system that provides real-time simultaneous localization
+    and mapping (SLAM) in 2D and 3D across multiple platforms and sensor
+    configurations. This package provides Cartographer's ROS integration.
+  </description>
+  <maintainer email="qixianyu@buaa.edu.cn">
+    The Cartographer Authors
+  </maintainer>
+  <license>Apache 2.0</license>
+
+  <url>https://github.com/cartographer-project/cartographer_ros</url>
+
+  <author email="google-cartographer@googlegroups.com">
+    The Cartographer Authors
+  </author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+
+  <depend>roscpp</depend>
+  <depend>roslaunch</depend>
+  <depend>roslib</depend>
+  <depend>driver_msgs</depend>
+  <depend>ins_msgs</depend>
+  <depend>localization_msgs</depend>
+  <depend>perception_msgs</depend>
+  <depend>heartbeat_msgs</depend>
+  <depend>taskPoints_msgs</depend>
+
+
+  <export>
+      <!-- <rviz plugin="${prefix}/rviz_plugin_description.xml" /> -->
+  </export>
+</package>

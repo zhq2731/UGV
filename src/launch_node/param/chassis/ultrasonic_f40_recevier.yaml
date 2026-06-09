@@ -1,0 +1,4 @@
+#YAML1.2
+  can_interface: can0
+  filters: "611:FFF,612:FFF"  
+  timeout_sec: 0.5

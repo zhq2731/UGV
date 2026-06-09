@@ -1,0 +1,15 @@
+#YAML1.2
+  #can通道
+  can_interface: can0
+  #dbc名称
+  dbc_file_name: D6_BCAN_Matrix_20230604.dbc
+  send_filters: "" 
+  receive_filters: "18ff018c:1FFFFFFF" 
+  #can信号发送/接收等待时间
+  timeout_sec_send: 0.5
+  interval_sec_receive: 1.0
+  enable_fd: false
+
+  #新增
+  print_log_screen: true
+  save_log_to_file: true

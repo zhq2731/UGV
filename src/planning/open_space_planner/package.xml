@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>open_space_planner</name>
+  <version>1.12.0</version>
+  <description>The libamathutils package</description>
+  <maintainer email="yusuke.fujii@tier4.jp">Yusuke FUJII</maintainer>
+  <author email="yusuke.fujii@tier4.jp">Yusuke FUJII</author>
+  <license>Apache 2</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>eigen</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+   <exec_depend>roslib</exec_depend>
+  <depend>amathutils_lib</depend>
+  <depend>pid</depend>
+  <build_depend>vehicle_info_util</build_depend>‘
+  <build_depend>utm</build_depend> 
+  <build_depend>common</build_depend> 
+  <build_depend>planning_msgs</build_depend>
+  <build_depend>planner_common</build_depend> 
+</package>

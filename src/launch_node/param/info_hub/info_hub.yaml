@@ -1,0 +1,25 @@
+vehicle_1:
+    dsrc_ip: "192.168.10.13"
+    dsrc_port: 4040
+    host_ip: "192.168.10.102"
+    host_port: 37008
+
+vehicle_2:
+    dsrc_ip: "192.168.10.11"
+    dsrc_port: 4040
+    host_ip: "192.168.10.102"
+    host_port: 37008
+    
+vehicle_3:
+    dsrc_ip: "192.168.10.12"
+    dsrc_port: 4040
+    host_ip: "192.168.10.102"
+    host_port: 37008
+
+vehicle_4:
+    dsrc_ip: "192.168.10.14"
+    dsrc_port: 4040
+    host_ip: "192.168.10.102"
+    host_port: 37008
+    
+timeOutmilliSecond: 1000

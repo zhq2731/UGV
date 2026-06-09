@@ -1,0 +1,6 @@
+#YAML1.2
+
+  can_interface: can1
+  filters: 0X00,0X01  
+  interval_sec: 0.5
+  

@@ -1,0 +1,4 @@
+#YAML1.2
+  ip: "192.168.4.11"
+  port: 8001
+  dbc_file_name: X6000.dbc

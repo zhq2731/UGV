@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>launch_node</name>
+  <version>0.0.0</version>
+  <description>The launch_node package</description>
+  <maintainer email="robotpengxu@gmail.com">Peng Xu</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>autoware_build_flags</buildtool_depend>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>driver_msgs</build_depend>
+  <build_depend>pluginlib</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>rviz</build_depend>
+  <exec_depend>driver_msgs</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <export>
+    <rviz plugin="${prefix}/rviz_plugin_description.xml"/>
+  </export>
+</package>

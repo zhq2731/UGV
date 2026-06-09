@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="localizer" type="run_localization_node" name="localizer" output="screen">
+  </node>
+</launch>

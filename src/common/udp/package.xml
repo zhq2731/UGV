@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<package format="2">
+  <name>udp</name>
+  <version>1.0.0</version>
+  <description>
+    udp
+  </description>
+  <maintainer email="qixianyu@buaa.edu.cn">
+    The Cartographer Authors
+  </maintainer>
+  <license>Apache 2.0</license>
+
+  <url>https://github.com/cartographer-project/cartographer_ros</url>
+
+  <author email="qixianyu@buaa.edu.cn">
+    qixianyu
+  </author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>roslaunch</depend>
+  <depend>roslib</depend>
+
+  <!-- <test_depend>rosunit</test_depend> -->
+
+  <export>
+      <!-- <rviz plugin="${prefix}/rviz_plugin_description.xml" /> -->
+  </export>
+</package>

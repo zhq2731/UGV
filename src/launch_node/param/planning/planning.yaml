@@ -1,0 +1,98 @@
+kPathBoundsDeciderHorizon: 100.0
+kPathBoundsDeciderResolution: 0.5
+kDefaultLaneWidth: 8.0
+kDefaultRoadWidth: 20.0
+static_obstacle_nudge_l_buffer: 0.3
+kNumExtraTailBoundPoint: 0
+enable_osqp_debug: false
+trajectory_space_resolution: 0.5
+numerical_epsilon: 1e-6
+#used in boundry decider
+static_obstacle_speed_threshold: 0.5 #静态障碍物速度界限
+
+is_lane_borrowing: false
+is_pull_over: false
+pull_over_destination_to_adc_buffer:  25.0
+pull_over_destination_to_pathend_buffer:  10.0
+pull_over_road_edge_buffer: 0.15
+pull_over_approach_lon_distance_adjust_factor: 1.5
+adc_buffer_coeff: 1.0 
+
+#used in boundry decider
+lateral_derivative_bound_default: 2.0
+
+virtual_obs_length: 10.0 #虚拟的时候，箭头方向是长
+virtual_obs_width: 1.0 
+virtual_moveing_obs: false
+
+mapParams_pointNum: 360 #栅格地图检测密度 
+mapParams_resolution: 0.2 #栅格地图分辨率
+mapParams_length: 40 #栅格地图原点距离自车中心的y距离
+mapParams_width: 40 #栅格地图原点距离自车中心的x距离
+
+enable_trajectory_stitcher: true
+replan_lateral_distance_threshold: 0.5
+replan_longitudinal_distance_threshold: 1.5
+prepoint_num: 1
+zudaunludaoche: 25
+kNumExtraEndPoint: 0
+areas: [["start_area","normal_area","park_area","weapon","over_taking_area","collect_info_area","car_meeting_area","road_obstacle_area","smoke_road_area","normal_obstacle_area"]]
+replan_points: [[39.29219880,  105.61120010,39.29169260,  105.61114190]]
+open_perception_obs: true
+stopping_obs_distance: 15.0
+integrator_enable: false  # 积分使能
+integrator_saturation_level: 10.0 # 积分饱和线
+kp: 0.3
+ki: 0.01
+kd: 0.1
+
+
+noplan_points: [[39.29341330,  105.49617710, 39.29341380,  105.49862670]]
+
+noplan_points_num: 4
+
+start_area:
+    weight: [[30.0,20.0,1000.0,5000.0]]
+    expansion: [[3.0,2.0,0.6]]
+    lane_width: 10.0
+    
+normal_area:
+    weight: [[10.0,20.0,1000.0,5000.0]]
+    expansion: [[3.0,2.0,1.0]]
+    lane_width: 10.0
+    
+park_area:
+    weight: [[30.0,20.0,1000.0,5000.0]]
+    expansion: [[3.0,2.0,0.6]]
+    lane_width: 10.0
+weapon:
+    weight: [[30.0,20.0,1000.0,5000.0]]
+    expansion: [[3.0,2.0,0.6]]
+    lane_width: 10.0
+    
+over_taking_area:
+    weight: [[1.0,5.0,800.0,30000.0]]
+    expansion: [[10.0,8.0,1.5]]
+    lane_width: 10.0
+collect_info_area:
+    weight: [[30.0,20.0,1000.0,5000.0]]
+    expansion: [[3.0,2.0,0.6]]
+    lane_width: 10.0
+car_meeting_area:
+    weight: [[1.0,2000.0,2000.0,10000.0]]
+    expansion: [[25.0,10.0,1.2]]
+    lane_width: 10.0
+    
+road_obstacle_area:
+    weight: [[1.0,20.0,1000.0,50000.0]]
+    expansion: [[3.0,2.0,0.9]]
+    lane_width: 10.0
+
+smoke_road_area:
+    weight: [[1.0,20.0,1000.0,50000.0]]
+    expansion: [[3.0,2.0,1.2]]
+    lane_width: 10.0
+normal_obstacle_area:
+    weight: [[1.0,20.0,1000.0,50000.0]]
+    expansion: [[3.0,2.0,0.9]]
+    lane_width: 10.0

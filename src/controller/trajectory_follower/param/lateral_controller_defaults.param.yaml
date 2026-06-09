@@ -1,0 +1,66 @@
+# -- system --
+traj_resample_dist: 0.1 # path resampling interval [m]
+use_steer_prediction: false # flag for using steer prediction (do not use steer measurement)
+admissible_position_error: 5.0 # stop mpc calculation when error is larger than the following value
+admissible_yaw_error_rad: 1.57 # stop mpc calculation when error is larger than the following value
+
+# -- path smoothing --
+enable_path_smoothing: false # flag for path smoothing
+path_filter_moving_ave_num: 25 # param of moving average filter for path smoothing
+curvature_smoothing_num_traj: 15 # point-to-point index distance used in curvature calculation (for trajectory): curvature is calculated from three points p(i-num), p(i), p(i+num)
+curvature_smoothing_num_ref_steer: 15 # point-to-point index distance used in curvature calculation (for steer command reference): curvature is calculated from three points p(i-num), p(i), p(i+num)
+
+# -- mpc optimization --
+qp_solver_type: "unconstraint_fast" # optimization solver option (unconstraint_fast or osqp)
+mpc_prediction_horizon: 50 # prediction horizon step
+mpc_prediction_dt: 0.1 # prediction horizon period [s]
+mpc_weight_lat_error: 3.5 # lateral error weight in matrix Q
+mpc_weight_heading_error: 0.0 # heading error weight in matrix Q
+mpc_weight_heading_error_squared_vel: 0.3 # heading error * velocity weight in matrix Q
+mpc_weight_steering_input: 1.0 # steering error weight in matrix R
+mpc_weight_steering_input_squared_vel: 0.25 # steering error * velocity weight in matrix R
+mpc_weight_lat_jerk: 0.0 # lateral jerk weight in matrix R
+mpc_weight_steer_rate: 0.0 # steering rate weight in matrix R
+mpc_weight_steer_acc: 0.000001 # steering angular acceleration weight in matrix R
+mpc_low_curvature_weight_lat_error: 0.5 # lateral error weight in matrix Q in low curvature point
+mpc_low_curvature_weight_heading_error: 0.0 # heading error weight in matrix Q in low curvature point
+mpc_low_curvature_weight_heading_error_squared_vel: 0.3 # heading error * velocity weight in matrix Q in low curvature point
+mpc_low_curvature_weight_steering_input: 1.0 # steering error weight in matrix R in low curvature point
+mpc_low_curvature_weight_steering_input_squared_vel: 0.25 # steering error * velocity weight in matrix R in low curvature point
+mpc_low_curvature_weight_lat_jerk: 0.0 # lateral jerk weight in matrix R in low curvature point
+mpc_low_curvature_weight_steer_rate: 0.0 # steering rate weight in matrix R in low curvature point
+mpc_low_curvature_weight_steer_acc: 0.000001 # steering angular acceleration weight in matrix R in low curvature point
+mpc_low_curvature_thresh_curvature: 0.0 # threshold of curvature to use "low_curvature" parameter (recommend: 0.01~0.03)
+
+mpc_weight_terminal_lat_error: 1.0 # terminal lateral error weight in matrix Q to improve mpc stability
+mpc_weight_terminal_heading_error: 0.1 # terminal heading error weight in matrix Q to improve mpc stability
+mpc_zero_ff_steer_deg: 0.5 # threshold that feed-forward angle becomes zero
+mpc_acceleration_limit: 2.0 # limit on the vehicle's acceleration
+mpc_velocity_time_constant: 0.3 # time constant used for velocity smoothing
+mpc_min_prediction_length: 5.0 # minimum prediction length
+
+# -- vehicle model --
+vehicle_model_type: "kinematics" # vehicle model type for mpc prediction. option is kinematics, kinematics_no_delay, and dynamics
+input_delay: 0.1 # steering input delay time for delay compensation
+vehicle_model_steer_tau: 0.5 # steering dynamics time constant (1d approximation) [s]
+steer_rate_lim_dps: 2500.0 # steering angle rate limit [deg/s]
+acceleration_limit: 2.0 # acceleration limit for trajectory velocity modification [m/ss]
+velocity_time_constant: 0.3 # velocity dynamics time constant  for trajectory velocity modification [s]
+
+# -- lowpass filter for noise reduction --
+steering_lpf_cutoff_hz: 2.0 # cutoff frequency of lowpass filter for steering command [Hz]
+error_deriv_lpf_cutoff_hz: 5.0
+
+# stop state: steering command is kept in the previous value in the stop state.
+stop_state_entry_ego_speed: 0.001
+stop_state_entry_target_speed: 0.001
+converged_steer_rad: 0.1
+keep_steer_control_until_converged: true
+new_traj_duration_time: 1.0
+new_traj_end_dist: 0.3
+
+wheel_to_steering_ratio: 21.035 #轮子转换为方向盘
+wheelbase: 1.9
+max_steer_angle: 7.853981633
+ego_nearest_dist_threshold: 3.0 # [m]
+ego_nearest_yaw_threshold: 1.046 # [rad] = 60 [deg]

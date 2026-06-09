@@ -1,0 +1,6 @@
+file_name: "gpsData.txt"
+forward_s: 60.0
+backward_s: 10.0
+normal_area_forward_s: 50.0
+others_area_forward_s: 80.0
+task_area:  "normal_area"    #"start_area","normal_area","park_area","weapon","over_taking_area","collect_info_area","car_meeting_area","road_obstacle_area","smoke_road_area"

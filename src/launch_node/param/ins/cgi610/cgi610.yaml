@@ -1,0 +1,12 @@
+#YAML1.2
+
+  can_interface: can2
+  dbc_file_name: cgi610_20210507-motorola.dbc
+  filters: "320:ff0"
+  interval_sec: 0.5
+  latitude: 0.0
+  longitude: 0.0
+  altitude: 0.0
+  init_set: true
+
+  

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package>
+  <name>third_party_controller</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="ubuntu@todo.todo">ubuntu</maintainer>
+  <license>TODO: License declaration</license>
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>std_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>yaml-cpp</build_depend>
+  <build_depend>planning_msgs</build_depend>
+  <build_depend>driver_msgs</build_depend>
+  <build_depend>localization_msgs</build_depend>
+
+  <run_depend>planning_msgs</run_depend>
+  <run_depend>driver_msgs</run_depend>
+  <run_depend>localization_msgs</run_depend>
+  <run_depend>yaml-cpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+
+</package>

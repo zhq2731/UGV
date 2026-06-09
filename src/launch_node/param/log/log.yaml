@@ -1,0 +1,108 @@
+#fileLevel和consoleLevel：打印或者写文件的等级
+#LEVEL_TRACE = 0x00,
+#LEVEL_DEBUG = 0x01,
+#LEVEL_INFO = 0x02,
+#LEVEL_WARN = 0x03,
+#LEVEL_ERROR = 0x04,
+#LEVEL_CRITICAL = 0x05,
+#LEVEL_OFF = 0x06    #关闭打印或者 写文件
+
+#单位是M
+#滚动存储的文件个数
+
+#file：文件名称，文件会存储在家目录的log文件夹下
+#loggerName：随便给自己的logger起一个名字
+#max_size： 日志记录文件单个文件的最大容量 单位M
+#max_files：滚动存储文件的个数。相当于总的日志是max_size* max_files
+
+chassis_driver_node: #与包名对应
+    fileLevel: 3
+    consoleLevel: 1
+    file: "chassis_driver_node.txt"
+    loggerName: "chassis_driver_node_logger"
+    max_size: 10.0 #单位是M
+    max_files: 10 #滚动存储的文件个数    
+cloud_comm:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "cloud_comm.txt"
+    loggerName: "cloud_comm_logger"
+    max_size: 10.0 
+    max_files: 10        
+trajectory_follower:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "trajectory_follower.txt"
+    loggerName: "trajectory_follower_logger"
+    max_size: 10.0 
+    max_files: 10 
+cooperation:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "cooperation.txt"
+    loggerName: "cooperation_logger"
+    max_size: 10.0 
+    max_files: 10 
+info_hub:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "info_hub.txt"
+    loggerName: "info_hub_logger"
+    max_size: 10.0 
+    max_files: 10 
+ins_driver_lib:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "ins_driver_lib.txt"
+    loggerName: "ins_driver_lib_logger"
+    max_size: 10.0 
+    max_files: 10 
+pad:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "pad.txt"
+    loggerName: "pad_logger"
+    max_size: 10.0 
+    max_files: 10 
+planner:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "planner.txt"
+    loggerName: "planner_logger"
+    max_size: 10.0 #单位是M
+    max_files: 10 
+record_data_node:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "record_data_node.txt"
+    loggerName: "record_data_node_logger"
+    max_size: 10.0 
+    max_files: 10 
+reference_line_node:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "reference_line_node.txt"
+    loggerName: "reference_line_node_logger"
+    max_size: 10.0 
+    max_files: 10 
+steering_offset_estimator:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "steering_offset_estimator.txt"
+    loggerName: "steering_offset_estimator_logger"    
+    max_size: 10.0 
+    max_files: 10 
+vehicle_cmd_gate:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "vehicle_cmd_gate.txt"
+    loggerName: "vehicle_cmd_gate_logger"    
+    max_size: 10.0 
+    max_files: 10 
+logger:
+    fileLevel: 3
+    consoleLevel: 1
+    file: "logger.txt"
+    loggerName: "logger_test" 
+    max_size: 10.0
+    max_files: 10    

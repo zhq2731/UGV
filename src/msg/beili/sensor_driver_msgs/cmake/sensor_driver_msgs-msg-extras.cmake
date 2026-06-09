@@ -1,0 +1,2 @@
+set(sensor_driver_msgs_MESSAGE_FILES "msg/ECUData.msg;msg/GpswithHeading.msg;msg/History_traj.msg;msg/InsVelocity.msg;msg/OdometrywithGps.msg;msg/PointCloudMultiLaser.msg;msg/PointCloudMultiLidar.msg;msg/Points.msg;msg/Predict_traj.msg;msg/Rectangle.msg;msg/TargetCar.msg;msg/VehicleState.msg;msg/moving_target.msg;msg/moving_target_send.msg")
+set(sensor_driver_msgs_SERVICE_FILES "srv/startconfig.srv")

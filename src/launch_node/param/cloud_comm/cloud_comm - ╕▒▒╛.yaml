@@ -1,0 +1,7 @@
+dsrc_ip: "192.168.1.120"
+dsrc_port: 6789
+host_ip: "192.168.1.112"
+host_port: 6789 
+timeOutmilliSecond: 100
+desired_speed: 5.5
+reverse_drive: false

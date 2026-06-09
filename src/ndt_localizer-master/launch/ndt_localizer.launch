@@ -1,0 +1,60 @@
+<launch>
+
+  <!-- Topics -->
+  <!-- <param name="/use_sim_time" value="true" /> -->
+
+  <arg name="input_sensor_points_topic" default="/middle/rslidar_point" doc="Sensor points topic"/>
+  <arg name="input_initial_pose_topic" default="/ekf_pose_with_covariance" doc="Initial position topic to align" />
+  <arg name="input_map_points_topic" default="/points_map" doc="Map points topic" />
+  <arg name="output_pose_topic" default="ndt_pose" doc="Estimated self position" />
+  <arg name="output_pose_with_covariance_topic" default="ndt_pose_with_covariance" doc="Estimated self position with covariance" />
+  <arg name="output_diagnostics_topic" default="diagnostics" doc="Diagnostic topic" />
+  <arg name="input_imu_topic" default="/XW56xx_IMU" doc= "IMU topic" />
+  <arg name="path_txt" default="/home/cf206/Desktop/ndt_localizer-master-new/pose.txt" doc= "path_txt" />
+  <arg name="ins_txt" default="/home/cf206/Desktop/ndt_localizer-master-new/ins.txt" doc= "ins_txt" />
+
+  <include file="$(find ndt_localizer)/launch/static_tf.launch" />
+  <include file="$(find ndt_localizer)/launch/map_loader.launch" />
+  <include file="$(find ndt_localizer)/launch/points_downsample.launch" />
+
+  <!-- tf -->
+  <arg name="base_frame" default="base_link" doc="Vehicle reference frame" />
+
+  <arg name="trans_epsilon" default="0.05" doc="The maximum difference between two consecutive transformations in order to consider convergence" />
+  <arg name="step_size" default="0.1" doc="The newton line search maximum step length" />
+  <arg name="resolution" default="2.0" doc="The ND voxel grid resolution" />
+  <arg name="max_iterations" default="30.0" doc="The number of iterations required to calculate alignment" />
+  <arg name="converged_param_transform_probability" default="4.0" doc="" />
+  <arg name="init_latitude" default= "39.4723557" />
+  <arg name="init_longitude" default= "115.6257681"/>
+  <arg name="init_altitude" default= "82.83"/>
+  <arg name="online_calib" default="true"/>
+  <arg name="map_grid_path" default="/media/cf206/512/gnss_lidar_mapping_ws/gridmap/large_loop/100_0_0.pcd"/>
+  <arg name="max_score" default="80" />
+
+  <node pkg="ndt_localizer" type="ndt_localizer_node" name="ndt_localizer_node" output="screen">
+
+    <remap from="points_raw" to="$(arg input_sensor_points_topic)" />
+    <remap from="ekf_pose_with_covariance" to="$(arg input_initial_pose_topic)" />
+    <remap from="pointcloud_map" to="$(arg input_map_points_topic)" />
+    <remap from="ndt_pose" to="$(arg output_pose_topic)" />
+    <remap from="ndt_pose_with_covariance" to="$(arg output_pose_with_covariance_topic)" />
+    <remap from="diagnostics" to="$(arg output_diagnostics_topic)" />
+    <param name="base_frame" value="$(arg base_frame)" />
+    <param name="trans_epsilon" value="$(arg trans_epsilon)" />
+    <param name="step_size" value="$(arg step_size)" />
+    <param name="resolution" value="$(arg resolution)" />
+    <param name="max_iterations" value="$(arg max_iterations)" />
+    <param name="converged_param_transform_probability" value="$(arg converged_param_transform_probability)" />
+    <param name="init_latitude" value="$(arg init_latitude)" />
+    <param name="init_longitude" value="$(arg init_longitude)" />
+    <param name="init_altitude" value="$(arg init_altitude)" />
+    <param name="input_imu_topic" value="$(arg input_imu_topic)"/>
+    <param name="online_calib" value="$(arg online_calib)"/>
+    <param name="map_grid_path" value="$(arg map_grid_path)"/>
+    <param name="path_txt" value="$(arg path_txt)" />
+  </node>
+
+  <!-- <include file="$(find ndt_localizer)/launch/lexus.launch" /> -->
+
+</launch>

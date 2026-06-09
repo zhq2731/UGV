@@ -1,0 +1,56 @@
+
+<launch>
+    <group if="$(arg openrviz)">
+    <node pkg="rviz" type="rviz" name="rviz"  args="-d $(find launch_node)/param/rviz/param.A.rviz" required="true" />
+	</group>
+	
+	<group ns="$(arg namespace)">
+    <node pkg="simulate" type="simulate" name="simulate" output="screen">
+        <rosparam file="$(find launch_node)/param/reference_line/reference_line.yaml"/>
+		<rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+		<rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+		<rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+		<param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+
+　　</node>
+
+　　<node pkg="cooperation" type="cooperation" name="cooperation" output="screen">
+		<rosparam file="$(find launch_node)/param/cooperation/cooperation.yaml"/>
+		<rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+		<rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+		<param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+　　</node>
+
+　　<node pkg="reference_line_node" type="reference_line_node" name="reference_line_node" output="screen">
+　　　　<rosparam file="$(find launch_node)/param/reference_line/reference_line.yaml"/>
+        <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+	    <rosparam file="$(find launch_node)/param/reference_line/smooth_config_file.yaml"/>
+		<rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>		
+		<rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+		<param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+
+　　</node>
+
+　　<node pkg="planner" type="planner" name="planner" output="screen">
+         <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+         <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
+         <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+         <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+		 <param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+
+	</node>
+
+　　<node pkg="trajectory_follower" type="trajectory_follower" name="trajectory_follower" output="screen">
+　　　　<rosparam file="$(find launch_node)/param/control/$(arg vehicle_type)/lateral_controller_defaults.param.yaml"/>
+        <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+		<rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+		<param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+　　</node>
+
+　　<node pkg="pad" type="pad_node" name="pad_node" output="screen">
+		<param name="vehicle_platform_file"  value="vehicle_platform-tank-1.yaml" />
+　　</node>
+    </group>
+	
+</launch>
+

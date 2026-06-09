@@ -1,0 +1,7 @@
+<launch>
+
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="localizer_to_base_link" args="0.598358 0.0273642 0.0349202 0.3726626 -1.4436736 -1.8935811 base_link rslidar"/> -->
+<!--     <node pkg="tf2_ros" type="static_transform_publisher" name="localizer_to_base_link" args="-1.18276 1.66322 0.12 0 0 1.7647553 base_link rslidar"/> -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="localizer_to_base_link" args="0.0 0.0 0.0 0.0 0 0 base_link rslidar"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_map" args="0 0 0 0 0 0 map world" />
+</launch>

@@ -1,0 +1,4 @@
+#YAML1.2
+  task_points_file: "task_points.txt"
+  global_path_jump_point_size: 1
+  

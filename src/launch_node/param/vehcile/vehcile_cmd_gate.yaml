@@ -1,0 +1,18 @@
+  #转向
+  enable_eps: true
+  enable_eps_debug: false
+  #车身电子
+  enable_bcm: true
+  enable_bcm_debug: false
+  #刹车
+  enable_xbr: true
+  enable_xbr_debug: false
+  #自动驾驶控制器
+  enable_adu: true
+  enable_adu_debug: false
+  #驻车
+  enable_epb: true
+  enable_epb_debug: false
+  #油门系统，个别车型有
+  enable_eec: false
+  enable_eec_debug: false

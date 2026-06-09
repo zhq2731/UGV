@@ -1,0 +1,217 @@
+Panels:
+  - Class: rviz/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Vehicle 1 Route1
+        - /Vehicle 1 Reference1
+        - /Vehicle 1 Planning1
+        - /Vehicle 2 Route1
+        - /Vehicle 2 Reference1
+        - /Vehicle 2 Planning1
+      Splitter Ratio: 0.5
+    Tree Height: 280
+  - Class: rviz/Tool Properties
+    Expanded: ~
+    Name: Tool Properties
+    Splitter Ratio: 0.550000011920929
+  - Class: launch_node/TwoVehicleMotionPanel
+    Name: Motion Commands
+  - Class: rviz/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz/Time
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
+Preferences:
+  PromptSaveOnExit: false
+Toolbars:
+  toolButtonStyle: 2
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/route_display
+      Name: Vehicle 1 Route
+      Namespaces:
+        /Osm/points: true
+        /Osm/pointsNormal: true
+        /Osm/points_cross: true
+        /Osm/way: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/rviz/reference_marker
+      Name: Vehicle 1 Reference
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/rviz/planning_marker
+      Name: Vehicle 1 Planning
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/control/desired_velocity
+      Name: Vehicle 1 Desired Velocity
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/perception_obs
+      Name: Vehicle 1 Obstacles
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /vehicle_1/cooperationMarkers
+      Name: Vehicle 1 Cooperation
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/route_display
+      Name: Vehicle 2 Route
+      Namespaces:
+        /Osm/points: true
+        /Osm/pointsNormal: true
+        /Osm/points_cross: true
+        /Osm/way: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/rviz/reference_marker
+      Name: Vehicle 2 Reference
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/rviz/planning_marker
+      Name: Vehicle 2 Planning
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/control/desired_velocity
+      Name: Vehicle 2 Desired Velocity
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/perception_obs
+      Name: Vehicle 2 Obstacles
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /vehicle_2/cooperationMarkers
+      Name: Vehicle 2 Cooperation
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Default Light: true
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetGoal
+      Topic: /vehicle_1/move_base_simple/goal
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /vehicle_1/clicked_point
+    - Class: rviz/SetGoal
+      Topic: /vehicle_2/move_base_simple/goal
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /vehicle_2/clicked_point
+  Value: true
+  Views:
+    Current:
+      Angle: -2.8250045776367188
+      Class: rviz/TopDownOrtho
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Scale: 20
+      Target Frame: map
+      X: -24.420936584472656
+      Y: -35.19974899291992
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1016
+  Hide Left Dock: false
+  Hide Right Dock: true
+  Motion Commands:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000100000000000001560000039efc0200000005fb000000100044006900730070006c006100790073010000003d000001a3000000c900fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000198000000a50000005c00fffffffb0000001e004d006f00740069006f006e00200043006f006d006d0061006e0064007301000001e6000001f50000013000fffffffb0000000a0056006900650077007300000002f8000000a4000000a400fffffffb0000000800540069006d00650000000395000000460000003900ffffff000005dc0000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1848
+  X: 72
+  Y: 27

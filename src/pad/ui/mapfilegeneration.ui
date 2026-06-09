@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MapFileGeneration</class>
+ <widget class="QDialog" name="MapFileGeneration">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>630</width>
+    <height>228</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>地图文件操作</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="2" column="3">
+      <widget class="QLineEdit" name="leMaxY">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>原点高度</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="3">
+      <widget class="QLineEdit" name="leImageHeight">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QLabel" name="label_10">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>图像高度</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="leLat">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="label_4">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>坐标轴X最大值</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="leResolution">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>原点经度</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QLineEdit" name="leMaxX">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="3">
+      <widget class="QLineEdit" name="leMinY">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLineEdit" name="leImageWidth">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QLabel" name="label_6">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>坐标轴Y最小值</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>原点纬度</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="leLon">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+       <property name="maxLength">
+        <number>32772</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLabel" name="label_5">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>坐标轴X最小值</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="leHeight">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>分辨率</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_9">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>图像宽度</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QLabel" name="label_7">
+       <property name="styleSheet">
+        <string notr="true">QLabel{font:11pt '仿宋' bold; color:rgb(255,255,255);}</string>
+       </property>
+       <property name="text">
+        <string>坐标轴Y最大值</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="3">
+      <widget class="QLineEdit" name="leMinX">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(50,50,50);color:rgb(50,223,249);font:11pt</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="3">
+      <widget class="QPushButton" name="btSaveMapFile">
+       <property name="minimumSize">
+        <size>
+         <width>146</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+       </property>
+       <property name="text">
+        <string>保存地图文件</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="btGetMapOrigin">
+       <property name="minimumSize">
+        <size>
+         <width>146</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+       </property>
+       <property name="text">
+        <string>获取地图原点</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QPushButton" name="btModifyMapFile">
+       <property name="minimumSize">
+        <size>
+         <width>146</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+       </property>
+       <property name="text">
+        <string>地图文件修改</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="pushButton_3">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>146</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}
+</string>
+       </property>
+       <property name="text">
+        <string>打开地图文件</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>pushButton_3</tabstop>
+  <tabstop>btGetMapOrigin</tabstop>
+  <tabstop>btModifyMapFile</tabstop>
+  <tabstop>btSaveMapFile</tabstop>
+  <tabstop>leLon</tabstop>
+  <tabstop>leLat</tabstop>
+  <tabstop>leHeight</tabstop>
+  <tabstop>leResolution</tabstop>
+  <tabstop>leImageWidth</tabstop>
+  <tabstop>leMaxX</tabstop>
+  <tabstop>leMinX</tabstop>
+  <tabstop>leMaxY</tabstop>
+  <tabstop>leMinY</tabstop>
+  <tabstop>leImageHeight</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,7 @@
+serialNode: "/dev/ttyUSB0" 
+boodrate: 230400
+
+can_interface: can1
+dbc_file_name: cgi610_20210507-motorola.dbc
+filters: 0X00,0X01  
+interval_sec: 0.5

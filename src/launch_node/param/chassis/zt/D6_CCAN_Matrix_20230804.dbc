@@ -1,0 +1,2324 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: IDS VCU TVM AC EBS EPB EPS TSN DCDC
+
+
+BO_ 2298425750 IDS_Command_1: 8 IDS
+ SG_ IDS_perPctgBrkPdlReq : 0|8@1+ (0.4,0) [0|100] "%" VCU
+ SG_ IDS_perPctgAccrPdlReq : 8|8@1+ (0.4,0) [0|100] "%" VCU
+ SG_ IDS_SteerWhlAngleReq : 16|16@1+ (0.1,-1575) [-1575|1575] "°" VCU
+ SG_ IDS_SteerWhlSpdReq : 32|8@1+ (10,0) [0|540] "deg/s" VCU
+ SG_ IDS_vVehSpd : 40|12@1+ (0.1,0) [0|200] "km/h" VCU,TVM
+ SG_ IDS_bIMUFlt : 52|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ IDS_AliveCntr1 : 56|8@1+ (1,0) [0|255] "" VCU,TVM
+
+BO_ 2566862998 IDS_Command_2: 8 IDS
+ SG_ IDS_noADSFltLvl : 0|3@1+ (1,0) [0|7] "" VCU
+ SG_ IDS_noDrvModReq : 3|3@1+ (1,0) [0|7] "" VCU
+ SG_ IDS_bEleSilenceSts : 6|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bHeadlightReq : 7|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bLCornrgLampReq : 8|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bRCornrgLampReq : 9|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bHighBeamReq : 10|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bLowBeamReq : 11|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bFrntFogLampReq : 12|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bReFogLampReq : 13|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_bWarnLampReq : 14|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_noGearPosnReq : 15|3@1+ (1,0) [0|7] "" VCU
+ SG_ IDS_bParkingBrkReq : 18|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_noWorkModReq : 19|8@1+ (1,0) [0|255] "" VCU
+ SG_ IDS_noParkingBrkReq : 27|8@1+ (0.4,0) [0|102] "" VCU
+ SG_ IDS_noKeyStart : 35|2@1+ (1,0) [0|3] "" VCU
+ SG_ IDS_noACCSts : 37|2@1+ (1,0) [0|3] "" VCU
+ SG_ IDS_noLKASts : 39|2@1+ (1,0) [0|3] "" VCU
+ SG_ IDS_noAEBSts : 41|2@1+ (1,0) [0|3] "" VCU
+ SG_ IDS_noSignal1 : 43|2@1+ (1,0) [0|3] "" VCU
+ SG_ IDS_noSignal2 : 45|3@1+ (1,0) [0|7] "" VCU
+ SG_ IDS_noSignal3 : 48|4@1+ (1,0) [0|15] "" VCU
+ SG_ IDS_noSignal4 : 52|1@1+ (1,0) [0|1] "" VCU
+ SG_ IDS_AliveCntr2 : 56|8@1+ (1,0) [0|255] "" VCU
+
+BO_ 2566862230 IDS_AcceleratedSpeed: 8 IDS
+ SG_ IDS_LateralAcce : 0|16@1+ (4.8828125E-4,-15.687) [-15.687|16.3125] "m/s?" VCU,TVM
+ SG_ IDS_LongitudinalAcce : 16|16@1+ (4.8828125E-4,-15.687) [-15.687|16.3125] "m/s?" VCU,TVM
+ SG_ IDS_Yawrate : 32|16@1+ (0.01,-100) [-100|100] "deg/s" VCU,TVM
+ SG_ IDS_AliveCntr3 : 56|8@1+ (1,0) [0|255] "bit" VCU,TVM
+
+BO_ 2566866070 IDS_GPS_1: 8 IDS
+ SG_ IDS_Latitude : 0|32@1+ (0.0000001,-210) [-210|211.108122] "°" VCU,TVM
+ SG_ IDS_AliveCntr4 : 56|8@1+ (1,0) [0|255] "bit" VCU,TVM
+
+BO_ 2566875286 IDS_GPS_2: 8 IDS
+ SG_ IDS_Altitude : 0|16@1+ (0.125,-2500) [-2500|5531.875] "m" VCU,TVM
+ SG_ IDS_Longitude : 16|32@1+ (0.0000001,-210) [-210|211.108122] "°" VCU,TVM
+ SG_ IDS_AliveCntr5 : 56|8@1+ (1,0) [0|255] "bit" VCU,TVM
+
+BO_ 2314154646 IDS_IMU_1: 8 IDS
+ SG_ IDS_Yawangle : 0|16@1+ (0.01,-180) [-180|180] "deg" VCU,TVM
+ SG_ IDS_Rollangle : 16|16@1+ (0.01,-45) [-45|45] "" VCU,TVM
+ SG_ IDS_Pitchangle : 32|16@1+ (0.01,-45) [-45|45] "" VCU,TVM
+ SG_ IDS_AliveCntr6 : 56|8@1+ (1,0) [0|255] "bit" VCU,TVM
+
+BO_ 2314155158 IDS_IMU_2: 8 IDS
+ SG_ IDS_VerticalAcce : 0|16@1+ (4.8828125E-4,-15.687) [-15.687|16.3125] "m/s?" VCU,TVM
+ SG_ IDS_RollVelocity : 16|16@1+ (0.01,-100) [-100|100] "" VCU,TVM
+ SG_ IDS_PitchVelocity : 32|16@1+ (0.01,-100) [-100|100] "" VCU,TVM
+ SG_ IDS_AliveCntr7 : 56|8@1+ (1,0) [0|255] "bit" VCU,TVM
+
+BO_ 2432671271 VCU_IDS_1: 8 VCU
+ SG_ VCU_IDS_vActuVehSpd : 0|11@1+ (0.1,0) [0|200] "Km/h" IDS
+ SG_ VCU_perActuPctgBrkPdl : 11|8@1+ (0.4,0) [0|100] "%" IDS
+ SG_ VCU_ActuSteerWhlAngle : 19|16@1+ (0.1,-1575) [-1575|1575] "°" IDS
+ SG_ VCU_ActuSteerWhlSpd : 35|8@1+ (10,0) [0|540] "deg/s" IDS
+ SG_ VCU_perActuPctgAccrPdl : 43|8@1+ (0.4,0) [0|100] "%" IDS
+ SG_ VCU_AliveCntr9E27 : 56|8@1+ (1,0) [0|255] "" IDS
+
+BO_ 2365553703 VCU_IDS_2: 8 VCU
+ SG_ VCU_noVehFltLvl : 0|3@1+ (1,0) [0|7] "" IDS
+ SG_ VCU_noActuDrvMod : 3|3@1+ (1,0) [0|7] "" IDS
+ SG_ VCU_bEleSlienceActv : 6|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_bTemStopActv : 7|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_bACCActv : 8|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_bAEBActv : 9|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_bLKAActv : 10|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_bAssidDrvMod : 11|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_noAutoMaxSpd : 12|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noActuGearPosn : 14|3@1+ (1,0) [0|7] "" IDS
+ SG_ VCU_IDS_bRdySts : 17|1@1+ (1,0) [0|1] "" IDS
+ SG_ VCU_noParkingBrkSts : 18|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_tqActuMotTrq : 20|17@1+ (0.5,-28000) [-28000|28000] "Nm" IDS
+ SG_ VCU_AliveCntr7C27 : 56|8@1+ (1,0) [0|255] "" IDS
+
+BO_ 2566850599 VCU_IDS_3: 8 VCU
+ SG_ VCU_noHeadlightSts : 0|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noLCornrgLampSts : 2|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noRCornrgLampSts : 4|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noHighBeamSts : 6|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noLowBeamSts : 8|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noFrntFogLampSts : 10|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noReFogLampSts : 12|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noWarnLampSts : 14|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noBrkLampSts : 16|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noEPBLampSts : 18|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noEPBErrLampSts : 20|2@1+ (1,0) [0|3] "" IDS
+ SG_ VCU_noBrkWorkSts : 22|4@1+ (1,0) [0|15] "" IDS
+ SG_ VCU_noParkWorkSts : 26|4@1+ (1,0) [0|15] "" IDS
+ SG_ VCU_AliveCntr0827 : 56|8@1+ (1,0) [0|255] "" IDS
+
+BO_ 2550260945 VCU_PCU_Ctrl: 8 VCU
+ SG_ VCU_noRningReq : 0|2@1+ (1,0) [0|3] "" AC
+ SG_ VCU_nRningSpd : 8|16@1+ (1,0) [0|5000] "rpm" AC
+ SG_ VCU_RollingCntrE4D1 : 56|8@1+ (1,0) [0|255] "" AC
+
+BO_ 2550256100 PCU_STA1: 8 AC
+ SG_ PCU_uvVoltgInput : 0|16@1+ (1,0) [0|1000] "Vdc" VCU
+ SG_ PCU_uvVltgOutput : 16|16@1+ (1,0) [0|1000] "Vdc" VCU
+ SG_ PCU_iaCurntOutput : 32|16@1+ (0.1,0) [0|30] "Vdc" VCU
+ SG_ PCU_noRningSts : 48|2@1+ (1,0) [0|3] "" VCU
+ SG_ PCU_RollingCntr1 : 56|8@1+ (1,0) [0|255] "" VCU
+
+BO_ 2550321636 PCU_STA2: 8 AC
+ SG_ PCU_nMotSpd : 0|16@1+ (1,0) [0|15000] "rpm" VCU
+ SG_ PCU_tMotTmep : 16|8@1+ (1,-40) [-40|215] "℃" VCU
+ SG_ PCU_tMCUTmep : 24|8@1+ (1,-40) [-40|215] "℃" VCU
+ SG_ PCU_UdvAlarmSts : 32|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_OdvAlarmSts : 33|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_DftphAlarmSts : 34|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_OcetAlarmSts : 35|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_OvheatAlarmSts : 36|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_ComutoutAlarmSts : 37|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_OspdAlarmSts : 38|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_ModprotAlarmSts : 39|1@1+ (1,0) [0|1] "" VCU
+ SG_ PCU_FaultcodeSts : 40|8@1+ (1,0) [0|255] "" VCU
+ SG_ PCU_RollingCntr2 : 56|4@1+ (1,0) [0|15] "" VCU
+
+BO_ 2565865739 EBC1: 8 EBS
+ SG_ EBS_ASREngCtrlActv : 0|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noASRBrkCtrlActv : 2|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noABSActv : 4|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noBrkSwt : 6|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_perBrkPdl : 8|8@1+ (0.4,0) [0|100] "%" VCU,TVM
+ SG_ EBS_noOffRoadSwt : 18|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noHillHoldSwt : 20|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noABSFullyWork : 40|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noRedWarnLamp : 42|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noYellowWarnLamp : 44|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noASRLamp : 46|2@1+ (1,0) [0|3] "" VCU,TVM
+
+BO_ 2566831883 EBC2: 8 EBS
+ SG_ EBS_vFrntAxleSpd : 0|16@1+ (0.00390625,0) [0|250.996] "km/h" EPB,VCU
+ SG_ EBS_vFrntAxleLeWhlSpd : 16|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+ SG_ EBS_vFrntAxleRiWhlSpd : 24|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+ SG_ EBS_vRe1AxleLeWhlSpd : 32|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+ SG_ EBS_vRe1AxleRiWhlSpd : 40|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+ SG_ EBS_vRe2AxleLeWhlSpd : 48|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+ SG_ EBS_vRe2AxleRiWhlSpd : 56|8@1+ (0.0625,-7.8125) [-7.8125|7.8125] "km/h" VCU
+
+BO_ 2566827275 EBC3: 8 EBS
+ SG_ EBS_kpaAxle12BrkPrureLe : 0|8@1+ (5,0) [0|1250] "kPa" VCU
+ SG_ EBS_kpaAxle12BrkPrureRi : 8|8@1+ (5,0) [0|1250] "kPa" VCU
+ SG_ EBS_kpaAxle34BrkPrureLe : 16|8@1+ (5,0) [0|1250] "kPa" VCU
+ SG_ EBS_kpaAxle34BrkPrureRi : 24|8@1+ (5,0) [0|1250] "kPa" VCU
+ SG_ EBS_kpaAxle56BrkPrureLe : 32|8@1+ (5,0) [0|1250] "kPa" VCU
+ SG_ EBS_kpaAxle56BrkPrureRi : 40|8@1+ (5,0) [0|1250] "kPa" VCU
+
+BO_ 2298375691 HRW: 8 EBS
+ SG_ EBS_vFrntLeWhlSpd : 0|16@1+ (0.00390625,0) [0|250.996] "km/h" VCU,TVM
+ SG_ EBS_vFrntRiWhlSpd : 16|16@1+ (0.00390625,0) [0|250.996] "km/h" VCU,TVM
+ SG_ EBS_vAxle5LeWhlSpd : 32|8@1+ (1,0) [0|250] "km/h" VCU,TVM
+ SG_ EBS_vReLeWhlSpd : 40|8@1+ (1,0) [0|250] "km/h" VCU,TVM
+ SG_ EBS_vAxle5RiWhlSpd : 48|8@1+ (1,0) [0|250] "km/h" VCU,TVM
+ SG_ EBS_vReRiWhlSpd : 56|8@1+ (1,0) [0|250] "km/h" VCU,TVM
+
+BO_ 2566834699 DM1: 8 EBS
+ SG_ EBS_noProtectLampSts : 0|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noAmberWarnLampSts : 2|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noRedStopLampSts : 4|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_noFltLampSts : 6|2@1+ (1,0) [0|3] "" VCU,TVM
+ SG_ EBS_SpnLeastSignBitsOfSPN : 16|8@1+ (1,0) [0|255] "" VCU,TVM
+ SG_ EBS_SpnSecByteOfSPN : 24|8@1+ (1,0) [0|255] "" VCU,TVM
+ SG_ EBS_Fmi : 32|5@1+ (1,0) [0|31] "" VCU,TVM
+ SG_ EBS_Spn3MostSignBitsofSPN : 37|3@1+ (1,0) [0|7] "" VCU,TVM
+ SG_ EBS_OccurrenceCnt : 40|7@1+ (1,0) [0|127] "" VCU,TVM
+ SG_ EBS_SpnCnvnMethod : 47|1@1+ (1,0) [0|1] "" VCU,TVM
+
+BO_ 2348810251 TSC1_E: 8 EBS
+ SG_ EBS_noXBRCtrlMod : 0|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_noSpdCtrlPri : 2|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_noModCtrlPrio : 4|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_perTrqLimit : 24|8@1+ (1,-125) [-125|125] "%" VCU
+ SG_ EBS_noCounter00B : 56|4@1+ (1,0) [0|15] "" VCU
+ SG_ EBS_noChkSum00B : 60|4@1+ (1,0) [0|15] "" VCU
+
+BO_ 2566767627 EBC5: 8 EBS
+ SG_ EBS_noHaltBrkModSts : 2|3@1+ (1,0) [0|7] "" EPB,VCU
+ SG_ EBS_HillHolderModSts : 5|3@1+ (1,0) [0|7] "" VCU
+ SG_ EBS_noXBRBrakeActv : 8|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_noXBRSysSts : 10|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_noXBRCtrlModActv : 12|4@1+ (1,0) [0|15] "" VCU
+ SG_ EBS_aXBRAccLimit : 16|8@1+ (0.1,-12.5) [-12.5|12.5] "m/s2" VCU
+ SG_ EBS_noParkingBrkActrFullyActv : 24|2@1+ (1,0) [0|3] "" VCU
+ SG_ EBS_noEmgyBrkActv : 26|2@1+ (1,0) [0|3] "" VCU
+
+BO_ 2566827568 AIR1: 8 VCU
+ SG_ VCU_kpaBrkAirPrure1 : 16|8@1+ (8,0) [0|2000] "kPa" EPB,EBS
+ SG_ VCU_kpaBrkAirPrure2 : 24|8@1+ (8,0) [0|2000] "kPa" EPB,EBS
+ SG_ VCU_AuxEquipSplyPrure : 32|8@1+ (8,0) [0|2000] "kPa" EPB,EBS
+ SG_ VCU_noAirCompressorSt : 48|2@1+ (1,0) [0|3] "" EPB,EBS
+
+BO_ 2364539904 EEC1: 8 VCU
+ SG_ VCU_noEngTrqMod : 0|4@1+ (1,0) [0|15] "" EPB
+ SG_ VCU_perActuMotTrqHiResl : 4|4@1+ (0.125,0) [0|0.875] "%" EBS
+ SG_ VCU_perMotTrqReq : 8|8@1+ (1,-125) [-125|125] "%" EBS
+ SG_ VCU_perActuMotTrq : 16|8@1+ (1,-125) [-125|125] "%" EBS
+ SG_ VCU_EEC1_nMotSpd : 24|16@1+ (0.125,0) [0|8031.875] "rpm" EBS
+ SG_ VCU_SourceAddres : 40|8@1+ (1,0) [0|255] "" Vector__XXX
+
+BO_ 2364539648 EEC2: 8 VCU
+ SG_ VCU_perPctgAccrPdl : 8|8@1+ (0.4,0) [0|100] "%" EBS
+ SG_ VCU_perPctgMotLoad : 16|8@1+ (1,0) [0|125] "%" EBS
+
+BO_ 2566840064 EEC3: 8 VCU
+ SG_ VCU_perPctgFrictionMotTrq : 0|8@1+ (1,-125) [-125|125] "%" EBS
+ SG_ VCU_perPctgEstimatedMotTrq : 32|8@1+ (1,-125) [-125|125] "%" EBS
+
+BO_ 2566844672 CCVS: 8 VCU
+ SG_ VCU_noParkingBrkReq : 2|2@1+ (1,0) [0|3] "" EBS
+ SG_ VCU_CCVS_vActuVehSpd : 8|16@1+ (0.00390625,0) [0|250.996] "km/h" EBS
+
+BO_ 2566873111 MSF_IC: 8 VCU
+ SG_ VCU_noASRESCReq : 2|2@1+ (1,0) [0|3] "" EBS
+ SG_ VCU_noHSAReq : 4|2@1+ (1,0) [0|3] "" EBS
+
+BO_ 2349075242 XBR: 8 VCU
+ SG_ VCU_aAccelerationReq : 0|16@1+ (4.8828125E-4,-15.687) [-15.687|15.687] "m/s^2" EBS
+ SG_ VCU_noXBREBIModReq : 16|2@1+ (1,0) [0|3] "" EBS
+ SG_ VCU_noXBRPrioReq : 18|2@1+ (1,0) [0|3] "" EBS
+ SG_ VCU_noXBRCtrlModReq : 20|2@1+ (1,0) [0|3] "" EBS
+
+BO_ 2364539395 ETC1: 8 VCU
+ SG_ VCU_noTrsmSftInProc : 4|2@1+ (1,0) [0|3] "" EBS
+
+BO_ 2566808815 EPBC2: 8 VCU
+ SG_ VCU_perPctgMotTrq : 0|8@1+ (1,-125) [-125|125] "%" EPB
+ SG_ VCU_EPBC2_nMotSpd : 8|8@1+ (32,0) [0|8000] "rpm" EPB
+ SG_ VCU_perPctgBrkPdlEPB : 16|8@1+ (0.4,0) [0|100] "%" EPB
+ SG_ VCU_perPctgAccrPdlEPB : 24|8@1+ (0.4,0) [0|100] "%" EPB
+ SG_ VCU_noGearR : 32|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_noGearN : 34|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_noGearD : 36|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_noVehType : 38|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_bBrkPdlEPB : 40|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_bRdySts : 44|2@1+ (1,0) [0|3] "" EPB
+ SG_ VCU_EPBC2_vActuVehSpd : 48|16@1+ (0.00390625,0) [0|250.996] "km/h" EPB
+
+BO_ 2565498095 EPBC1: 8 VCU
+ SG_ VCU_noFillSignal1 : 0|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_noFillSignal2 : 8|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_noFillSignal3 : 16|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_noFillSignal4 : 24|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_noParkingBrkCtrlReq : 32|8@1+ (0.4,0) [0|102] "" EPB
+ SG_ VCU_noFillSignal5 : 40|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_EPBC1_noWorkModReq : 48|8@1+ (1,0) [0|255] "" EPB
+ SG_ VCU_ChkSUMEPBC1 : 56|8@1+ (1,0) [0|255] "" EPB
+
+BO_ 2566787684 EPB_STA1: 8 EPB
+ SG_ EPB_ParkBrkSts : 0|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_AHBrkSts : 2|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_AHParkActvSts : 4|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_WorkMod : 6|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_noErrCodes : 8|8@1+ (1,0) [0|255] "" VCU
+ SG_ EPB_ChildLckActvSts : 16|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_LoPrsrRelsPrkLimSts : 18|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_RespPrioSts : 22|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_IdepedtBrkOlySts : 24|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_ParkBrkFrceTestSts : 26|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_DrvHillSts : 28|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_BrkSwtSts : 30|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_ParkBtnSwtSts : 32|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_RelsBtnSwtSts : 34|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_AHBtnSwtSts : 36|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_IdepedtBrkBtnSwtSts : 38|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_ForcTestBtnSwtSts : 40|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_SysSts : 42|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_WarnSts : 44|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_ParkBrKPrsr : 48|8@1+ (4.9,-122.5) [-122.5|1102.5] "Kpa" VCU
+
+BO_ 2566834788 DM11: 8 EPB
+ SG_ EPB_ProtLampSt : 0|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_AmberWarnLampSt : 2|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_RedStopLampSt : 4|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_MalfunIndcrLampSt : 6|2@1+ (1,0) [0|3] "" VCU
+ SG_ EPB_SPNLeastSign : 16|8@1+ (1,0) [0|255] "" VCU
+ SG_ EPB_SPNSecByte : 24|8@1+ (1,0) [0|255] "" VCU
+ SG_ EPB_FMI : 32|5@1+ (1,0) [0|31] "" VCU
+ SG_ EPB_SPNMostSign : 37|3@1+ (1,0) [0|7] "" VCU
+ SG_ EPB_OccurrenceCnt : 40|7@1+ (1,0) [0|127] "" VCU
+ SG_ EPB_SPNCnvnMethod : 47|1@1+ (1,0) [0|1] "" VCU
+
+BO_ 2565865828 EBC1_EPB: 8 EPB
+ SG_ EPB_HaltBrkSwtSt : 58|2@1+ (1,0) [0|3] "" EBS,VCU
+
+BO_ 2466251060 EHPS_STA1: 8 EPS
+ SG_ EHPS_ActuSteerWhlAngle : 0|16@1+ (0.1,-1575) [-1575|1575] "deg" IDS,VCU,TVM
+ SG_ EHPS_ActuSteerWhlAngleSpd : 16|8@1+ (10,0) [0|540] "deg/s" IDS,VCU,TVM
+ SG_ EHPS_AmberWarningLamp : 24|2@1+ (1,0) [0|3] "" IDS,VCU,TVM
+ SG_ EHPS_RedStopLamp : 26|2@1+ (1,0) [0|3] "" IDS,VCU,TVM
+ SG_ EHPS_noDrvModSts : 28|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noWrkModSts : 32|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noFltLvl : 36|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noFrntMot1WorkSts : 40|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noFrntMot2WorkSts : 44|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noRearMot1WorkSts : 48|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_noRearMot2WorkSts : 52|4@1+ (1,0) [0|15] "" IDS,VCU,TVM
+ SG_ EHPS_AliveCntr0134 : 56|8@1+ (1,0) [0|255] "" IDS,VCU,TVM
+
+BO_ 2466251316 EHPS_STA2: 8 EPS
+ SG_ EHPS_3AxTireAg_st : 0|16@1+ (0.1,-90) [-90|90] "°" VCU,TVM
+ SG_ EHPS_4AxTireAg_st : 16|16@1+ (0.1,-90) [-90|90] "°" VCU,TVM
+ SG_ EHPS_5AxTireAg_st : 32|16@1+ (0.1,-90) [-90|90] "°" VCU,TVM
+ SG_ EHPS_perFrntOillvr : 48|8@1+ (1,0) [0|100] "%" VCU,TVM
+ SG_ EHPS_AliveCntr0234 : 56|8@1+ (1,0) [0|255] "" VCU,TVM
+
+BO_ 2466251572 EHPS_STA3: 8 EPS
+ SG_ EHPS_6AxTireAg_st : 0|16@1+ (0.1,-90) [-90|90] "°" VCU,TVM
+ SG_ EHPS_3AxSteerP_st : 16|8@1+ (1,0) [0|250] "bar" VCU,TVM
+ SG_ EHPS_4AxSteerP_st : 24|8@1+ (1,0) [0|250] "bar" VCU,TVM
+ SG_ EHPS_5AxSteerP_st : 32|8@1+ (1,0) [0|250] "bar" VCU,TVM
+ SG_ EHPS_6AxSteerP_st : 40|8@1+ (1,0) [0|250] "bar" VCU,TVM
+ SG_ EHPS_RAxSteerOvfP_st : 48|8@1+ (1,0) [0|250] "bar" VCU,TVM
+ SG_ EHPS_AliveCntr0334 : 56|8@1+ (1,0) [0|255] "" VCU,TVM
+
+BO_ 2466251828 EHPS_STA4: 8 EPS
+ SG_ EHPS_perRearOillvr : 0|8@1+ (1,0) [0|100] "%" VCU
+ SG_ EHPS_FAxOilTemp_st : 8|8@1+ (1,-40) [-40|160] "℃" VCU
+ SG_ EHPS_RAxOilTemp_st : 16|8@1+ (1,-40) [-40|160] "℃" VCU
+ SG_ EHPS_FAxSteerP_st : 24|8@1+ (1,0) [0|250] "bar" VCU
+ SG_ EHPS_AliveCntr0434 : 56|8@1+ (1,0) [0|255] "" VCU
+
+BO_ 2466252084 EHPS_STA5: 8 EPS
+ SG_ EHPS_FltCode_Vcu : 0|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_3AxTireAg_A : 1|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_3AxTireAg_B : 2|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_4AxTireAg_A : 3|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_4AxTireAg_B : 4|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_5AxTireAg_A : 5|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_5AxTireAg_B : 6|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_6AxTireAg_A : 7|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_6AxTireAg_B : 8|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_RAxSteerOvfP : 9|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_RAxSteerEgy : 10|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_3AxSteerP : 11|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_4AxSteerP : 12|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_5AxSteerP : 13|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_6AxSteerP : 14|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_FAxSteerP : 15|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerOvfP_H : 16|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerOvfP_L : 17|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerEgy_H : 18|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerEgy_L : 19|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_3AxTireAg : 20|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_4AxTireAg : 21|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_5AxTireAg : 22|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_6AxTireAg : 23|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerPFil_1H : 24|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerPFil_2H : 25|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxSteerPFil_B : 26|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxOilLvl : 27|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_FAxSteerPFil_1H : 28|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_FAxSteerPFil_2H : 29|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_FAxSteerPFil_B : 30|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_FAxOilLvl : 31|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_FAxOilTemp : 32|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_FAxOilTemp : 33|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_RAxOilTemp : 34|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_WarnCode_RAxOilTemp : 35|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_3AxStrai : 36|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_4AxStrai : 37|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_5AxStrai : 38|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_6AxStrai : 39|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_3AxSteerTiOut : 40|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_4AxSteerTiOut : 41|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_5AxSteerTiOut : 42|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_FltCode_6AxSteerTiOut : 43|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_3AxVlvElec : 44|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_4AxVlvElec : 45|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_5AxVlvElec : 46|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_6AxVlvElec : 47|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_OvfVlvElec : 48|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_Lock_WrkMod : 49|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_ErrCode_VehSpeed : 50|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_VehOverSpeedWarn : 51|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bFrntMot1BUSOFF : 52|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bFrntMot2BUSOFF : 53|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bECUBUSOFF : 54|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bRearFanErr : 55|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_AliveCntr0534 : 56|8@1+ (1,0) [0|255] "" VCU,TVM
+
+BO_ 2466252340 EHPS_STA6: 8 EPS
+ SG_ EHPS_bTrqSnsrPwrErr : 0|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTrqT2OverRangeErr : 1|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTrqT1OverRangeErr : 2|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTrqMismatchErr : 3|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bMotSnsrPositionErr : 4|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bECUNoAngelCalErr : 5|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bAngelAOverRangeErr : 6|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bAngelROverRangeErr : 7|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bAngelMismatchErr : 8|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bMotCurntErr : 9|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bMotDriverErr : 10|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bMotCurntMismatchErr : 11|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bRlyInvaldErr : 12|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bCurntSnsrErr : 13|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTempSnsrLoErr : 14|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTempSnsrHiErr : 15|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bOverSpdErr : 16|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bOverVoltgErr : 17|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bLowVoltgErr : 18|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bBusoffClosedErr : 19|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bIPDMissErr : 20|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bTBDErr : 21|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_bIDSCmdMissErr : 22|1@1+ (1,0) [0|1] "" VCU,TVM
+ SG_ EHPS_AliveCntr0634 : 56|8@1+ (1,0) [0|255] "" VCU,TVM
+
+BO_ 2566852903 VCU_EHPS_CTRL: 8 VCU
+ SG_ VCU_SteerWhlAngleReq : 0|16@1+ (0.1,-1575) [-1575|1575] "deg" EPS,TVM
+ SG_ VCU_SteerWhlAngleSpdReq : 16|8@1+ (10,0) [0|540] "deg/s" EPS,TVM
+ SG_ VCU_noDrvModReq : 24|4@1+ (1,0) [0|15] "" EPS,TVM
+ SG_ VCU_EHPS_noWorkModReq : 28|4@1+ (1,0) [0|15] "" EPS,TVM
+ SG_ VCU_EHPS_bRdySts : 32|1@1+ (1,0) [0|1] "" EPS,TVM
+ SG_ VCU_vABSVehSpd : 33|11@1+ (0.1,0) [0|200] "Km/h" EPS,TVM
+ SG_ VCU_vMotVehSpd : 44|11@1+ (0.1,0) [0|200] "Km/h" EPS,TVM
+ SG_ VCU_AliveCntr1127 : 56|8@1+ (1,0) [0|255] "" EPS,TVM
+
+BO_ 2566848808 TVM_TSN: 8 TVM
+ SG_ TVM_bDrvEmgryStop : 0|1@1+ (1,0) [0|1] "" VCU,TSN
+ SG_ TVM_bFightActv : 1|1@1+ (1,0) [0|1] "" VCU,TSN
+ SG_ TVM_bSignalSwt1 : 2|1@1+ (1,0) [0|1] "" VCU,TSN
+ SG_ TVM_bSignalSwt2 : 3|1@1+ (1,0) [0|1] "" VCU,TSN
+ SG_ TVM_noWorkModReq : 4|4@1+ (1,0) [0|15] "" VCU
+ SG_ TVM_bTCSSwt : 8|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_noVehDir : 9|2@1+ (1,0) [0|3] "" VCU
+ SG_ TVM_perMotTrqReq : 11|8@1+ (1,0) [0|255] "" VCU
+ SG_ TVM_perActuMotTrq : 19|8@1+ (1,0) [0|255] "" VCU
+ SG_ TVM_bMCU1AliveCntrErr : 27|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_bMCU2AliveCntrErr : 28|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_bMCU3AliveCntrErr : 29|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_bMCU4AliveCntrErr : 30|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_bMCU5AliveCntrErr : 31|1@1+ (1,0) [0|1] "" VCU
+ SG_ TVM_AliveCntr0128 : 56|8@1+ (1,0) [0|255] "" VCU,TSN
+
+BO_ 2566074913 VCU_VEH_STA: 8 VCU
+ SG_ VCU_FightMod_Cmd1 : 4|2@1+ (1,0) [0|3] "" DCDC,TVM
+
+BO_ 2364616993 VCU_AUXSYS_CTRL: 8 VCU
+ SG_ VCU_28DCEna_Cmd1 : 0|2@1+ (1,0) [0|3] "" DCDC
+ SG_ VCU_28DCQmod_Cmd1 : 6|2@1+ (1,0) [0|3] "" DCDC
+ SG_ VCU_28DCQv_Cmd1 : 8|16@1+ (0.1,0) [0|1000] "V" DCDC
+ SG_ VCU_28DCQi_Cmd1 : 24|16@1+ (1,0) [0|5000] "W" DCDC
+ SG_ VCU_28DCQp_Cmd1 : 40|16@1+ (0.1,0) [0|3000] "A" DCDC
+ SG_ VCU_RollgCntr31211 : 56|8@1+ (1,0) [0|255] "" DCDC
+
+BO_ 2566324609 DCDC_STA: 8 DCDC
+ SG_ DCDC1_Flt_St : 0|3@1+ (1,0) [0|7] "" VCU
+ SG_ DCDC1_Ena_St : 3|2@1+ (1,0) [0|3] "" VCU
+ SG_ DCDC1_VltgIn : 8|16@1+ (1,0) [0|2000] "V" VCU
+ SG_ DCDC1_VltgOut : 24|8@1+ (0.2,0) [0|50] "V" VCU
+ SG_ DCDC1_CurrOut : 32|8@1+ (2,0) [0|500] "A" VCU
+ SG_ DCDC1_Temp : 40|8@1+ (1,-50) [-50|200] "℃" VCU
+ SG_ DCDC1_FltCod : 48|8@1+ (1,0) [0|255] "" VCU
+ SG_ DCDC1_RollgCntr0181 : 56|8@1+ (1,0) [0|255] "" VCU
+
+BO_ 2566850855 VCU_TVM_Ctrl: 8 VCU
+ SG_ VCU_kwMaxDischrgPwr : 0|16@1+ (0.1,0) [0|3000] "Kw" TVM
+ SG_ VCU_kwMaxChrgPwr : 16|16@1+ (0.1,0) [0|3000] "Kw" TVM
+ SG_ VCU_bFightingModReq : 32|1@1+ (1,0) [0|1] "" TVM
+ SG_ VCU_RollingCntr0927 : 56|8@1+ (1,0) [0|255] "" TVM
+
+
+CM_ SG_ 2298425750 IDS_perPctgBrkPdlReq "制动踏板开度";
+CM_ SG_ 2298425750 IDS_perPctgAccrPdlReq "加速踏板开度";
+CM_ SG_ 2298425750 IDS_SteerWhlAngleReq "目标方向盘转向角度指令
+左正右负";
+CM_ SG_ 2298425750 IDS_SteerWhlSpdReq "方向盘目标角速度
+实际最大可用角速度需限制为0~540区间内";
+CM_ SG_ 2298425750 IDS_vVehSpd "惯导的对地车速";
+CM_ SG_ 2298425750 IDS_bIMUFlt "惯导信息故障标志位";
+CM_ SG_ 2298425750 IDS_AliveCntr1 "Alive Rolling";
+CM_ SG_ 2566862998 IDS_noADSFltLvl "自动驾驶故障等级";
+CM_ SG_ 2566862998 IDS_noDrvModReq "驾驶模式请求";
+CM_ SG_ 2566862998 IDS_bEleSilenceSts "远程遥控的电磁静默请求";
+CM_ SG_ 2566862998 IDS_bHeadlightReq "前照灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bLCornrgLampReq "左转灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bRCornrgLampReq "右转灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bHighBeamReq "远光请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bLowBeamReq "近光请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bFrntFogLampReq "前雾灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bReFogLampReq "后雾灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_bWarnLampReq "双闪警示灯请求
+IDS通过车身CAN直接发给BCM，此处预留，不开发";
+CM_ SG_ 2566862998 IDS_noGearPosnReq "IDS档位请求";
+CM_ SG_ 2566862998 IDS_bParkingBrkReq "驻车指令请求
+注：本次预留，自动驾驶始终发0即可";
+CM_ SG_ 2566862998 IDS_noWorkModReq "0为人工模式，9为自动驾驶控制模式
+只有0x00和0x09有效，其他预留。
+注：IDS可以不发，由VCU内部逻辑根据驾驶模式决策后发给EPS";
+CM_ SG_ 2566862998 IDS_noParkingBrkReq "压力控制模式可以控制制动压力大小，此位为驻车开关开度大小。
+0为释放驻车，100.4为直接启动驻车。
+IDS只能发0和100.4，严禁发其他值，因为EPB有校验和算法，发其他值，EPB无法识别，不会响应的！！！";
+CM_ SG_ 2566862998 IDS_noKeyStart "远程点火指令
+点火请持续发0x1，熄火请持续发0x0";
+CM_ SG_ 2566862998 IDS_noACCSts "ACC功能状态";
+CM_ SG_ 2566862998 IDS_noLKASts "LKA功能状态
+注意：必须先按下ACC按钮，打开ACC功能，才能按下LKA按钮，顺序不能乱";
+CM_ SG_ 2566862998 IDS_noAEBSts "AEB功能状态";
+CM_ SG_ 2566862998 IDS_noSignal1 "预留信号1";
+CM_ SG_ 2566862998 IDS_noSignal2 "预留信号2";
+CM_ SG_ 2566862998 IDS_noSignal3 "预留信号3";
+CM_ SG_ 2566862998 IDS_noSignal4 "预留信号4";
+CM_ SG_ 2566862998 IDS_AliveCntr2 "Alive Rolling";
+CM_ SG_ 2566862230 IDS_LateralAcce "横向加速度";
+CM_ SG_ 2566862230 IDS_LongitudinalAcce "纵向加速度";
+CM_ SG_ 2566862230 IDS_Yawrate "横摆角速度";
+CM_ SG_ 2566862230 IDS_AliveCntr3 "Alive Rolling";
+CM_ SG_ 2566866070 IDS_Latitude "纬度(负为南，正为北)";
+CM_ SG_ 2566866070 IDS_AliveCntr4 "Alive Rolling";
+CM_ SG_ 2566875286 IDS_Altitude "海拔高度";
+CM_ SG_ 2566875286 IDS_Longitude "经度(负为西，正为东)";
+CM_ SG_ 2566875286 IDS_AliveCntr5 "Alive Rolling";
+CM_ SG_ 2314154646 IDS_Yawangle "横摆角";
+CM_ SG_ 2314154646 IDS_Rollangle "侧倾角";
+CM_ SG_ 2314154646 IDS_Pitchangle "俯仰角";
+CM_ SG_ 2314154646 IDS_AliveCntr6 "Alive Rolling";
+CM_ SG_ 2314155158 IDS_VerticalAcce "垂直加速度";
+CM_ SG_ 2314155158 IDS_RollVelocity "侧倾角速度";
+CM_ SG_ 2314155158 IDS_PitchVelocity "俯仰角速度";
+CM_ SG_ 2314155158 IDS_AliveCntr7 "Alive Rolling";
+CM_ SG_ 2432671271 VCU_IDS_vActuVehSpd "整车计算的对地车速";
+CM_ SG_ 2432671271 VCU_perActuPctgBrkPdl "制动踏板开度反馈";
+CM_ SG_ 2432671271 VCU_ActuSteerWhlAngle "方向盘转角反馈
+左正右负";
+CM_ SG_ 2432671271 VCU_ActuSteerWhlSpd "方向盘转速反馈
+实际最大可用角速度需限制为0~540区间内";
+CM_ SG_ 2432671271 VCU_perActuPctgAccrPdl "加速踏板开度";
+CM_ SG_ 2432671271 VCU_AliveCntr9E27 "Alive Rolling";
+CM_ SG_ 2365553703 VCU_noVehFltLvl "整车故障状态";
+CM_ SG_ 2365553703 VCU_noActuDrvMod "整车驾驶模式";
+CM_ SG_ 2365553703 VCU_bEleSlienceActv "电磁静默开关激活";
+CM_ SG_ 2365553703 VCU_bTemStopActv "暂时停靠功能按钮";
+CM_ SG_ 2365553703 VCU_bACCActv "ACC激活/关闭
+IDS需要控制驱动，制动，档位";
+CM_ SG_ 2365553703 VCU_bAEBActv "AEB激活/关闭
+IDS需要控制制动，档位，EPB";
+CM_ SG_ 2365553703 VCU_bLKAActv "LKA激活/关闭
+IDS需要控制驱动，制动，档位，转向";
+CM_ SG_ 2365553703 VCU_bAssidDrvMod "辅助驾驶功能激活标志（预留）
+VCU一直发0处理";
+CM_ SG_ 2365553703 VCU_noAutoMaxSpd "自动驾驶调速按钮";
+CM_ SG_ 2365553703 VCU_noActuGearPosn "当前驾驶档位";
+CM_ SG_ 2365553703 VCU_IDS_bRdySts "车辆可行驶信号Ready";
+CM_ SG_ 2365553703 VCU_noParkingBrkSts "线性驻车状态反馈";
+CM_ SG_ 2365553703 VCU_tqActuMotTrq "行车实际扭矩";
+CM_ SG_ 2365553703 VCU_AliveCntr7C27 "Alive Rolling";
+CM_ SG_ 2566850599 VCU_noHeadlightSts "前照灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noLCornrgLampSts "左转灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noRCornrgLampSts "右转灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noHighBeamSts "远光状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noLowBeamSts "近光状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noFrntFogLampSts "前雾灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noReFogLampSts "后雾灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noWarnLampSts "双闪警示灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noBrkLampSts "制动灯状态反馈
+由车身控制器BCM反馈，VCU预留";
+CM_ SG_ 2566850599 VCU_noEPBLampSts "EPB灯光状态反馈";
+CM_ SG_ 2566850599 VCU_noEPBErrLampSts "EBS和EPB故障灯反馈";
+CM_ SG_ 2566850599 VCU_noBrkWorkSts "线控制动执行反馈";
+CM_ SG_ 2566850599 VCU_noParkWorkSts "驻车反馈";
+CM_ SG_ 2566850599 VCU_AliveCntr0827 "Alive Rolling";
+CM_ SG_ 2550260945 VCU_noRningReq "运行命令
+电动空压机控制策略：
+1) 空压机开启
+当任一压力传感器电压值低于0.6Mpa时，控制电机控制器运行，转速一直发1500RPM；
+2) 空压机关闭
+a 当空气干燥器信号输出为低电平时，控制电机控制器停止运行；
+3) VCU故障报警
+VCU给定电机控制器使能后，连续运行10min，就发停机指令并发送整车漏气报警；";
+CM_ SG_ 2550260945 VCU_nRningSpd "运行速度
+VCU一直发1500";
+CM_ SG_ 2550260945 VCU_RollingCntrE4D1 "循环计数器
+心跳,0～255";
+CM_ SG_ 2550256100 PCU_uvVoltgInput "控制器输入电压";
+CM_ SG_ 2550256100 PCU_uvVltgOutput "控制器输出电压";
+CM_ SG_ 2550256100 PCU_iaCurntOutput "控制器输出电流";
+CM_ SG_ 2550256100 PCU_noRningSts "控制器状态";
+CM_ SG_ 2550256100 PCU_RollingCntr1 "循环计数器
+心跳,0～255";
+CM_ SG_ 2550321636 PCU_nMotSpd "电机转速";
+CM_ SG_ 2550321636 PCU_tMotTmep "电机温度";
+CM_ SG_ 2550321636 PCU_tMCUTmep "控制器温度";
+CM_ SG_ 2550321636 PCU_UdvAlarmSts "欠压报警信息";
+CM_ SG_ 2550321636 PCU_OdvAlarmSts "过压报警信息";
+CM_ SG_ 2550321636 PCU_DftphAlarmSts "缺相报警信息";
+CM_ SG_ 2550321636 PCU_OcetAlarmSts "过流报警信息";
+CM_ SG_ 2550321636 PCU_OvheatAlarmSts "过热报警信息";
+CM_ SG_ 2550321636 PCU_ComutoutAlarmSts "通讯超时报警信息";
+CM_ SG_ 2550321636 PCU_OspdAlarmSts "超速报警信息";
+CM_ SG_ 2550321636 PCU_ModprotAlarmSts "模块保护信息";
+CM_ SG_ 2550321636 PCU_FaultcodeSts "控制器厂家自定义故障代码";
+CM_ SG_ 2550321636 PCU_RollingCntr2 "循环计数器
+0～15";
+CM_ SG_ 2565865739 EBS_ASREngCtrlActv "本项目制动系统取消ASR防滑功能。
+ASR 发动机控制激活
+仪表接收，用于显示ASR指示灯状态，本次VCU转发";
+CM_ SG_ 2565865739 EBS_noASRBrkCtrlActv "本项目制动系统取消ASR防滑功能。
+ASR 制动控制激活
+仪表接收，用于显示ASR指示灯状态，本次VCU转发";
+CM_ SG_ 2565865739 EBS_noABSActv "ABS激活状态
+1、对于带相关辅助制动模块的传统车型，可判断该信号来决定是否退出工作（ABS激活时，相关辅助制动模块系统需在100ms内退出工作）
+2、对于纯电动车型，能量回收系统需判断该信号来决定是否退出工作（ABS激活时，能量回收系统需在100ms内退出工作）";
+CM_ SG_ 2565865739 EBS_noBrkSwt "EBS制动开关
+根据制动踏板开度大小计算开或者关";
+CM_ SG_ 2565865739 EBS_perBrkPdl "制动踏板开度百分比位置
+VCU内部需要从此处接收刹车踏板开度，无法硬线采集。
+VCU无法通过硬线控制刹车。
+VCU检测不到心跳，考虑后处理。";
+CM_ SG_ 2565865739 EBS_noOffRoadSwt "ASR 越野开关
+仪表接收，用于显示ASR、ESC-OFF、ESC指示灯状态
+本项目VCU不接收";
+CM_ SG_ 2565865739 EBS_noHillHoldSwt "ASR坡道保持开关
+若系统支持坡起功能时，用于指示坡起功能的开关状态";
+CM_ SG_ 2565865739 EBS_noABSFullyWork "ABS 完全工作模式
+VCU不用理这个信号";
+CM_ SG_ 2565865739 EBS_noRedWarnLamp "EBS红灯警告状态（目前我们的EBS只有黄灯警告状态，没有红灯警告状态，所以该信号默认为“关”的状态）";
+CM_ SG_ 2565865739 EBS_noYellowWarnLamp "ABS/EBS黄灯警告状态
+仪表接收，用于显示EBS指示灯状态，本次VCU转发";
+CM_ SG_ 2565865739 EBS_noASRLamp "ATC/ASR指示灯状态
+仪表接收，用于显示ASR指示灯状态，本次VCU转发";
+CM_ SG_ 2566831883 EBS_vFrntAxleSpd "前轴平均速度
+本项目VCU不接收该信号,EPB接收该信号";
+CM_ SG_ 2566831883 EBS_vFrntAxleLeWhlSpd "相对速度；前轴，左轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566831883 EBS_vFrntAxleRiWhlSpd "相对速度；前轴，右轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566831883 EBS_vRe1AxleLeWhlSpd "相对速度；后轴#1，左轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566831883 EBS_vRe1AxleRiWhlSpd "相对速度；后轴#1，右轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566831883 EBS_vRe2AxleLeWhlSpd "相对速度；后轴#2，左轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566831883 EBS_vRe2AxleRiWhlSpd "相对速度；后轴#2，右轮
+本项目VCU不接收该信号";
+CM_ SG_ 2566827275 EBS_kpaAxle12BrkPrureLe "制动压力前桥左
+施加到1轴、2轴左侧轮缸的制动压力";
+CM_ SG_ 2566827275 EBS_kpaAxle12BrkPrureRi "制动压力前桥右
+施加到1轴、2轴右侧轮缸的制动压力";
+CM_ SG_ 2566827275 EBS_kpaAxle34BrkPrureLe "制动压力后桥1左
+施加到3轴、4轴左侧轮缸的制动压力";
+CM_ SG_ 2566827275 EBS_kpaAxle34BrkPrureRi "制动压力后桥1右
+施加到3轴、4轴右侧轮缸的制动压力";
+CM_ SG_ 2566827275 EBS_kpaAxle56BrkPrureLe "制动压力后桥2左
+施加到5轴、6轴左侧轮缸的制动压力";
+CM_ SG_ 2566827275 EBS_kpaAxle56BrkPrureRi "制动压力后桥2右
+施加到5轴、6轴右侧轮缸的制动压力";
+CM_ SG_ 2298375691 EBS_vFrntLeWhlSpd "前轴，左轮轮速";
+CM_ SG_ 2298375691 EBS_vFrntRiWhlSpd "前轴，右轮轮速";
+CM_ SG_ 2298375691 EBS_vAxle5LeWhlSpd "第五轴左轮轮速";
+CM_ SG_ 2298375691 EBS_vReLeWhlSpd "后轴#1，左轮轮速";
+CM_ SG_ 2298375691 EBS_vAxle5RiWhlSpd "第五轴右轮轮速";
+CM_ SG_ 2298375691 EBS_vReRiWhlSpd "后轴#1，右轮轮速";
+CM_ SG_ 2566834699 EBS_noProtectLampSts "保护灯状态";
+CM_ SG_ 2566834699 EBS_noAmberWarnLampSts "黄色警告灯状态";
+CM_ SG_ 2566834699 EBS_noRedStopLampSts "红色停车灯状态";
+CM_ SG_ 2566834699 EBS_noFltLampSts "故障指示灯状态
+支工发下故障列表";
+CM_ SG_ 2566834699 EBS_SpnLeastSignBitsOfSPN "SPN 的8个最低有效位";
+CM_ SG_ 2566834699 EBS_SpnSecByteOfSPN "SPN 的第二个字节";
+CM_ SG_ 2566834699 EBS_Fmi "故障模式标志符";
+CM_ SG_ 2566834699 EBS_Spn3MostSignBitsofSPN "SPN 有效位中的最高3位";
+CM_ SG_ 2566834699 EBS_OccurrenceCnt "故障发生次数";
+CM_ SG_ 2566834699 EBS_SpnCnvnMethod "SPN 转换方式";
+CM_ SG_ 2348810251 EBS_noXBRCtrlMod "控制模式
+VCU发送XBR时，制动系统会执行，并反馈该状态
+VCU仅接入预留不使用。";
+CM_ SG_ 2348810251 EBS_noSpdCtrlPri "请求转速控制条件
+VCU仅接入预留不使用。该信号默认发送11";
+CM_ SG_ 2348810251 EBS_noModCtrlPrio "控制模式优先级
+VCU仅接入预留不使用。";
+CM_ SG_ 2348810251 EBS_perTrqLimit "目标扭矩/扭矩限制
+由于VCU内部已经实现制动优先控制，不需要在参考该扭矩限制信号，VCU仅接入预留不使用。";
+CM_ SG_ 2348810251 EBS_noCounter00B "报文计数";
+CM_ SG_ 2348810251 EBS_noChkSum00B "报文校验和";
+CM_ SG_ 2566767627 EBS_noHaltBrkModSts "临停制动模式状态反馈
+类似于AuotHold功能
+VCU接入接口预留，无相关功能。
+如带临停功能，则EPB接收，用于判断临停执行状态";
+CM_ SG_ 2566767627 EBS_HillHolderModSts "坡道保持模式
+如带坡起功能，则仪表接收，用于显示坡起指示灯状态";
+CM_ SG_ 2566767627 EBS_noXBRBrakeActv "（原1939）基础刹车，理解为常规制动
+XBR制动时，发送01
+XBR停止后，发送00
+当XBR连续制动超过2分钟后，反馈00";
+CM_ SG_ 2566767627 EBS_noXBRSysSts "XBR系统状态
+VCU接入接口预留，无相关功能。";
+CM_ SG_ 2566767627 EBS_noXBRCtrlModActv "XBR主动控制模式
+0010表示对VCU下发的减速度的执行反馈标志位信号
+0011表示脚踏板和减速度同时请求";
+CM_ SG_ 2566767627 EBS_aXBRAccLimit "制动系统可以暂时或一般地限制外部系统的最大制动性能。
+VCU接入接口预留，无相关功能。";
+CM_ SG_ 2566767627 EBS_noParkingBrkActrFullyActv "（原1939）驻车制动器执行器完全激活
+该信号不可用，VCU忽略即可";
+CM_ SG_ 2566767627 EBS_noEmgyBrkActv "紧急制动是否激活
+支工去确认EBS如何触发紧急制动?
+VCU是否需要去响应？";
+CM_ SG_ 2566827568 VCU_kpaBrkAirPrure1 "（后桥）行车制动器气压回路1 
+VCU转发空压缩机的气压
+VCU采集前桥和后桥储气筒模拟量，把电压信号转换为气压值。关系图由支工提供。";
+CM_ SG_ 2566827568 VCU_kpaBrkAirPrure2 "（前桥）行车制动器气压回路2 
+VCU转发空压缩机的气压
+VCU采集前桥和后桥储气筒模拟量，把电压信号转换为气压值。关系图由支工提供。";
+CM_ SG_ 2566827568 VCU_AuxEquipSplyPrure "辅助设备供应压力
+VCU不发";
+CM_ SG_ 2566827568 VCU_noAirCompressorSt "空气压缩机状态
+VCU不发";
+CM_ SG_ 2364539904 VCU_noEngTrqMod "发动机扭矩模式
+VCU不发";
+CM_ SG_ 2364539904 VCU_perActuMotTrqHiResl "实际发动机或电机-扭矩百分比高分辨率
+VCU发0";
+CM_ SG_ 2364539904 VCU_perMotTrqReq "驾驶员需求发动机或电机-扭矩百分比
+制动系统内XBR请求时，扭矩干涉时会调用该信号。";
+CM_ SG_ 2364539904 VCU_perActuMotTrq "实际发动机或电机-扭矩百分比
+制动系统内XBR请求时，扭矩干涉时会调用该信号。";
+CM_ SG_ 2364539904 VCU_EEC1_nMotSpd "发动机或电机转速
+VCU发送电机转速";
+CM_ SG_ 2364539904 VCU_SourceAddres "控制装置源地址
+VCU不发";
+CM_ SG_ 2364539648 VCU_perPctgAccrPdl "油门踏板位置1";
+CM_ SG_ 2364539648 VCU_perPctgMotLoad "当前速度下的发动机或电机负载百分比
+VCU发100%";
+CM_ SG_ 2566840064 VCU_perPctgFrictionMotTrq "标称摩擦扭矩百分比
+VCU发0";
+CM_ SG_ 2566840064 VCU_perPctgEstimatedMotTrq "估计的发动机或电机寄生损耗-扭矩百分比
+当该参数的数据值等于FB时，意味着发动机或电机计算的所有寄生损耗都包含在标称摩擦百分比扭矩（SPN 514）中。
+VCU发0";
+CM_ SG_ 2566844672 VCU_noParkingBrkReq "驻车制动开关";
+CM_ SG_ 2566844672 VCU_CCVS_vActuVehSpd "轮端车速
+VCU发送整车车速";
+CM_ SG_ 2566873111 VCU_noASRESCReq "ASR/ESC功能关闭请求
+VCU发固定0x01";
+CM_ SG_ 2566873111 VCU_noHSAReq "HSA功能打开请求
+VCU发固定0x11";
+CM_ SG_ 2349075242 VCU_aAccelerationReq "外部加速需求";
+CM_ SG_ 2349075242 VCU_noXBREBIModReq "XBR EBI（持久制动集成）模式 
+以后功能扩张用，VCU固定发11
+注意：进行XBR控制时，最长持续控制时间不能超过2分钟";
+CM_ SG_ 2349075242 VCU_noXBRPrioReq "XBR优先级
+不需要XBR控制就发11，需要控制就发00";
+CM_ SG_ 2349075242 VCU_noXBRCtrlModReq "XBR控制模式
+不需要XBR控制就发00，需要控制就发01
+当XBR持续制动超过2分钟后，为了保护电磁阀，EBS控制器会停止制动，此时此信号需发送00，再发送01，XBR才会继续制动。";
+CM_ SG_ 2364539395 VCU_noTrsmSftInProc "变速箱换挡过程
+VCU固定发11";
+CM_ SG_ 2566808815 VCU_perPctgMotTrq "电机扭矩百分比
+人工模式下的坡起用，整车的电机扭矩百分比。";
+CM_ SG_ 2566808815 VCU_EPBC2_nMotSpd "整车的平均电机转速";
+CM_ SG_ 2566808815 VCU_perPctgBrkPdlEPB "制动踏板行程
+无人模式发0，人工模式发真实的";
+CM_ SG_ 2566808815 VCU_perPctgAccrPdlEPB "加速踏板行程
+无人模式发0，人工模式发真实的";
+CM_ SG_ 2566808815 VCU_noGearR "倒挡开关";
+CM_ SG_ 2566808815 VCU_noGearN "空档开关";
+CM_ SG_ 2566808815 VCU_noGearD "前进档开关";
+CM_ SG_ 2566808815 VCU_noVehType "车辆类型
+本车型VCU固定发1";
+CM_ SG_ 2566808815 VCU_bBrkPdlEPB "制动踏板开关
+VCU可以不发，固定发0";
+CM_ SG_ 2566808815 VCU_bRdySts "上高压驾驶状态信号";
+CM_ SG_ 2566808815 VCU_EPBC2_vActuVehSpd "整车车速
+电机的车速，不是制动EBS发出的车速。
+因为一般驻车时，都是低速状态，ABS高速时报的车速较准，低速时不太准，所以会以电机的车速为准。";
+CM_ SG_ 2565498095 VCU_noFillSignal1 "填充FF";
+CM_ SG_ 2565498095 VCU_noFillSignal2 "0x08";
+CM_ SG_ 2565498095 VCU_noFillSignal3 "填充FF";
+CM_ SG_ 2565498095 VCU_noFillSignal4 "填充FF";
+CM_ SG_ 2565498095 VCU_noParkingBrkCtrlReq "压力控制模式可以控制制动压力大小，此位为驻车开关开度大小。0为直接释放驻车，251为直接启动驻车。 （需要配合Working Mode =09h）";
+CM_ SG_ 2565498095 VCU_noFillSignal5 "填充FF";
+CM_ SG_ 2565498095 VCU_EPBC1_noWorkModReq "各模式使能状态。正常模式时可接收所有整车状态自动逻辑判断；维修模式时只受EPB开关控制。
+VCU只发0x00和0x09，人工模式按钮优先级高";
+CM_ SG_ 2565498095 VCU_ChkSUMEPBC1 "校验";
+CM_ SG_ 2566787684 EPB_ParkBrkSts "EPB驻车状态";
+CM_ SG_ 2566787684 EPB_AHBrkSts "Auto Hold制动状态(当激活后满足条件才会制动)";
+CM_ SG_ 2566787684 EPB_AHParkActvSts "Autohold激活状态";
+CM_ SG_ 2566787684 EPB_WorkMod "工作模式,压力控制模式时可以控制驻车力度大小，发送相应的需求开关开度请求可实现相应驻车力度";
+CM_ SG_ 2566787684 EPB_noErrCodes "故障码";
+CM_ SG_ 2566787684 EPB_ChildLckActvSts "童锁功能触发
+解除驻车时，需人踩脚踏板，同时按下电子开关";
+CM_ SG_ 2566787684 EPB_LoPrsrRelsPrkLimSts "低压释放驻车限制";
+CM_ SG_ 2566787684 EPB_RespPrioSts "人为控制响应优先,当操作开关与无人驾驶控制相反时将激活人为控制优先，响应认为操作指令";
+CM_ SG_ 2566787684 EPB_IdepedtBrkOlySts "挂车独立制动开启";
+CM_ SG_ 2566787684 EPB_ParkBrkFrceTestSts "驻车力度检测开启
+所有轮都有驻车且同时驻车";
+CM_ SG_ 2566787684 EPB_DrvHillSts "测试项";
+CM_ SG_ 2566787684 EPB_BrkSwtSts "制动开关，行驶过程中拉EPB开关将发送该信号用于点亮制动灯";
+CM_ SG_ 2566787684 EPB_ParkBtnSwtSts "驻车开关状态
+开关是自复位
+当前电子手刹开关操作的反馈";
+CM_ SG_ 2566787684 EPB_RelsBtnSwtSts "缓解开关状态
+当前电子手刹开关操作的反馈";
+CM_ SG_ 2566787684 EPB_AHBtnSwtSts "临停开关状态
+当前电子手刹开关操作的反馈";
+CM_ SG_ 2566787684 EPB_IdepedtBrkBtnSwtSts "挂车独立制动开关状态";
+CM_ SG_ 2566787684 EPB_ForcTestBtnSwtSts "驻车力度检测开关状态";
+CM_ SG_ 2566787684 EPB_SysSts "是否能响应无人驾驶（Not Ready时不能响应）
+支工确认根据VCU的哪个输入信号来决策的？
+答：上面接收到的上高压驾驶状态信号ready，报文名称EPBC2";
+CM_ SG_ 2566787684 EPB_WarnSts "仪表声音警告";
+CM_ SG_ 2566787684 EPB_ParkBrKPrsr "驻车气压";
+CM_ SG_ 2566834788 EPB_ProtLampSt "Prot灯状态";
+CM_ SG_ 2566834788 EPB_AmberWarnLampSt "黄色灯亮";
+CM_ SG_ 2566834788 EPB_RedStopLampSt "红色灯亮
+有红灯状态，需查看EPB DTC文件";
+CM_ SG_ 2566834788 EPB_MalfunIndcrLampSt "故障指示灯状态";
+CM_ SG_ 2566834788 EPB_SPNLeastSign "SPN 的8个最低有效位";
+CM_ SG_ 2566834788 EPB_SPNSecByte "SPN 的第二个字节";
+CM_ SG_ 2566834788 EPB_FMI "故障模式标志符";
+CM_ SG_ 2566834788 EPB_SPNMostSign "SPN 有效位中的最高3位";
+CM_ SG_ 2566834788 EPB_OccurrenceCnt "故障发生次数";
+CM_ SG_ 2566834788 EPB_SPNCnvnMethod "SPN 转换方式";
+CM_ SG_ 2565865828 EPB_HaltBrkSwtSt "如车辆搭载EBS时需要EPB的临停功能，可通过EBS执行临时停车。
+临停制动开关（通过EBS实现短暂制动）
+可以临停2分钟，两分钟后会用EPB驻车
+该报文由EPB发送，和VCU无关。";
+CM_ SG_ 2466251060 EHPS_ActuSteerWhlAngle "方向盘转向反馈角度
+左正右负";
+CM_ SG_ 2466251060 EHPS_ActuSteerWhlAngleSpd "方向盘转向反馈角速度
+实际目标角速度需要限制在0~540之间";
+CM_ SG_ 2466251060 EHPS_AmberWarningLamp "等于 转向驾驶模式反馈里的警告模式
+琥珀色报警灯
+会有助力，能支持人工行驶，不能回正。
+EPS自动退出自动驾驶模式，不会等待VCU决策
+该信号发给仪表，点灯报警用";
+CM_ SG_ 2466251060 EHPS_RedStopLamp "等于 转向驾驶模式反馈里的错误模式
+红色停止指示灯
+EPS自动退出自动驾驶，不会等待VCU决策
+该信号发给仪表，点灯报警用";
+CM_ SG_ 2466251060 EHPS_noDrvModSts "转向驾驶模式反馈
+只有反馈01才是自动驾驶，其他都不支持自动驾驶";
+CM_ SG_ 2466251060 EHPS_noWrkModSts "转向工作模式反馈";
+CM_ SG_ 2466251060 EHPS_noFltLvl "转向系统故障等级
+一级故障(警告级别)黄灯常亮
+二级故障(功能降级)红灯常亮
+三级故障(完全失效，无助力)红灯闪烁";
+CM_ SG_ 2466251060 EHPS_noFrntMot1WorkSts "前桥油泵电机1转态反馈";
+CM_ SG_ 2466251060 EHPS_noFrntMot2WorkSts "前桥油泵电机2转态反馈";
+CM_ SG_ 2466251060 EHPS_noRearMot1WorkSts "后桥油泵电机1转态反馈";
+CM_ SG_ 2466251060 EHPS_noRearMot2WorkSts "后桥油泵电机2转态反馈";
+CM_ SG_ 2466251060 EHPS_AliveCntr0134 "0134心跳检测";
+CM_ SG_ 2466251316 EHPS_3AxTireAg_st "3桥角度值
+桥中间位置摇臂的转角";
+CM_ SG_ 2466251316 EHPS_4AxTireAg_st "4桥角度值
+桥中间位置摇臂的转角";
+CM_ SG_ 2466251316 EHPS_5AxTireAg_st "5桥角度值
+桥中间位置摇臂的转角";
+CM_ SG_ 2466251316 EHPS_perFrntOillvr "前桥液压油箱油位";
+CM_ SG_ 2466251316 EHPS_AliveCntr0234 "0234心跳检测";
+CM_ SG_ 2466251572 EHPS_6AxTireAg_st "6桥角度值
+桥中间位置摇臂的转角";
+CM_ SG_ 2466251572 EHPS_3AxSteerP_st "3桥转向压力";
+CM_ SG_ 2466251572 EHPS_4AxSteerP_st "4桥转向压力";
+CM_ SG_ 2466251572 EHPS_5AxSteerP_st "5桥转向压力";
+CM_ SG_ 2466251572 EHPS_6AxSteerP_st "6桥转向压力";
+CM_ SG_ 2466251572 EHPS_RAxSteerOvfP_st "后桥转向溢流压力";
+CM_ SG_ 2466251572 EHPS_AliveCntr0334 "0334心跳检测";
+CM_ SG_ 2466251828 EHPS_perRearOillvr "后桥液压油箱油位";
+CM_ SG_ 2466251828 EHPS_FAxOilTemp_st "前桥转向油温";
+CM_ SG_ 2466251828 EHPS_RAxOilTemp_st "后桥转向油温";
+CM_ SG_ 2466251828 EHPS_FAxSteerP_st "前桥转向压力";
+CM_ SG_ 2466251828 EHPS_AliveCntr0434 "0434心跳检测";
+CM_ SG_ 2466252084 EHPS_FltCode_Vcu "转向控制器与VCU通讯故障";
+CM_ SG_ 2466252084 EHPS_FltCode_3AxTireAg_A "3角度传感器信号A故障";
+CM_ SG_ 2466252084 EHPS_FltCode_3AxTireAg_B "3角度传感器信号B故障";
+CM_ SG_ 2466252084 EHPS_FltCode_4AxTireAg_A "4角度传感器信号A故障";
+CM_ SG_ 2466252084 EHPS_FltCode_4AxTireAg_B "4角度传感器信号B故障";
+CM_ SG_ 2466252084 EHPS_FltCode_5AxTireAg_A "5角度传感器信号A故障";
+CM_ SG_ 2466252084 EHPS_FltCode_5AxTireAg_B "5角度传感器信号B故障";
+CM_ SG_ 2466252084 EHPS_FltCode_6AxTireAg_A "6角度传感器信号A故障";
+CM_ SG_ 2466252084 EHPS_FltCode_6AxTireAg_B "6角度传感器信号B故障";
+CM_ SG_ 2466252084 EHPS_FltCode_RAxSteerOvfP "后桥转向溢流压力传感器故障";
+CM_ SG_ 2466252084 EHPS_FltCode_RAxSteerEgy "转向控制器与后桥油泵电机1通讯故障";
+CM_ SG_ 2466252084 EHPS_FltCode_3AxSteerP "3桥转向蓄能器压力传感器故障";
+CM_ SG_ 2466252084 EHPS_FltCode_4AxSteerP "4桥转向蓄能器压力传感器故障";
+CM_ SG_ 2466252084 EHPS_FltCode_5AxSteerP "5桥转向蓄能器压力传感器故障";
+CM_ SG_ 2466252084 EHPS_FltCode_6AxSteerP "6桥转向蓄能器压力传感器故障";
+CM_ SG_ 2466252084 EHPS_FltCode_FAxSteerP "前桥转向压力传感器故障";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_H "后桥转向溢流压力高报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_L "后桥转向溢流压力低报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_H "转向控制器与前桥油泵高压电机1通讯故障";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_L "转向控制器与前桥油泵高压电机2通讯故障";
+CM_ SG_ 2466252084 EHPS_ErrCode_3AxTireAg "3桥转向转向角度异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_4AxTireAg "4桥转向转向角度异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_5AxTireAg "5桥转向转向角度异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_6AxTireAg "6桥转向转向角度异常";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_1H "后桥转向高压滤芯堵塞报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_2H "转向控制器与后桥油泵电机2通讯故障";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_B "后桥转向回油滤芯堵塞报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxOilLvl "后桥转向油液位低报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_1H "前桥转向高压滤芯堵塞报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_2H "前桥转向加载阀电路异常";
+CM_ SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_B "前桥转向回油滤芯堵塞报警";
+CM_ SG_ 2466252084 EHPS_WarnCode_FAxOilLvl "前桥转向油液位低报警";
+CM_ SG_ 2466252084 EHPS_FltCode_FAxOilTemp "前桥液压油温传感器故障";
+CM_ SG_ 2466252084 EHPS_WarnCode_FAxOilTemp "前桥液压油温高报警";
+CM_ SG_ 2466252084 EHPS_FltCode_RAxOilTemp "后桥液压油温传感器故障";
+CM_ SG_ 2466252084 EHPS_WarnCode_RAxOilTemp "后桥液压油温高报警";
+CM_ SG_ 2466252084 EHPS_FltCode_3AxStrai "3桥未回到中位";
+CM_ SG_ 2466252084 EHPS_FltCode_4AxStrai "4桥未回到中位";
+CM_ SG_ 2466252084 EHPS_FltCode_5AxStrai "5桥未回到中位";
+CM_ SG_ 2466252084 EHPS_FltCode_6AxStrai "6桥未回到中位";
+CM_ SG_ 2466252084 EHPS_FltCode_3AxSteerTiOut "3桥转向超时";
+CM_ SG_ 2466252084 EHPS_FltCode_4AxSteerTiOut "4桥转向超时";
+CM_ SG_ 2466252084 EHPS_FltCode_5AxSteerTiOut "5桥转向超时";
+CM_ SG_ 2466252084 EHPS_FltCode_6AxSteerTiOut "6桥转向超时";
+CM_ SG_ 2466252084 EHPS_ErrCode_3AxVlvElec "3桥阀系电路异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_4AxVlvElec "4桥阀系电路异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_5AxVlvElec "5桥阀系电路异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_6AxVlvElec "6桥阀系电路异常";
+CM_ SG_ 2466252084 EHPS_ErrCode_OvfVlvElec "后桥加载阀系电路异常";
+CM_ SG_ 2466252084 EHPS_Lock_WrkMod "车速快，此时禁止切换模式
+（模式请求判断需要参考这个信号）";
+CM_ SG_ 2466252084 EHPS_ErrCode_VehSpeed "车速异常";
+CM_ SG_ 2466252084 EHPS_VehOverSpeedWarn "车速过快报警(当前模式下的车速过快报警)";
+CM_ SG_ 2466252084 EHPS_bFrntMot1BUSOFF "转向控制器与前桥油泵低压电机1通讯故障";
+CM_ SG_ 2466252084 EHPS_bFrntMot2BUSOFF "转向控制器与前桥油泵低压电机2通讯故障";
+CM_ SG_ 2466252084 EHPS_bECUBUSOFF "转向控制器与EHPS通讯故障";
+CM_ SG_ 2466252084 EHPS_bRearFanErr "后桥风冷器电路异常";
+CM_ SG_ 2466252084 EHPS_AliveCntr0534 "0534心跳检测";
+CM_ SG_ 2466252340 EHPS_bTrqSnsrPwrErr "电动转向器-扭矩传感器电源电压异常";
+CM_ SG_ 2466252340 EHPS_bTrqT2OverRangeErr "电动转向器-扭矩T2信号超出设计范围";
+CM_ SG_ 2466252340 EHPS_bTrqT1OverRangeErr "电动转向器-扭矩T1信号超出设计范围";
+CM_ SG_ 2466252340 EHPS_bTrqMismatchErr "电动转向器-扭矩T1与T2信号不匹配";
+CM_ SG_ 2466252340 EHPS_bMotSnsrPositionErr "电动转向器-电机位置传感器故障";
+CM_ SG_ 2466252340 EHPS_bECUNoAngelCalErr "电动转向器-ECU不执行角度标定";
+CM_ SG_ 2466252340 EHPS_bAngelAOverRangeErr "电动转向器-转角信号A超出设计范围";
+CM_ SG_ 2466252340 EHPS_bAngelROverRangeErr "电动转向器-转角信号R超出设计范围";
+CM_ SG_ 2466252340 EHPS_bAngelMismatchErr "电动转向器-转角信号A与转角信号R不匹配";
+CM_ SG_ 2466252340 EHPS_bMotCurntErr "电动转向器-电机电流异常";
+CM_ SG_ 2466252340 EHPS_bMotDriverErr "电动转向器-电机驱动电路失效";
+CM_ SG_ 2466252340 EHPS_bMotCurntMismatchErr "电动转向器-助力电机实际电流和目标电流差异过大";
+CM_ SG_ 2466252340 EHPS_bRlyInvaldErr "电动转向器-继电器失效";
+CM_ SG_ 2466252340 EHPS_bCurntSnsrErr "电动转向器-控制器电流采样芯片信号异常";
+CM_ SG_ 2466252340 EHPS_bTempSnsrLoErr "电动转向器-温度传感器信号过低";
+CM_ SG_ 2466252340 EHPS_bTempSnsrHiErr "电动转向器-温度传感器信号过高";
+CM_ SG_ 2466252340 EHPS_bOverSpdErr "电动转向器-车速超上限";
+CM_ SG_ 2466252340 EHPS_bOverVoltgErr "电动转向器-蓄电池供电过压";
+CM_ SG_ 2466252340 EHPS_bLowVoltgErr "电动转向器-蓄电池供电欠压";
+CM_ SG_ 2466252340 EHPS_bBusoffClosedErr "电动转向器-总线关闭故障";
+CM_ SG_ 2466252340 EHPS_bIPDMissErr "电动转向器-仪表/网关丢失";
+CM_ SG_ 2466252340 EHPS_bTBDErr "电动转向器-TBD";
+CM_ SG_ 2466252340 EHPS_bIDSCmdMissErr "电动转向器-自动驾驶指令丢失";
+CM_ SG_ 2466252340 EHPS_AliveCntr0634 "0634心跳检测";
+CM_ SG_ 2566852903 VCU_SteerWhlAngleReq "方向盘转向目标角度
+左正右负";
+CM_ SG_ 2566852903 VCU_SteerWhlAngleSpdReq "方向盘转向目标角速度
+实际目标角速度需要限制在0~540之间";
+CM_ SG_ 2566852903 VCU_noDrvModReq "转向驾驶模式指令
+一上电就默认发助力模式";
+CM_ SG_ 2566852903 VCU_EHPS_noWorkModReq "转向工作模式指令";
+CM_ SG_ 2566852903 VCU_EHPS_bRdySts "ready信号";
+CM_ SG_ 2566852903 VCU_vABSVehSpd "车速信号1（ABS）车速异常会锁后桥";
+CM_ SG_ 2566852903 VCU_vMotVehSpd "车速信号2（电机）";
+CM_ SG_ 2566852903 VCU_AliveCntr1127 "0~255的循环心跳计数";
+CM_ SG_ 2566848808 TVM_bDrvEmgryStop "上装急停";
+CM_ SG_ 2566848808 TVM_bFightActv "上装超限作战";
+CM_ SG_ 2566848808 TVM_bSignalSwt1 "上装预留1";
+CM_ SG_ 2566848808 TVM_bSignalSwt2 "上装预留2";
+CM_ SG_ 2566848808 TVM_noWorkModReq "转向工作模式指令";
+CM_ SG_ 2566848808 TVM_bTCSSwt "TCS：防滑开关（带指示灯）";
+CM_ SG_ 2566848808 TVM_noVehDir "整车运行方向
+VehDir_StandStill(0)
+VehDir_Reverse(1)
+VehDir_Forward(2)";
+CM_ SG_ 2566848808 TVM_perMotTrqReq "驾驶员需求发动机或电机-扭矩百分比(单位%)
+制动系统内XBR请求时，扭矩干涉时会调用该信号。";
+CM_ SG_ 2566848808 TVM_perActuMotTrq "实际发动机或电机-扭矩百分比(单位%)
+制动系统内XBR请求时，扭矩干涉时会调用该信号。";
+CM_ SG_ 2566848808 TVM_bMCU1AliveCntrErr "MCU1的心跳故障";
+CM_ SG_ 2566848808 TVM_bMCU2AliveCntrErr "MCU2的心跳故障";
+CM_ SG_ 2566848808 TVM_bMCU3AliveCntrErr "MCU3的心跳故障";
+CM_ SG_ 2566848808 TVM_bMCU4AliveCntrErr "MCU4的心跳故障";
+CM_ SG_ 2566848808 TVM_bMCU5AliveCntrErr "MCU5的心跳故障";
+CM_ SG_ 2566848808 TVM_AliveCntr0128 "0~255的循环心跳计数";
+CM_ SG_ 2566074913 VCU_FightMod_Cmd1 "战斗模式设置";
+CM_ SG_ 2364616993 VCU_28DCEna_Cmd1 "28VDC使能指令";
+CM_ SG_ 2364616993 VCU_28DCQmod_Cmd1 "28VDC控制模式
+VCU固定发0";
+CM_ SG_ 2364616993 VCU_28DCQv_Cmd1 "28VDC请求电压
+VCU固定发28";
+CM_ SG_ 2364616993 VCU_28DCQi_Cmd1 "28VDC请求功率";
+CM_ SG_ 2364616993 VCU_28DCQp_Cmd1 "28VDC请求电流";
+CM_ SG_ 2364616993 VCU_RollgCntr31211 "心跳，0~255";
+CM_ SG_ 2566324609 DCDC1_Flt_St "28VDC故障状态";
+CM_ SG_ 2566324609 DCDC1_Ena_St "28VDC使能状态";
+CM_ SG_ 2566324609 DCDC1_VltgIn "28VDC输入电压";
+CM_ SG_ 2566324609 DCDC1_VltgOut "28VDC输出电压";
+CM_ SG_ 2566324609 DCDC1_CurrOut "28VDC输出电流";
+CM_ SG_ 2566324609 DCDC1_Temp "28VDC温度";
+CM_ SG_ 2566324609 DCDC1_FltCod "28VDC故障代码";
+CM_ SG_ 2566324609 DCDC1_RollgCntr0181 "28VDC心跳,0～255";
+CM_ SG_ 2566850855 VCU_kwMaxDischrgPwr "整车允许的最大驱动功率";
+CM_ SG_ 2566850855 VCU_kwMaxChrgPwr "电机能量回收时最大充电功率";
+CM_ SG_ 2566850855 VCU_bFightingModReq "战斗模式设置";
+CM_ SG_ 2566850855 VCU_RollingCntr0927 "循环计数器
+心跳,0～255";
+
+BA_DEF_ BU_ "TerminalNode" ENUM "No","Yes";
+BA_DEF_ BU_ "NodeLayerModules" STRING ;
+BA_DEF_ BU_ "NmStationAddress" HEX 0 241;
+BA_DEF_ BU_ "NmNode" ENUM "Yes","No";
+BA_DEF_ BU_ "NmCAN" INT 1 2;
+BA_DEF_ BU_ "ILUsed" ENUM "No","Yes";
+BA_DEF_ BU_ "ECUDisplayName" STRING ;
+BA_DEF_ BU_ "CANoeStartDelay" INT 0 10;
+BA_DEF_ BU_ "CANoeJitterMin" INT 0 0;
+BA_DEF_ BU_ "CANoeJitterMax" INT 0 0;
+BA_DEF_ BU_ "CANoeDrift" INT 0 0;
+BA_DEF_ BU_ "BootloaderNode" ENUM "No","Yes";
+BA_DEF_ BO_ "StartDelay" INT 0 0;
+BA_DEF_ BO_ "GenMsgStartDelayTime" INT 0 0;
+BA_DEF_ BO_ "GenMsgSendType" ENUM "Cycle","NoMsgSendType","IfActive","Event","CA","CE";
+BA_DEF_ BO_ "GenMsgNrOfRepetition" INT 0 0;
+BA_DEF_ BO_ "GenMsgILSupport" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgDelayTime" INT 0 0;
+BA_DEF_ BO_ "GenMsgCycleTimeFast" INT 0 0;
+BA_DEF_ BO_ "GenMsgCycleTime" INT 0 0;
+BA_DEF_ BO_ "DiagState" ENUM "No","Yes";
+BA_DEF_ BO_ "DiagResponse" ENUM "No","Yes";
+BA_DEF_ BO_ "DiagRequest" ENUM "No","Yes";
+BA_DEF_ BO_ "NmMessage" ENUM "No","Yes";
+BA_DEF_ BO_ "VFrameFormat" ENUM "StandardCAN","ExtendedCAN","StandardCAN_FD","ExtendedCAN_FD","reserved","J1939PG","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_ SG_ "GenSigInvalidValue" HEX 0 0;
+BA_DEF_ SG_ "GenSigStartValue" HEX 0 0;
+BA_DEF_ SG_ "GenSigRoutingTimeoutValue" HEX 0 0;
+BA_DEF_ SG_ "GenSigInactiveValue" HEX 0 0;
+BA_DEF_ SG_ "GenSigSendType" ENUM "Cycle","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType","vector_leerstring";
+BA_DEF_ "NmType" STRING ;
+BA_DEF_ "ProtocolType" STRING ;
+BA_DEF_ "NmBaseAddress" HEX 0 2047;
+BA_DEF_ "Manufacturer" STRING ;
+BA_DEF_ "ILTxTimeout" INT 0 100;
+BA_DEF_ "DBName" STRING ;
+BA_DEF_ "BusType" STRING ;
+BA_DEF_ "Baudrate" INT 0 1000000;
+BA_DEF_DEF_ "TerminalNode" "No";
+BA_DEF_DEF_ "NodeLayerModules" "OSEKNM01.dll,CANoeILNLVector.dll";
+BA_DEF_DEF_ "NmStationAddress" 0;
+BA_DEF_DEF_ "NmNode" "No";
+BA_DEF_DEF_ "NmCAN" 2;
+BA_DEF_DEF_ "ILUsed" "Yes";
+BA_DEF_DEF_ "ECUDisplayName" "";
+BA_DEF_DEF_ "CANoeStartDelay" 0;
+BA_DEF_DEF_ "CANoeJitterMin" 0;
+BA_DEF_DEF_ "CANoeJitterMax" 0;
+BA_DEF_DEF_ "CANoeDrift" 0;
+BA_DEF_DEF_ "BootloaderNode" "No";
+BA_DEF_DEF_ "StartDelay" 0;
+BA_DEF_DEF_ "GenMsgStartDelayTime" 0;
+BA_DEF_DEF_ "GenMsgSendType" "Cycle";
+BA_DEF_DEF_ "GenMsgNrOfRepetition" 0;
+BA_DEF_DEF_ "GenMsgILSupport" "Yes";
+BA_DEF_DEF_ "GenMsgDelayTime" 0;
+BA_DEF_DEF_ "GenMsgCycleTimeFast" 0;
+BA_DEF_DEF_ "GenMsgCycleTime" 100;
+BA_DEF_DEF_ "DiagState" "No";
+BA_DEF_DEF_ "DiagResponse" "No";
+BA_DEF_DEF_ "DiagRequest" "No";
+BA_DEF_DEF_ "NmMessage" "No";
+BA_DEF_DEF_ "VFrameFormat" "StandardCAN";
+BA_DEF_DEF_ "GenSigInvalidValue" 0;
+BA_DEF_DEF_ "GenSigStartValue" 0;
+BA_DEF_DEF_ "GenSigRoutingTimeoutValue" 0;
+BA_DEF_DEF_ "GenSigInactiveValue" 0;
+BA_DEF_DEF_ "GenSigSendType" "Cycle";
+BA_DEF_DEF_ "NmType" "OSEK";
+BA_DEF_DEF_ "ProtocolType" "CAN";
+BA_DEF_DEF_ "NmBaseAddress" 1024;
+BA_DEF_DEF_ "Manufacturer" "";
+BA_DEF_DEF_ "ILTxTimeout" 0;
+BA_DEF_DEF_ "DBName" "";
+BA_DEF_DEF_ "BusType" "";
+BA_DEF_DEF_ "Baudrate" 500000;
+BA_ "DBName" "Matrix";
+BA_ "GenMsgCycleTime" BO_ 2298425750 10;
+BA_ "GenMsgSendType" BO_ 2298425750 0;
+BA_ "VFrameFormat" BO_ 2298425750 1;
+BA_ "GenMsgCycleTime" BO_ 2566862998 200;
+BA_ "GenMsgSendType" BO_ 2566862998 0;
+BA_ "VFrameFormat" BO_ 2566862998 1;
+BA_ "GenMsgCycleTime" BO_ 2566862230 10;
+BA_ "GenMsgSendType" BO_ 2566862230 0;
+BA_ "VFrameFormat" BO_ 2566862230 1;
+BA_ "GenMsgCycleTime" BO_ 2566866070 1000;
+BA_ "GenMsgSendType" BO_ 2566866070 0;
+BA_ "VFrameFormat" BO_ 2566866070 1;
+BA_ "GenMsgCycleTime" BO_ 2566875286 1000;
+BA_ "GenMsgSendType" BO_ 2566875286 0;
+BA_ "VFrameFormat" BO_ 2566875286 1;
+BA_ "GenMsgCycleTime" BO_ 2314154646 100;
+BA_ "GenMsgSendType" BO_ 2314154646 0;
+BA_ "VFrameFormat" BO_ 2314154646 1;
+BA_ "GenMsgCycleTime" BO_ 2314155158 100;
+BA_ "GenMsgSendType" BO_ 2314155158 0;
+BA_ "VFrameFormat" BO_ 2314155158 1;
+BA_ "GenMsgCycleTime" BO_ 2432671271 20;
+BA_ "GenMsgSendType" BO_ 2432671271 0;
+BA_ "VFrameFormat" BO_ 2432671271 1;
+BA_ "GenMsgCycleTime" BO_ 2365553703 100;
+BA_ "GenMsgSendType" BO_ 2365553703 0;
+BA_ "VFrameFormat" BO_ 2365553703 1;
+BA_ "GenMsgCycleTime" BO_ 2566850599 500;
+BA_ "GenMsgSendType" BO_ 2566850599 0;
+BA_ "VFrameFormat" BO_ 2566850599 1;
+BA_ "GenMsgCycleTime" BO_ 2550260945 100;
+BA_ "GenMsgSendType" BO_ 2550260945 0;
+BA_ "VFrameFormat" BO_ 2550260945 1;
+BA_ "GenMsgCycleTime" BO_ 2550256100 100;
+BA_ "GenMsgSendType" BO_ 2550256100 0;
+BA_ "VFrameFormat" BO_ 2550256100 1;
+BA_ "GenMsgCycleTime" BO_ 2550321636 100;
+BA_ "GenMsgSendType" BO_ 2550321636 0;
+BA_ "VFrameFormat" BO_ 2550321636 1;
+BA_ "GenMsgCycleTime" BO_ 2565865739 100;
+BA_ "GenMsgSendType" BO_ 2565865739 0;
+BA_ "VFrameFormat" BO_ 2565865739 1;
+BA_ "GenMsgCycleTime" BO_ 2566831883 50;
+BA_ "GenMsgSendType" BO_ 2566831883 0;
+BA_ "VFrameFormat" BO_ 2566831883 1;
+BA_ "GenMsgCycleTime" BO_ 2566827275 100;
+BA_ "GenMsgSendType" BO_ 2566827275 0;
+BA_ "VFrameFormat" BO_ 2566827275 1;
+BA_ "GenMsgCycleTime" BO_ 2298375691 20;
+BA_ "GenMsgSendType" BO_ 2298375691 0;
+BA_ "VFrameFormat" BO_ 2298375691 1;
+BA_ "GenMsgNrOfRepetition" BO_ 2566834699 3;
+BA_ "GenMsgCycleTime" BO_ 2566834699 0;
+BA_ "GenMsgCycleTimeFast" BO_ 2566834699 1000;
+BA_ "GenMsgSendType" BO_ 2566834699 3;
+BA_ "VFrameFormat" BO_ 2566834699 1;
+BA_ "GenMsgCycleTime" BO_ 2348810251 10;
+BA_ "GenMsgSendType" BO_ 2348810251 0;
+BA_ "VFrameFormat" BO_ 2348810251 1;
+BA_ "GenMsgCycleTime" BO_ 2566767627 100;
+BA_ "GenMsgSendType" BO_ 2566767627 0;
+BA_ "VFrameFormat" BO_ 2566767627 1;
+BA_ "GenMsgCycleTime" BO_ 2566827568 1000;
+BA_ "GenMsgSendType" BO_ 2566827568 0;
+BA_ "VFrameFormat" BO_ 2566827568 1;
+BA_ "GenMsgCycleTime" BO_ 2364539904 10;
+BA_ "GenMsgSendType" BO_ 2364539904 0;
+BA_ "VFrameFormat" BO_ 2364539904 1;
+BA_ "GenMsgCycleTime" BO_ 2364539648 50;
+BA_ "GenMsgSendType" BO_ 2364539648 0;
+BA_ "VFrameFormat" BO_ 2364539648 1;
+BA_ "GenMsgCycleTime" BO_ 2566840064 250;
+BA_ "GenMsgSendType" BO_ 2566840064 0;
+BA_ "VFrameFormat" BO_ 2566840064 1;
+BA_ "GenMsgCycleTime" BO_ 2566844672 100;
+BA_ "GenMsgSendType" BO_ 2566844672 0;
+BA_ "VFrameFormat" BO_ 2566844672 1;
+BA_ "GenMsgCycleTime" BO_ 2566873111 100;
+BA_ "GenMsgSendType" BO_ 2566873111 0;
+BA_ "VFrameFormat" BO_ 2566873111 1;
+BA_ "GenMsgCycleTime" BO_ 2349075242 20;
+BA_ "GenMsgSendType" BO_ 2349075242 0;
+BA_ "VFrameFormat" BO_ 2349075242 1;
+BA_ "GenMsgCycleTime" BO_ 2364539395 50;
+BA_ "GenMsgSendType" BO_ 2364539395 0;
+BA_ "VFrameFormat" BO_ 2364539395 1;
+BA_ "GenMsgCycleTime" BO_ 2566808815 100;
+BA_ "GenMsgSendType" BO_ 2566808815 0;
+BA_ "VFrameFormat" BO_ 2566808815 1;
+BA_ "GenMsgCycleTime" BO_ 2565498095 100;
+BA_ "GenMsgSendType" BO_ 2565498095 0;
+BA_ "VFrameFormat" BO_ 2565498095 1;
+BA_ "GenMsgCycleTime" BO_ 2566787684 100;
+BA_ "GenMsgSendType" BO_ 2566787684 0;
+BA_ "VFrameFormat" BO_ 2566787684 1;
+BA_ "GenMsgNrOfRepetition" BO_ 2566834788 3;
+BA_ "GenMsgCycleTime" BO_ 2566834788 0;
+BA_ "GenMsgCycleTimeFast" BO_ 2566834788 1000;
+BA_ "GenMsgSendType" BO_ 2566834788 3;
+BA_ "VFrameFormat" BO_ 2566834788 1;
+BA_ "GenMsgCycleTime" BO_ 2565865828 100;
+BA_ "GenMsgSendType" BO_ 2565865828 0;
+BA_ "VFrameFormat" BO_ 2565865828 1;
+BA_ "GenMsgCycleTime" BO_ 2466251060 20;
+BA_ "GenMsgSendType" BO_ 2466251060 0;
+BA_ "VFrameFormat" BO_ 2466251060 1;
+BA_ "GenMsgCycleTime" BO_ 2466251316 50;
+BA_ "GenMsgSendType" BO_ 2466251316 0;
+BA_ "VFrameFormat" BO_ 2466251316 1;
+BA_ "GenMsgCycleTime" BO_ 2466251572 50;
+BA_ "GenMsgSendType" BO_ 2466251572 0;
+BA_ "VFrameFormat" BO_ 2466251572 1;
+BA_ "GenMsgCycleTime" BO_ 2466251828 50;
+BA_ "GenMsgSendType" BO_ 2466251828 0;
+BA_ "VFrameFormat" BO_ 2466251828 1;
+BA_ "GenMsgCycleTime" BO_ 2466252084 50;
+BA_ "GenMsgSendType" BO_ 2466252084 0;
+BA_ "VFrameFormat" BO_ 2466252084 1;
+BA_ "GenMsgCycleTime" BO_ 2466252340 50;
+BA_ "GenMsgSendType" BO_ 2466252340 0;
+BA_ "VFrameFormat" BO_ 2466252340 1;
+BA_ "GenMsgCycleTime" BO_ 2566852903 10;
+BA_ "GenMsgSendType" BO_ 2566852903 0;
+BA_ "VFrameFormat" BO_ 2566852903 1;
+BA_ "GenMsgCycleTime" BO_ 2566848808 100;
+BA_ "GenMsgSendType" BO_ 2566848808 0;
+BA_ "VFrameFormat" BO_ 2566848808 1;
+BA_ "GenMsgCycleTime" BO_ 2566074913 100;
+BA_ "GenMsgSendType" BO_ 2566074913 0;
+BA_ "VFrameFormat" BO_ 2566074913 1;
+BA_ "GenMsgCycleTime" BO_ 2364616993 100;
+BA_ "GenMsgSendType" BO_ 2364616993 0;
+BA_ "VFrameFormat" BO_ 2364616993 1;
+BA_ "GenMsgCycleTime" BO_ 2566324609 500;
+BA_ "GenMsgSendType" BO_ 2566324609 0;
+BA_ "VFrameFormat" BO_ 2566324609 1;
+BA_ "GenMsgCycleTime" BO_ 2566850855 200;
+BA_ "GenMsgSendType" BO_ 2566850855 0;
+BA_ "VFrameFormat" BO_ 2566850855 1;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_perPctgBrkPdlReq 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_perPctgBrkPdlReq 0;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_perPctgAccrPdlReq 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_perPctgAccrPdlReq 0;
+BA_ "GenSigInvalidValue" SG_ 2298425750 IDS_SteerWhlAngleReq 65535;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_SteerWhlAngleReq 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_SteerWhlAngleReq 0;
+BA_ "GenSigInvalidValue" SG_ 2298425750 IDS_SteerWhlSpdReq 255;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_SteerWhlSpdReq 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_SteerWhlSpdReq 0;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_vVehSpd 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_vVehSpd 0;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_bIMUFlt 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_bIMUFlt 0;
+BA_ "GenSigStartValue" SG_ 2298425750 IDS_AliveCntr1 0;
+BA_ "GenSigSendType" SG_ 2298425750 IDS_AliveCntr1 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noADSFltLvl 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noADSFltLvl 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noDrvModReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noDrvModReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bEleSilenceSts 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bEleSilenceSts 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bHeadlightReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bHeadlightReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bLCornrgLampReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bLCornrgLampReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bRCornrgLampReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bRCornrgLampReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bHighBeamReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bHighBeamReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bLowBeamReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bLowBeamReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bFrntFogLampReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bFrntFogLampReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bReFogLampReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bReFogLampReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bWarnLampReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bWarnLampReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noGearPosnReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noGearPosnReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_bParkingBrkReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_bParkingBrkReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noWorkModReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noWorkModReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noParkingBrkReq 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noParkingBrkReq 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noKeyStart 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noKeyStart 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noACCSts 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noACCSts 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noLKASts 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noLKASts 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noAEBSts 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noAEBSts 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noSignal1 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noSignal1 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noSignal2 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noSignal2 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noSignal3 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noSignal3 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_noSignal4 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_noSignal4 0;
+BA_ "GenSigStartValue" SG_ 2566862998 IDS_AliveCntr2 0;
+BA_ "GenSigSendType" SG_ 2566862998 IDS_AliveCntr2 0;
+BA_ "GenSigStartValue" SG_ 2566862230 IDS_LateralAcce 0;
+BA_ "GenSigSendType" SG_ 2566862230 IDS_LateralAcce 0;
+BA_ "GenSigStartValue" SG_ 2566862230 IDS_LongitudinalAcce 0;
+BA_ "GenSigSendType" SG_ 2566862230 IDS_LongitudinalAcce 0;
+BA_ "GenSigStartValue" SG_ 2566862230 IDS_Yawrate 0;
+BA_ "GenSigSendType" SG_ 2566862230 IDS_Yawrate 0;
+BA_ "GenSigStartValue" SG_ 2566862230 IDS_AliveCntr3 0;
+BA_ "GenSigSendType" SG_ 2566862230 IDS_AliveCntr3 0;
+BA_ "GenSigSendType" SG_ 2566866070 IDS_Latitude 0;
+BA_ "GenSigStartValue" SG_ 2566866070 IDS_AliveCntr4 0;
+BA_ "GenSigSendType" SG_ 2566866070 IDS_AliveCntr4 0;
+BA_ "GenSigSendType" SG_ 2566875286 IDS_Altitude 0;
+BA_ "GenSigSendType" SG_ 2566875286 IDS_Longitude 0;
+BA_ "GenSigStartValue" SG_ 2566875286 IDS_AliveCntr5 0;
+BA_ "GenSigSendType" SG_ 2566875286 IDS_AliveCntr5 0;
+BA_ "GenSigStartValue" SG_ 2314154646 IDS_Yawangle 0;
+BA_ "GenSigSendType" SG_ 2314154646 IDS_Yawangle 0;
+BA_ "GenSigStartValue" SG_ 2314154646 IDS_Rollangle 0;
+BA_ "GenSigSendType" SG_ 2314154646 IDS_Rollangle 0;
+BA_ "GenSigStartValue" SG_ 2314154646 IDS_Pitchangle 0;
+BA_ "GenSigSendType" SG_ 2314154646 IDS_Pitchangle 0;
+BA_ "GenSigStartValue" SG_ 2314154646 IDS_AliveCntr6 0;
+BA_ "GenSigSendType" SG_ 2314154646 IDS_AliveCntr6 0;
+BA_ "GenSigStartValue" SG_ 2314155158 IDS_VerticalAcce 0;
+BA_ "GenSigSendType" SG_ 2314155158 IDS_VerticalAcce 0;
+BA_ "GenSigStartValue" SG_ 2314155158 IDS_RollVelocity 0;
+BA_ "GenSigSendType" SG_ 2314155158 IDS_RollVelocity 0;
+BA_ "GenSigStartValue" SG_ 2314155158 IDS_PitchVelocity 0;
+BA_ "GenSigSendType" SG_ 2314155158 IDS_PitchVelocity 0;
+BA_ "GenSigStartValue" SG_ 2314155158 IDS_AliveCntr7 0;
+BA_ "GenSigSendType" SG_ 2314155158 IDS_AliveCntr7 0;
+BA_ "GenSigInvalidValue" SG_ 2432671271 VCU_IDS_vActuVehSpd 2047;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_IDS_vActuVehSpd 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_IDS_vActuVehSpd 0;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_perActuPctgBrkPdl 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_perActuPctgBrkPdl 0;
+BA_ "GenSigInvalidValue" SG_ 2432671271 VCU_ActuSteerWhlAngle 65535;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_ActuSteerWhlAngle 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_ActuSteerWhlAngle 0;
+BA_ "GenSigInvalidValue" SG_ 2432671271 VCU_ActuSteerWhlSpd 255;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_ActuSteerWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_ActuSteerWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_perActuPctgAccrPdl 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_perActuPctgAccrPdl 0;
+BA_ "GenSigStartValue" SG_ 2432671271 VCU_AliveCntr9E27 0;
+BA_ "GenSigSendType" SG_ 2432671271 VCU_AliveCntr9E27 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_noVehFltLvl 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_noVehFltLvl 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_noActuDrvMod 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_noActuDrvMod 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bEleSlienceActv 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bEleSlienceActv 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bTemStopActv 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bTemStopActv 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bACCActv 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bACCActv 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bAEBActv 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bAEBActv 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bLKAActv 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bLKAActv 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_bAssidDrvMod 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_bAssidDrvMod 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_noAutoMaxSpd 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_noAutoMaxSpd 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_noActuGearPosn 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_noActuGearPosn 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_IDS_bRdySts 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_IDS_bRdySts 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_noParkingBrkSts 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_noParkingBrkSts 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_tqActuMotTrq 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_tqActuMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2365553703 VCU_AliveCntr7C27 0;
+BA_ "GenSigSendType" SG_ 2365553703 VCU_AliveCntr7C27 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noHeadlightSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noHeadlightSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noLCornrgLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noLCornrgLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noRCornrgLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noRCornrgLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noHighBeamSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noHighBeamSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noLowBeamSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noLowBeamSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noFrntFogLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noFrntFogLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noReFogLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noReFogLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noWarnLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noWarnLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noBrkLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noBrkLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noEPBLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noEPBLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noEPBErrLampSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noEPBErrLampSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noBrkWorkSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noBrkWorkSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_noParkWorkSts 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_noParkWorkSts 0;
+BA_ "GenSigStartValue" SG_ 2566850599 VCU_AliveCntr0827 0;
+BA_ "GenSigSendType" SG_ 2566850599 VCU_AliveCntr0827 0;
+BA_ "GenSigInvalidValue" SG_ 2550260945 VCU_noRningReq 0;
+BA_ "GenSigStartValue" SG_ 2550260945 VCU_noRningReq 0;
+BA_ "GenSigSendType" SG_ 2550260945 VCU_noRningReq 0;
+BA_ "GenSigInvalidValue" SG_ 2550260945 VCU_nRningSpd 0;
+BA_ "GenSigStartValue" SG_ 2550260945 VCU_nRningSpd 0;
+BA_ "GenSigSendType" SG_ 2550260945 VCU_nRningSpd 0;
+BA_ "GenSigInvalidValue" SG_ 2550260945 VCU_RollingCntrE4D1 0;
+BA_ "GenSigStartValue" SG_ 2550260945 VCU_RollingCntrE4D1 0;
+BA_ "GenSigSendType" SG_ 2550260945 VCU_RollingCntrE4D1 0;
+BA_ "GenSigInvalidValue" SG_ 2550256100 PCU_uvVoltgInput 0;
+BA_ "GenSigStartValue" SG_ 2550256100 PCU_uvVoltgInput 0;
+BA_ "GenSigSendType" SG_ 2550256100 PCU_uvVoltgInput 0;
+BA_ "GenSigInvalidValue" SG_ 2550256100 PCU_uvVltgOutput 0;
+BA_ "GenSigStartValue" SG_ 2550256100 PCU_uvVltgOutput 0;
+BA_ "GenSigSendType" SG_ 2550256100 PCU_uvVltgOutput 0;
+BA_ "GenSigInvalidValue" SG_ 2550256100 PCU_iaCurntOutput 0;
+BA_ "GenSigStartValue" SG_ 2550256100 PCU_iaCurntOutput 0;
+BA_ "GenSigSendType" SG_ 2550256100 PCU_iaCurntOutput 0;
+BA_ "GenSigInvalidValue" SG_ 2550256100 PCU_noRningSts 0;
+BA_ "GenSigStartValue" SG_ 2550256100 PCU_noRningSts 0;
+BA_ "GenSigSendType" SG_ 2550256100 PCU_noRningSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550256100 PCU_RollingCntr1 0;
+BA_ "GenSigStartValue" SG_ 2550256100 PCU_RollingCntr1 0;
+BA_ "GenSigSendType" SG_ 2550256100 PCU_RollingCntr1 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_nMotSpd 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_nMotSpd 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_nMotSpd 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_tMotTmep 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_tMotTmep 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_tMotTmep 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_tMCUTmep 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_tMCUTmep 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_tMCUTmep 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_UdvAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_UdvAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_UdvAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_OdvAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_OdvAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_OdvAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_DftphAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_DftphAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_DftphAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_OcetAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_OcetAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_OcetAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_OvheatAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_OvheatAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_OvheatAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_ComutoutAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_ComutoutAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_ComutoutAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_OspdAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_OspdAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_OspdAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_ModprotAlarmSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_ModprotAlarmSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_ModprotAlarmSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_FaultcodeSts 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_FaultcodeSts 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_FaultcodeSts 0;
+BA_ "GenSigInvalidValue" SG_ 2550321636 PCU_RollingCntr2 0;
+BA_ "GenSigStartValue" SG_ 2550321636 PCU_RollingCntr2 0;
+BA_ "GenSigSendType" SG_ 2550321636 PCU_RollingCntr2 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_ASREngCtrlActv 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_ASREngCtrlActv 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noASRBrkCtrlActv 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noASRBrkCtrlActv 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noABSActv 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noABSActv 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noBrkSwt 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noBrkSwt 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_perBrkPdl 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_perBrkPdl 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noOffRoadSwt 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noOffRoadSwt 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noHillHoldSwt 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noHillHoldSwt 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noABSFullyWork 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noABSFullyWork 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noRedWarnLamp 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noRedWarnLamp 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noYellowWarnLamp 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noYellowWarnLamp 0;
+BA_ "GenSigStartValue" SG_ 2565865739 EBS_noASRLamp 0;
+BA_ "GenSigSendType" SG_ 2565865739 EBS_noASRLamp 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vFrntAxleSpd 0;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vFrntAxleSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vFrntAxleLeWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vFrntAxleLeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vFrntAxleRiWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vFrntAxleRiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vRe1AxleLeWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vRe1AxleLeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vRe1AxleRiWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vRe1AxleRiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vRe2AxleLeWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vRe2AxleLeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566831883 EBS_vRe2AxleRiWhlSpd 125;
+BA_ "GenSigSendType" SG_ 2566831883 EBS_vRe2AxleRiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle12BrkPrureLe 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle12BrkPrureLe 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle12BrkPrureRi 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle12BrkPrureRi 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle34BrkPrureLe 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle34BrkPrureLe 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle34BrkPrureRi 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle34BrkPrureRi 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle56BrkPrureLe 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle56BrkPrureLe 0;
+BA_ "GenSigStartValue" SG_ 2566827275 EBS_kpaAxle56BrkPrureRi 0;
+BA_ "GenSigSendType" SG_ 2566827275 EBS_kpaAxle56BrkPrureRi 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vFrntLeWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vFrntLeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vFrntRiWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vFrntRiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vAxle5LeWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vAxle5LeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vReLeWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vReLeWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vAxle5RiWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vAxle5RiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2298375691 EBS_vReRiWhlSpd 0;
+BA_ "GenSigSendType" SG_ 2298375691 EBS_vReRiWhlSpd 0;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_noProtectLampSts 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_noProtectLampSts 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_noAmberWarnLampSts 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_noAmberWarnLampSts 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_noRedStopLampSts 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_noRedStopLampSts 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_noFltLampSts 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_noFltLampSts 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_SpnLeastSignBitsOfSPN 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_SpnLeastSignBitsOfSPN 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_SpnSecByteOfSPN 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_SpnSecByteOfSPN 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_Fmi 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_Fmi 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_Spn3MostSignBitsofSPN 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_Spn3MostSignBitsofSPN 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_OccurrenceCnt 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_OccurrenceCnt 4;
+BA_ "GenSigStartValue" SG_ 2566834699 EBS_SpnCnvnMethod 0;
+BA_ "GenSigSendType" SG_ 2566834699 EBS_SpnCnvnMethod 4;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_noXBRCtrlMod 0;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_noXBRCtrlMod 0;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_noSpdCtrlPri 0;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_noSpdCtrlPri 0;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_noModCtrlPrio 0;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_noModCtrlPrio 0;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_perTrqLimit 125;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_perTrqLimit 0;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_noCounter00B 0;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_noCounter00B 0;
+BA_ "GenSigStartValue" SG_ 2348810251 EBS_noChkSum00B 0;
+BA_ "GenSigSendType" SG_ 2348810251 EBS_noChkSum00B 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noHaltBrkModSts 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noHaltBrkModSts 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_HillHolderModSts 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_HillHolderModSts 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noXBRBrakeActv 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noXBRBrakeActv 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noXBRSysSts 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noXBRSysSts 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noXBRCtrlModActv 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noXBRCtrlModActv 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_aXBRAccLimit 125;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_aXBRAccLimit 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noParkingBrkActrFullyActv 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noParkingBrkActrFullyActv 0;
+BA_ "GenSigStartValue" SG_ 2566767627 EBS_noEmgyBrkActv 0;
+BA_ "GenSigSendType" SG_ 2566767627 EBS_noEmgyBrkActv 0;
+BA_ "GenSigStartValue" SG_ 2566827568 VCU_kpaBrkAirPrure1 0;
+BA_ "GenSigSendType" SG_ 2566827568 VCU_kpaBrkAirPrure1 0;
+BA_ "GenSigStartValue" SG_ 2566827568 VCU_kpaBrkAirPrure2 0;
+BA_ "GenSigSendType" SG_ 2566827568 VCU_kpaBrkAirPrure2 0;
+BA_ "GenSigStartValue" SG_ 2566827568 VCU_AuxEquipSplyPrure 0;
+BA_ "GenSigSendType" SG_ 2566827568 VCU_AuxEquipSplyPrure 0;
+BA_ "GenSigStartValue" SG_ 2566827568 VCU_noAirCompressorSt 0;
+BA_ "GenSigSendType" SG_ 2566827568 VCU_noAirCompressorSt 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_noEngTrqMod 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_noEngTrqMod 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_perActuMotTrqHiResl 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_perActuMotTrqHiResl 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_perMotTrqReq 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_perMotTrqReq 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_perActuMotTrq 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_perActuMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_EEC1_nMotSpd 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_EEC1_nMotSpd 0;
+BA_ "GenSigStartValue" SG_ 2364539904 VCU_SourceAddres 0;
+BA_ "GenSigSendType" SG_ 2364539904 VCU_SourceAddres 0;
+BA_ "GenSigStartValue" SG_ 2364539648 VCU_perPctgAccrPdl 0;
+BA_ "GenSigSendType" SG_ 2364539648 VCU_perPctgAccrPdl 0;
+BA_ "GenSigStartValue" SG_ 2364539648 VCU_perPctgMotLoad 0;
+BA_ "GenSigSendType" SG_ 2364539648 VCU_perPctgMotLoad 0;
+BA_ "GenSigStartValue" SG_ 2566840064 VCU_perPctgFrictionMotTrq 0;
+BA_ "GenSigSendType" SG_ 2566840064 VCU_perPctgFrictionMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2566840064 VCU_perPctgEstimatedMotTrq 0;
+BA_ "GenSigSendType" SG_ 2566840064 VCU_perPctgEstimatedMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2566844672 VCU_noParkingBrkReq 0;
+BA_ "GenSigSendType" SG_ 2566844672 VCU_noParkingBrkReq 0;
+BA_ "GenSigStartValue" SG_ 2566844672 VCU_CCVS_vActuVehSpd 0;
+BA_ "GenSigSendType" SG_ 2566844672 VCU_CCVS_vActuVehSpd 0;
+BA_ "GenSigStartValue" SG_ 2566873111 VCU_noASRESCReq 0;
+BA_ "GenSigSendType" SG_ 2566873111 VCU_noASRESCReq 0;
+BA_ "GenSigStartValue" SG_ 2566873111 VCU_noHSAReq 0;
+BA_ "GenSigSendType" SG_ 2566873111 VCU_noHSAReq 0;
+BA_ "GenSigStartValue" SG_ 2349075242 VCU_aAccelerationReq 32127;
+BA_ "GenSigSendType" SG_ 2349075242 VCU_aAccelerationReq 0;
+BA_ "GenSigStartValue" SG_ 2349075242 VCU_noXBREBIModReq 0;
+BA_ "GenSigSendType" SG_ 2349075242 VCU_noXBREBIModReq 0;
+BA_ "GenSigStartValue" SG_ 2349075242 VCU_noXBRPrioReq 0;
+BA_ "GenSigSendType" SG_ 2349075242 VCU_noXBRPrioReq 0;
+BA_ "GenSigStartValue" SG_ 2349075242 VCU_noXBRCtrlModReq 0;
+BA_ "GenSigSendType" SG_ 2349075242 VCU_noXBRCtrlModReq 0;
+BA_ "GenSigStartValue" SG_ 2364539395 VCU_noTrsmSftInProc 0;
+BA_ "GenSigSendType" SG_ 2364539395 VCU_noTrsmSftInProc 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_perPctgMotTrq 125;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_perPctgMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_EPBC2_nMotSpd 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_EPBC2_nMotSpd 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_perPctgBrkPdlEPB 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_perPctgBrkPdlEPB 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_perPctgAccrPdlEPB 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_perPctgAccrPdlEPB 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_noGearR 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_noGearR 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_noGearN 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_noGearN 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_noGearD 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_noGearD 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_noVehType 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_noVehType 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_bBrkPdlEPB 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_bBrkPdlEPB 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_bRdySts 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_bRdySts 0;
+BA_ "GenSigStartValue" SG_ 2566808815 VCU_EPBC2_vActuVehSpd 0;
+BA_ "GenSigSendType" SG_ 2566808815 VCU_EPBC2_vActuVehSpd 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noFillSignal1 255;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noFillSignal1 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noFillSignal2 8;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noFillSignal2 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noFillSignal3 255;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noFillSignal3 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noFillSignal4 255;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noFillSignal4 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noParkingBrkCtrlReq 0;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noParkingBrkCtrlReq 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_noFillSignal5 255;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_noFillSignal5 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_EPBC1_noWorkModReq 0;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_EPBC1_noWorkModReq 0;
+BA_ "GenSigStartValue" SG_ 2565498095 VCU_ChkSUMEPBC1 0;
+BA_ "GenSigSendType" SG_ 2565498095 VCU_ChkSUMEPBC1 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ParkBrkSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_AHBrkSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_AHParkActvSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_WorkMod 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_noErrCodes 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ChildLckActvSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_LoPrsrRelsPrkLimSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_RespPrioSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_IdepedtBrkOlySts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ParkBrkFrceTestSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_DrvHillSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_BrkSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ParkBtnSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_RelsBtnSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_AHBtnSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_IdepedtBrkBtnSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ForcTestBtnSwtSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_SysSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_WarnSts 0;
+BA_ "GenSigSendType" SG_ 2566787684 EPB_ParkBrKPrsr 0;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_ProtLampSt 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_AmberWarnLampSt 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_RedStopLampSt 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_MalfunIndcrLampSt 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_SPNLeastSign 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_SPNSecByte 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_FMI 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_SPNMostSign 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_OccurrenceCnt 4;
+BA_ "GenSigSendType" SG_ 2566834788 EPB_SPNCnvnMethod 4;
+BA_ "GenSigSendType" SG_ 2565865828 EPB_HaltBrkSwtSt 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_ActuSteerWhlAngle 65535;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_ActuSteerWhlAngle 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_ActuSteerWhlAngle 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_ActuSteerWhlAngleSpd 255;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_ActuSteerWhlAngleSpd 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_ActuSteerWhlAngleSpd 0;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_AmberWarningLamp 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_AmberWarningLamp 0;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_RedStopLamp 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_RedStopLamp 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noDrvModSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noDrvModSts 4;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noDrvModSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noWrkModSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noWrkModSts 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noWrkModSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noFltLvl 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noFltLvl 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noFltLvl 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noFrntMot1WorkSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noFrntMot1WorkSts 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noFrntMot1WorkSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noFrntMot2WorkSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noFrntMot2WorkSts 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noFrntMot2WorkSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noRearMot1WorkSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noRearMot1WorkSts 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noRearMot1WorkSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_noRearMot2WorkSts 15;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_noRearMot2WorkSts 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_noRearMot2WorkSts 0;
+BA_ "GenSigInvalidValue" SG_ 2466251060 EHPS_AliveCntr0134 0;
+BA_ "GenSigStartValue" SG_ 2466251060 EHPS_AliveCntr0134 0;
+BA_ "GenSigSendType" SG_ 2466251060 EHPS_AliveCntr0134 0;
+BA_ "GenSigInvalidValue" SG_ 2466251316 EHPS_3AxTireAg_st 65535;
+BA_ "GenSigStartValue" SG_ 2466251316 EHPS_3AxTireAg_st 900;
+BA_ "GenSigSendType" SG_ 2466251316 EHPS_3AxTireAg_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251316 EHPS_4AxTireAg_st 65535;
+BA_ "GenSigStartValue" SG_ 2466251316 EHPS_4AxTireAg_st 900;
+BA_ "GenSigSendType" SG_ 2466251316 EHPS_4AxTireAg_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251316 EHPS_5AxTireAg_st 65535;
+BA_ "GenSigStartValue" SG_ 2466251316 EHPS_5AxTireAg_st 900;
+BA_ "GenSigSendType" SG_ 2466251316 EHPS_5AxTireAg_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251316 EHPS_perFrntOillvr 255;
+BA_ "GenSigStartValue" SG_ 2466251316 EHPS_perFrntOillvr 100;
+BA_ "GenSigSendType" SG_ 2466251316 EHPS_perFrntOillvr 0;
+BA_ "GenSigInvalidValue" SG_ 2466251316 EHPS_AliveCntr0234 0;
+BA_ "GenSigStartValue" SG_ 2466251316 EHPS_AliveCntr0234 0;
+BA_ "GenSigSendType" SG_ 2466251316 EHPS_AliveCntr0234 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_6AxTireAg_st 65535;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_6AxTireAg_st 900;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_6AxTireAg_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_3AxSteerP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_3AxSteerP_st 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_3AxSteerP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_4AxSteerP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_4AxSteerP_st 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_4AxSteerP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_5AxSteerP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_5AxSteerP_st 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_5AxSteerP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_6AxSteerP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_6AxSteerP_st 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_6AxSteerP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_RAxSteerOvfP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_RAxSteerOvfP_st 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_RAxSteerOvfP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251572 EHPS_AliveCntr0334 0;
+BA_ "GenSigStartValue" SG_ 2466251572 EHPS_AliveCntr0334 0;
+BA_ "GenSigSendType" SG_ 2466251572 EHPS_AliveCntr0334 0;
+BA_ "GenSigInvalidValue" SG_ 2466251828 EHPS_perRearOillvr 255;
+BA_ "GenSigStartValue" SG_ 2466251828 EHPS_perRearOillvr 100;
+BA_ "GenSigSendType" SG_ 2466251828 EHPS_perRearOillvr 0;
+BA_ "GenSigInvalidValue" SG_ 2466251828 EHPS_FAxOilTemp_st 255;
+BA_ "GenSigStartValue" SG_ 2466251828 EHPS_FAxOilTemp_st 40;
+BA_ "GenSigSendType" SG_ 2466251828 EHPS_FAxOilTemp_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251828 EHPS_RAxOilTemp_st 255;
+BA_ "GenSigStartValue" SG_ 2466251828 EHPS_RAxOilTemp_st 40;
+BA_ "GenSigSendType" SG_ 2466251828 EHPS_RAxOilTemp_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251828 EHPS_FAxSteerP_st 255;
+BA_ "GenSigStartValue" SG_ 2466251828 EHPS_FAxSteerP_st 0;
+BA_ "GenSigSendType" SG_ 2466251828 EHPS_FAxSteerP_st 0;
+BA_ "GenSigInvalidValue" SG_ 2466251828 EHPS_AliveCntr0434 0;
+BA_ "GenSigStartValue" SG_ 2466251828 EHPS_AliveCntr0434 0;
+BA_ "GenSigSendType" SG_ 2466251828 EHPS_AliveCntr0434 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_Vcu 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_Vcu 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_3AxTireAg_A 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_3AxTireAg_A 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_3AxTireAg_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_3AxTireAg_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_4AxTireAg_A 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_4AxTireAg_A 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_4AxTireAg_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_4AxTireAg_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_5AxTireAg_A 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_5AxTireAg_A 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_5AxTireAg_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_5AxTireAg_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_6AxTireAg_A 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_6AxTireAg_A 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_6AxTireAg_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_6AxTireAg_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_RAxSteerOvfP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_RAxSteerOvfP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_RAxSteerEgy 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_RAxSteerEgy 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_3AxSteerP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_3AxSteerP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_4AxSteerP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_4AxSteerP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_5AxSteerP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_5AxSteerP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_6AxSteerP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_6AxSteerP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_FAxSteerP 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_FAxSteerP 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_L 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_L 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_L 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerEgy_L 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_3AxTireAg 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_3AxTireAg 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_4AxTireAg 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_4AxTireAg 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_5AxTireAg 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_5AxTireAg 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_6AxTireAg 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_6AxTireAg 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_1H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_1H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_2H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_2H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxSteerPFil_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxOilLvl 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxOilLvl 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_1H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_1H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_2H 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_2H 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_B 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_FAxSteerPFil_B 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_FAxOilLvl 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_FAxOilLvl 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_FAxOilTemp 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_FAxOilTemp 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_FAxOilTemp 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_FAxOilTemp 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_RAxOilTemp 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_RAxOilTemp 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_WarnCode_RAxOilTemp 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_WarnCode_RAxOilTemp 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_3AxStrai 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_3AxStrai 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_4AxStrai 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_4AxStrai 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_5AxStrai 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_5AxStrai 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_6AxStrai 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_6AxStrai 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_3AxSteerTiOut 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_3AxSteerTiOut 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_4AxSteerTiOut 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_4AxSteerTiOut 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_5AxSteerTiOut 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_5AxSteerTiOut 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_FltCode_6AxSteerTiOut 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_FltCode_6AxSteerTiOut 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_3AxVlvElec 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_3AxVlvElec 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_4AxVlvElec 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_4AxVlvElec 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_5AxVlvElec 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_5AxVlvElec 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_6AxVlvElec 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_6AxVlvElec 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_OvfVlvElec 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_OvfVlvElec 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_Lock_WrkMod 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_Lock_WrkMod 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_ErrCode_VehSpeed 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_ErrCode_VehSpeed 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_VehOverSpeedWarn 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_VehOverSpeedWarn 0;
+BA_ "GenSigInvalidValue" SG_ 2466252084 EHPS_bFrntMot1BUSOFF 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_bFrntMot1BUSOFF 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_bFrntMot1BUSOFF 0;
+BA_ "GenSigInvalidValue" SG_ 2466252084 EHPS_bFrntMot2BUSOFF 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_bFrntMot2BUSOFF 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_bFrntMot2BUSOFF 0;
+BA_ "GenSigInvalidValue" SG_ 2466252084 EHPS_bECUBUSOFF 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_bECUBUSOFF 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_bECUBUSOFF 0;
+BA_ "GenSigInvalidValue" SG_ 2466252084 EHPS_bRearFanErr 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_bRearFanErr 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_bRearFanErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252084 EHPS_AliveCntr0534 0;
+BA_ "GenSigStartValue" SG_ 2466252084 EHPS_AliveCntr0534 0;
+BA_ "GenSigSendType" SG_ 2466252084 EHPS_AliveCntr0534 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTrqSnsrPwrErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTrqSnsrPwrErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTrqSnsrPwrErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTrqT2OverRangeErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTrqT2OverRangeErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTrqT2OverRangeErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTrqT1OverRangeErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTrqT1OverRangeErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTrqT1OverRangeErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTrqMismatchErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTrqMismatchErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTrqMismatchErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bMotSnsrPositionErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bMotSnsrPositionErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bMotSnsrPositionErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bECUNoAngelCalErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bECUNoAngelCalErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bECUNoAngelCalErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bAngelAOverRangeErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bAngelAOverRangeErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bAngelAOverRangeErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bAngelROverRangeErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bAngelROverRangeErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bAngelROverRangeErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bAngelMismatchErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bAngelMismatchErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bAngelMismatchErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bMotCurntErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bMotCurntErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bMotCurntErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bMotDriverErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bMotDriverErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bMotDriverErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bMotCurntMismatchErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bMotCurntMismatchErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bMotCurntMismatchErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bRlyInvaldErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bRlyInvaldErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bRlyInvaldErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bCurntSnsrErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bCurntSnsrErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bCurntSnsrErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTempSnsrLoErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTempSnsrLoErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTempSnsrLoErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTempSnsrHiErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTempSnsrHiErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTempSnsrHiErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bOverSpdErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bOverSpdErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bOverSpdErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bOverVoltgErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bOverVoltgErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bOverVoltgErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bLowVoltgErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bLowVoltgErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bLowVoltgErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bBusoffClosedErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bBusoffClosedErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bBusoffClosedErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bIPDMissErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bIPDMissErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bIPDMissErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bTBDErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bTBDErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bTBDErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_bIDSCmdMissErr 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_bIDSCmdMissErr 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_bIDSCmdMissErr 0;
+BA_ "GenSigInvalidValue" SG_ 2466252340 EHPS_AliveCntr0634 0;
+BA_ "GenSigStartValue" SG_ 2466252340 EHPS_AliveCntr0634 0;
+BA_ "GenSigSendType" SG_ 2466252340 EHPS_AliveCntr0634 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_SteerWhlAngleReq 65535;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_SteerWhlAngleReq 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_SteerWhlAngleReq 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_SteerWhlAngleSpdReq 255;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_SteerWhlAngleSpdReq 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_SteerWhlAngleSpdReq 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_noDrvModReq 15;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_noDrvModReq 4;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_noDrvModReq 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_EHPS_noWorkModReq 15;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_EHPS_noWorkModReq 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_EHPS_noWorkModReq 0;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_EHPS_bRdySts 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_EHPS_bRdySts 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_vABSVehSpd 2047;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_vABSVehSpd 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_vABSVehSpd 0;
+BA_ "GenSigInvalidValue" SG_ 2566852903 VCU_vMotVehSpd 2047;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_vMotVehSpd 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_vMotVehSpd 0;
+BA_ "GenSigStartValue" SG_ 2566852903 VCU_AliveCntr1127 0;
+BA_ "GenSigSendType" SG_ 2566852903 VCU_AliveCntr1127 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bDrvEmgryStop 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bDrvEmgryStop 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bFightActv 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bFightActv 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bSignalSwt1 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bSignalSwt1 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bSignalSwt2 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bSignalSwt2 0;
+BA_ "GenSigInvalidValue" SG_ 2566848808 TVM_noWorkModReq 15;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_noWorkModReq 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_noWorkModReq 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bTCSSwt 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bTCSSwt 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_noVehDir 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_noVehDir 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_perMotTrqReq 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_perMotTrqReq 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_perActuMotTrq 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_perActuMotTrq 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bMCU1AliveCntrErr 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bMCU1AliveCntrErr 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bMCU2AliveCntrErr 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bMCU2AliveCntrErr 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bMCU3AliveCntrErr 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bMCU3AliveCntrErr 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bMCU4AliveCntrErr 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bMCU4AliveCntrErr 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_bMCU5AliveCntrErr 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_bMCU5AliveCntrErr 0;
+BA_ "GenSigStartValue" SG_ 2566848808 TVM_AliveCntr0128 0;
+BA_ "GenSigSendType" SG_ 2566848808 TVM_AliveCntr0128 0;
+BA_ "GenSigStartValue" SG_ 2566074913 VCU_FightMod_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2566074913 VCU_FightMod_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_28DCEna_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_28DCEna_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_28DCQmod_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_28DCQmod_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_28DCQv_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_28DCQv_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_28DCQi_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_28DCQi_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_28DCQp_Cmd1 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_28DCQp_Cmd1 0;
+BA_ "GenSigStartValue" SG_ 2364616993 VCU_RollgCntr31211 0;
+BA_ "GenSigSendType" SG_ 2364616993 VCU_RollgCntr31211 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_Flt_St 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_Flt_St 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_Ena_St 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_Ena_St 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_VltgIn 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_VltgIn 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_VltgOut 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_VltgOut 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_CurrOut 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_CurrOut 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_Temp 50;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_Temp 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_FltCod 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_FltCod 0;
+BA_ "GenSigStartValue" SG_ 2566324609 DCDC1_RollgCntr0181 0;
+BA_ "GenSigSendType" SG_ 2566324609 DCDC1_RollgCntr0181 0;
+BA_ "GenSigInvalidValue" SG_ 2566850855 VCU_kwMaxDischrgPwr 65535;
+BA_ "GenSigStartValue" SG_ 2566850855 VCU_kwMaxDischrgPwr 0;
+BA_ "GenSigSendType" SG_ 2566850855 VCU_kwMaxDischrgPwr 0;
+BA_ "GenSigInvalidValue" SG_ 2566850855 VCU_kwMaxChrgPwr 65535;
+BA_ "GenSigStartValue" SG_ 2566850855 VCU_kwMaxChrgPwr 0;
+BA_ "GenSigSendType" SG_ 2566850855 VCU_kwMaxChrgPwr 0;
+BA_ "GenSigStartValue" SG_ 2566850855 VCU_bFightingModReq 0;
+BA_ "GenSigSendType" SG_ 2566850855 VCU_bFightingModReq 0;
+BA_ "GenSigInvalidValue" SG_ 2566850855 VCU_RollingCntr0927 0;
+BA_ "GenSigStartValue" SG_ 2566850855 VCU_RollingCntr0927 0;
+BA_ "GenSigSendType" SG_ 2566850855 VCU_RollingCntr0927 0;
+VAL_ 2298425750 IDS_bIMUFlt 1 "故障" 0 "正常";
+VAL_ 2566862998 IDS_noADSFltLvl 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "三级故障（VCU强制退出自动驾驶模式）" 2 "二级故障（IDS内部限速限扭）" 1 "一级故障" 0 "无故障";
+VAL_ 2566862998 IDS_noDrvModReq 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "预留" 2 "预留" 1 "远程遥控驾驶模式请求" 0 "无请求";
+VAL_ 2566862998 IDS_bEleSilenceSts 1 "电磁静默开启" 0 "电磁静默关闭";
+VAL_ 2566862998 IDS_bHeadlightReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bLCornrgLampReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bRCornrgLampReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bHighBeamReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bLowBeamReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bFrntFogLampReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bReFogLampReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_bWarnLampReq 1 "开灯" 0 "关闭";
+VAL_ 2566862998 IDS_noGearPosnReq 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "预留" 2 "D" 1 "R" 0 "N";
+VAL_ 2566862998 IDS_bParkingBrkReq 1 "驻车请求" 0 "不驻车";
+VAL_ 2566862998 IDS_noWorkModReq 255 "无效" 254 "无效" 253 "无效" 252 "无效" 251 "无效" 250 "无效" 249 "无效" 248 "无效" 247 "无效" 246 "无效" 245 "无效" 244 "无效" 243 "无效" 242 "无效" 241 "无效" 240 "无效" 239 "无效" 238 "无效" 237 "无效" 236 "无效" 235 "无效" 234 "无效" 233 "无效" 232 "无效" 231 "无效" 230 "无效" 229 "无效" 228 "无效" 227 "无效" 226 "无效" 225 "无效" 224 "无效" 223 "无效" 222 "无效" 221 "无效" 220 "无效" 219 "无效" 218 "无效" 217 "无效" 216 "无效" 215 "无效" 214 "无效" 213 "无效" 212 "无效" 211 "无效" 210 "无效" 209 "无效" 208 "无效" 207 "无效" 206 "无效" 205 "无效" 204 "无效" 203 "无效" 202 "无效" 201 "无效" 200 "无效" 199 "无效" 198 "无效" 197 "无效" 196 "无效" 195 "无效" 194 "无效" 193 "无效" 192 "无效" 191 "无效" 190 "无效" 189 "无效" 188 "无效" 187 "无效" 186 "无效" 185 "无效" 184 "无效" 183 "无效" 182 "无效" 181 "无效" 180 "无效" 179 "无效" 178 "无效" 177 "无效" 176 "无效" 175 "无效" 174 "无效" 173 "无效" 172 "无效" 171 "无效" 170 "无效" 169 "无效" 168 "无效" 167 "无效" 166 "无效" 165 "无效" 164 "无效" 163 "无效" 162 "无效" 161 "无效" 160 "无效" 159 "无效" 158 "无效" 157 "无效" 156 "无效" 155 "无效" 154 "无效" 153 "无效" 152 "无效" 151 "无效" 150 "无效" 149 "无效" 148 "无效" 147 "无效" 146 "无效" 145 "无效" 144 "无效" 143 "无效" 142 "无效" 141 "无效" 140 "无效" 139 "无效" 138 "无效" 137 "无效" 136 "无效" 135 "无效" 134 "无效" 133 "无效" 132 "无效" 131 "无效" 130 "无效" 129 "无效" 128 "无效" 127 "无效" 126 "无效" 125 "无效" 124 "无效" 123 "无效" 122 "无效" 121 "无效" 120 "无效" 119 "无效" 118 "无效" 117 "无效" 116 "无效" 115 "无效" 114 "无效" 113 "无效" 112 "无效" 111 "无效" 110 "无效" 109 "无效" 108 "无效" 107 "无效" 106 "无效" 105 "无效" 104 "无效" 103 "无效" 102 "无效" 101 "无效" 100 "无效" 99 "无效" 98 "无效" 97 "无效" 96 "无效" 95 "无效" 94 "无效" 93 "无效" 92 "无效" 91 "无效" 90 "无效" 89 "无效" 88 "无效" 87 "无效" 86 "无效" 85 "无效" 84 "无效" 83 "无效" 82 "无效" 81 "无效" 80 "无效" 79 "无效" 78 "无效" 77 "无效" 76 "无效" 75 "无效" 74 "无效" 73 "无效" 72 "无效" 71 "无效" 70 "无效" 69 "无效" 68 "无效" 67 "无效" 66 "无效" 65 "无效" 64 "无效" 63 "无效" 62 "无效" 61 "无效" 60 "无效" 59 "无效" 58 "无效" 57 "无效" 56 "无效" 55 "无效" 54 "无效" 53 "无效" 52 "无效" 51 "无效" 50 "无效" 49 "无效" 48 "无效" 47 "无效" 46 "无效" 45 "无效" 44 "无效" 43 "无效" 42 "无效" 41 "无效" 40 "无效" 39 "无效" 38 "无效" 37 "无效" 36 "无效" 35 "无效" 34 "无效" 33 "无效" 32 "无效" 31 "无效" 30 "无效" 29 "无效" 28 "无效" 27 "无效" 26 "无效" 25 "无效" 24 "无效" 23 "无效" 22 "无效" 21 "无效" 20 "无效" 19 "无效" 18 "无效" 17 "无效" 16 "无效" 15 "无效" 14 "无效" 13 "无效" 12 "无效" 11 "无效" 10 "Work Shop Mode(维修模式，只能EPB开关控制)" 9 "Brake Pressure Control Mode（外部请求压力控制，二代EPB）" 8 "无效" 7 "无效" 6 "无效" 5 "无效" 4 "无效" 3 "无效" 2 "无效" 1 "无效" 0 "Normal Mode  (正常模式，人操作自动控制)";
+VAL_ 2566862998 IDS_noKeyStart 3 "预留" 2 "预留" 1 "点火指令" 0 "熄火指令";
+VAL_ 2566862998 IDS_noACCSts 3 "ACC功能非激活" 2 "ACC功能激活" 1 "ACC功能开启" 0 "ACC功能关闭";
+VAL_ 2566862998 IDS_noLKASts 3 "LKA功能非激活" 2 "LKA功能激活" 1 "LKA功能开启" 0 "LKA功能关闭";
+VAL_ 2566862998 IDS_noAEBSts 3 "预留" 2 "预留" 1 "AEB功能开启" 0 "AEB功能关闭";
+VAL_ 2566862998 IDS_noSignal1 3 "预留" 2 "预留" 1 "AEB功能开启" 0 "AEB功能关闭";
+VAL_ 2365553703 VCU_noVehFltLvl 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "三级故障（VCU强制退出自动驾驶模式）" 2 "二级故障（IDS内部限速限扭）" 1 "一级故障" 0 "无故障";
+VAL_ 2365553703 VCU_noActuDrvMod 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "远程驾驶（ IDS指令）" 2 "人工反向驾驶模式（开关按钮）" 1 "自动驾驶模式（开关按钮）" 0 "人工驾驶模式（开关按钮）";
+VAL_ 2365553703 VCU_bEleSlienceActv 1 "电磁静默开启" 0 "电磁静默关闭";
+VAL_ 2365553703 VCU_bTemStopActv 1 "暂时停靠开启" 0 "暂时停靠关闭";
+VAL_ 2365553703 VCU_bACCActv 1 "ON" 0 "OFF";
+VAL_ 2365553703 VCU_bAEBActv 1 "ON" 0 "OFF";
+VAL_ 2365553703 VCU_bLKAActv 1 "ON" 0 "OFF";
+VAL_ 2365553703 VCU_bAssidDrvMod 1 "ON" 0 "OFF";
+VAL_ 2365553703 VCU_noAutoMaxSpd 3 "预留" 2 "down" 1 "up" 0 "不变";
+VAL_ 2365553703 VCU_noActuGearPosn 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "预留" 2 "D" 1 "R" 0 "N";
+VAL_ 2365553703 VCU_IDS_bRdySts 1 "高压上电完成" 0 "高压上电未完成";
+VAL_ 2365553703 VCU_noParkingBrkSts 3 "Error" 2 "Disable" 1 "Enable" 0 "Proportional braking （0-100%的线性驻车状态）";
+VAL_ 2566850599 VCU_noHeadlightSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noLCornrgLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noRCornrgLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noHighBeamSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noLowBeamSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noFrntFogLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noReFogLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noWarnLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noBrkLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noEPBLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noEPBErrLampSts 3 "无效" 2 "错误" 1 "工作" 0 "关闭";
+VAL_ 2566850599 VCU_noBrkWorkSts 15 "不支持" 14 "预留" 13 "预留" 12 "预留" 11 "预留" 10 "预留" 9 "预留" 8 "预留" 7 "预留" 6 "预留" 5 "预留" 4 "预留" 3 "加速控制的最大模式被执行（脚刹和XBR均执行）" 2 "XBR加速控制的附加模式被执行（执行了XBR的制动请求）" 1 "执行司机的脚刹，没有外部制动请求" 0 "没有执行刹车请求";
+VAL_ 2566850599 VCU_noParkWorkSts 15 "无效" 14 "无效" 13 "无效" 12 "无效" 11 "无效" 10 "无效" 9 "无效" 8 "无效" 7 "无效" 6 "无效" 5 "无效" 4 "无效" 3 "错误" 2 "预留" 1 "开启" 0 "关闭";
+VAL_ 2550260945 VCU_noRningReq 3 "未定义" 2 "停止" 1 "运行" 0 "未定义";
+VAL_ 2550256100 PCU_noRningSts 3 "无效" 2 "故障" 1 "运行" 0 "停机";
+VAL_ 2550321636 PCU_UdvAlarmSts 1 "输入欠压" 0 "正常";
+VAL_ 2550321636 PCU_OdvAlarmSts 1 "输入过压" 0 "正常";
+VAL_ 2550321636 PCU_DftphAlarmSts 1 "缺相" 0 "正常";
+VAL_ 2550321636 PCU_OcetAlarmSts 1 "过流" 0 "正常";
+VAL_ 2550321636 PCU_OvheatAlarmSts 1 "过热" 0 "正常";
+VAL_ 2550321636 PCU_ComutoutAlarmSts 1 "通讯超时" 0 "正常";
+VAL_ 2550321636 PCU_OspdAlarmSts 1 "超速" 0 "正常";
+VAL_ 2550321636 PCU_ModprotAlarmSts 1 "模块保护" 0 "正常";
+VAL_ 2565865739 EBS_ASREngCtrlActv 3 "无效值" 2 "保留" 1 "发动机控制运行状态" 0 "发动机控制非运行状态";
+VAL_ 2565865739 EBS_noASRBrkCtrlActv 3 "无效值" 2 "保留" 1 "运行状态" 0 "非运行状态";
+VAL_ 2565865739 EBS_noABSActv 3 "无效值" 2 "保留" 1 "运行状态(ABS调节压力)" 0 "非运行状态(非ABS调节压力)";
+VAL_ 2565865739 EBS_noBrkSwt 3 "无效值" 2 "保留" 1 "EBS制动开关打开" 0 "EBS制动开关关闭";
+VAL_ 2565865739 EBS_noOffRoadSwt 3 "无效值" 2 "保留" 1 "ASR越野运行开关打开" 0 "ASR越野运行开关关闭";
+VAL_ 2565865739 EBS_noHillHoldSwt 3 "无效值" 2 "错误" 1 "坡道保持开关打开" 0 "坡道保持开关关闭";
+VAL_ 2565865739 EBS_noABSFullyWork 3 "无效值" 2 "保留" 1 "完全工作状态" 0 "非完全工作状态";
+VAL_ 2565865739 EBS_noRedWarnLamp 3 "无效值" 2 "保留" 1 "开" 0 "关";
+VAL_ 2565865739 EBS_noYellowWarnLamp 3 "无效值" 2 "保留" 1 "故障状态" 0 "无故障状态";
+VAL_ 2565865739 EBS_noASRLamp 3 "无效值" 2 "保留" 1 "开" 0 "关";
+VAL_ 2566834699 EBS_noProtectLampSts 3 "无效值" 2 "保留" 1 "开" 0 "关";
+VAL_ 2566834699 EBS_noAmberWarnLampSts 3 "无效值" 2 "保留" 1 "故障状态" 0 "无故障状态";
+VAL_ 2566834699 EBS_noRedStopLampSts 3 "无效值" 2 "保留" 1 "开" 0 "关";
+VAL_ 2566834699 EBS_noFltLampSts 3 "无效值" 2 "保留" 1 "开" 0 "关";
+VAL_ 2348810251 EBS_noXBRCtrlMod 3 "转速/扭矩限制控制" 2 "扭矩控制" 1 "转速控制" 0 "不使能";
+VAL_ 2348810251 EBS_noSpdCtrlPri 3 "始终设置。此信息对于速度控制很重要，而不是              转矩控制。" 2 "不支持" 1 "不支持" 0 "不支持";
+VAL_ 2348810251 EBS_noModCtrlPrio 3 "Low priority" 2 "Medium priority, ASR engine control is active." 1 "not supported" 0 "not supported";
+VAL_ 2566767627 EBS_noHaltBrkModSts 7 "Not available" 6 "Halt brake not functional" 5 "Reserved" 4 "Reserved" 3 "Reserved" 2 "Active, but not functioning properly. (This mode may be used to warn the driver)" 1 "Active" 0 "Inactive";
+VAL_ 2566767627 EBS_HillHolderModSts 7 "Not available" 6 "Hill holder not functional" 5 "Reserved" 4 "Reserved" 3 "Reserved" 2 "Active, but will change to inactive in a short time. (This mode may be used to warn the driver)" 1 "Active" 0 "Inactive";
+VAL_ 2566767627 EBS_noXBRBrakeActv 3 "Not available" 2 "Reserved" 1 "Foundation brakes in use正在使用常规制动" 0 "Foundation brakes not in use没有使用常规制动";
+VAL_ 2566767627 EBS_noXBRSysSts 3 "不支持" 2 "不接受外部请求" 1 "仅接受XBR最高优先级00" 0 "接受任何外部制动请求";
+VAL_ 2566767627 EBS_noXBRCtrlModActv 15 "Not available 不支持" 14 "Reserved for SAE assignment 预留" 13 "Reserved for SAE assignment 预留" 12 "Reserved for SAE assignment 预留" 11 "Reserved for SAE assignment 预留" 10 "Reserved for SAE assignment 预留" 9 "Reserved for SAE assignment 预留" 8 "Reserved for SAE assignment 预留" 7 "Reserved for SAE assignment 预留" 6 "Reserved for SAE assignment 预留" 5 "Reserved for SAE assignment 预留" 4 "Reserved for SAE assignment 预留" 3 "Maximum mode of XBR acceleration control being executed  XBR加速控制的最大模式被执行" 2 "Addition mode of XBR acceleration control being executed  XBR加速控制的附加模式被执行" 1 "Driver's brake demand being executed, no external brake demand执行司机的脚刹，没有外部制动请求" 0 "No brake demand being executed (default mode)没有执行刹车请求";
+VAL_ 2566767627 EBS_noParkingBrkActrFullyActv 3 "Not available" 2 "Error" 1 "Parking Brake Actuator fully activated 停车制动执行机构完全启动" 0 "Parking Brake Actuator not fully activated 停车制动执行机构未完全启动";
+VAL_ 2566767627 EBS_noEmgyBrkActv 3 "not available" 2 "reserved" 1 "active" 0 "inactive";
+VAL_ 2566827568 VCU_noAirCompressorSt 3 "不可用" 2 "误差指示器" 1 "压缩机激活" 0 "压缩机未激活";
+VAL_ 2566844672 VCU_noParkingBrkReq 3 "无效值" 2 "保留" 1 "手刹拉起" 0 "手刹未拉起";
+VAL_ 2566873111 VCU_noASRESCReq 3 "无效值" 2 "错误" 1 "请求ASR/ESC功能关闭" 0 "请求ASR/ESC功能打开";
+VAL_ 2566873111 VCU_noHSAReq 3 "无效值" 2 "错误" 1 "请求HSA功能打开" 0 "请求HSA功能关闭";
+VAL_ 2349075242 VCU_noXBREBIModReq 3 "未定义" 2 "制动集成允许" 1 "仅辅助制动" 0 "禁止辅助制动";
+VAL_ 2349075242 VCU_noXBRPrioReq 3 "低（如:ACC）" 2 "中" 1 "高" 0 "最高（紧急，如AEBS）";
+VAL_ 2349075242 VCU_noXBRCtrlModReq 3 "未定义" 2 "减速度大允许（允许XBR＞司机踏板）" 1 "减速度控制允许" 0 "禁用控制命令";
+VAL_ 2364539395 VCU_noTrsmSftInProc 3 "不可用" 2 "错误" 1 "换挡进行中" 0 "未进行换挡";
+VAL_ 2566808815 VCU_noGearR 3 "Not Available" 2 "Error" 1 "On" 0 "Off";
+VAL_ 2566808815 VCU_noGearN 3 "Not Available" 2 "Error" 1 "On" 0 "Off";
+VAL_ 2566808815 VCU_noGearD 3 "Not Available" 2 "Error" 1 "On" 0 "Off";
+VAL_ 2566808815 VCU_noVehType 3 "Traditional type" 2 "Traditional type" 1 "New energy type" 0 "Traditional type";
+VAL_ 2566808815 VCU_bBrkPdlEPB 3 "Not Available" 2 "Error" 1 "Brake Pedal Depressed" 0 "Brake Pedal Released";
+VAL_ 2566808815 VCU_bRdySts 3 "Not Available" 2 "Error" 1 "Ready" 0 "NotReady";
+VAL_ 2565498095 VCU_EPBC1_noWorkModReq 255 "Not Available" 254 "Not Available" 253 "Not Available" 252 "Not Available" 251 "Not Available" 250 "Not Available" 249 "Not Available" 248 "Not Available" 247 "Not Available" 246 "Not Available" 245 "Not Available" 244 "Not Available" 243 "Not Available" 242 "Not Available" 241 "Not Available" 240 "Not Available" 239 "Not Available" 238 "Not Available" 237 "Not Available" 236 "Not Available" 235 "Not Available" 234 "Not Available" 233 "Not Available" 232 "Not Available" 231 "Not Available" 230 "Not Available" 229 "Not Available" 228 "Not Available" 227 "Not Available" 226 "Not Available" 225 "Not Available" 224 "Not Available" 223 "Not Available" 222 "Not Available" 221 "Not Available" 220 "Not Available" 219 "Not Available" 218 "Not Available" 217 "Not Available" 216 "Not Available" 215 "Not Available" 214 "Not Available" 213 "Not Available" 212 "Not Available" 211 "Not Available" 210 "Not Available" 209 "Not Available" 208 "Not Available" 207 "Not Available" 206 "Not Available" 205 "Not Available" 204 "Not Available" 203 "Not Available" 202 "Not Available" 201 "Not Available" 200 "Not Available" 199 "Not Available" 198 "Not Available" 197 "Not Available" 196 "Not Available" 195 "Not Available" 194 "Not Available" 193 "Not Available" 192 "Not Available" 191 "Not Available" 190 "Not Available" 189 "Not Available" 188 "Not Available" 187 "Not Available" 186 "Not Available" 185 "Not Available" 184 "Not Available" 183 "Not Available" 182 "Not Available" 181 "Not Available" 180 "Not Available" 179 "Not Available" 178 "Not Available" 177 "Not Available" 176 "Not Available" 175 "Not Available" 174 "Not Available" 173 "Not Available" 172 "Not Available" 171 "Not Available" 170 "Not Available" 169 "Not Available" 168 "Not Available" 167 "Not Available" 166 "Not Available" 165 "Not Available" 164 "Not Available" 163 "Not Available" 162 "Not Available" 161 "Not Available" 160 "Not Available" 159 "Not Available" 158 "Not Available" 157 "Not Available" 156 "Not Available" 155 "Not Available" 154 "Not Available" 153 "Not Available" 152 "Not Available" 151 "Not Available" 150 "Not Available" 149 "Not Available" 148 "Not Available" 147 "Not Available" 146 "Not Available" 145 "Not Available" 144 "Not Available" 143 "Not Available" 142 "Not Available" 141 "Not Available" 140 "Not Available" 139 "Not Available" 138 "Not Available" 137 "Not Available" 136 "Not Available" 135 "Not Available" 134 "Not Available" 133 "Not Available" 132 "Not Available" 131 "Not Available" 130 "Not Available" 129 "Not Available" 128 "Not Available" 127 "Not Available" 126 "Not Available" 125 "Not Available" 124 "Not Available" 123 "Not Available" 122 "Not Available" 121 "Not Available" 120 "Not Available" 119 "Not Available" 118 "Not Available" 117 "Not Available" 116 "Not Available" 115 "Not Available" 114 "Not Available" 113 "Not Available" 112 "Not Available" 111 "Not Available" 110 "Not Available" 109 "Not Available" 108 "Not Available" 107 "Not Available" 106 "Not Available" 105 "Not Available" 104 "Not Available" 103 "Not Available" 102 "Not Available" 101 "Not Available" 100 "Not Available" 99 "Not Available" 98 "Not Available" 97 "Not Available" 96 "Not Available" 95 "Not Available" 94 "Not Available" 93 "Not Available" 92 "Not Available" 91 "Not Available" 90 "Not Available" 89 "Not Available" 88 "Not Available" 87 "Not Available" 86 "Not Available" 85 "Not Available" 84 "Not Available" 83 "Not Available" 82 "Not Available" 81 "Not Available" 80 "Not Available" 79 "Not Available" 78 "Not Available" 77 "Not Available" 76 "Not Available" 75 "Not Available" 74 "Not Available" 73 "Not Available" 72 "Not Available" 71 "Not Available" 70 "Not Available" 69 "Not Available" 68 "Not Available" 67 "Not Available" 66 "Not Available" 65 "Not Available" 64 "Not Available" 63 "Not Available" 62 "Not Available" 61 "Not Available" 60 "Not Available" 59 "Not Available" 58 "Not Available" 57 "Not Available" 56 "Not Available" 55 "Not Available" 54 "Not Available" 53 "Not Available" 52 "Not Available" 51 "Not Available" 50 "Not Available" 49 "Not Available" 48 "Not Available" 47 "Not Available" 46 "Not Available" 45 "Not Available" 44 "Not Available" 43 "Not Available" 42 "Not Available" 41 "Not Available" 40 "Not Available" 39 "Not Available" 38 "Not Available" 37 "Not Available" 36 "Not Available" 35 "Not Available" 34 "Not Available" 33 "Not Available" 32 "Not Available" 31 "Not Available" 30 "Not Available" 29 "Not Available" 28 "Not Available" 27 "Not Available" 26 "Not Available" 25 "Not Available" 24 "Not Available" 23 "Not Available" 22 "Not Available" 21 "Not Available" 20 "Not Available" 19 "Not Available" 18 "Not Available" 17 "Not Available" 16 "Not Available" 15 "Not Available" 14 "Not Available" 13 "Not Available" 12 "Not Available" 11 "Not Available" 10 "Work Shop Mode(维修模式，只能EPB开关控制)" 9 "Brake Pressure Control Mode（外部请求压力控制，二代EPB）" 8 "无效" 7 "无效" 6 "无效" 5 "无效" 4 "无效" 3 "无效" 2 "无效" 1 "无效" 0 "Normal Mode  (正常模式，人操作自动控制)";
+VAL_ 2566787684 EPB_ParkBrkSts 3 "Error" 2 "Disable" 1 "Enable" 0 "Proportional braking （0-100%的线性驻车状态）";
+VAL_ 2566787684 EPB_AHBrkSts 3 "Error" 2 "Inactive" 1 "Active" 0 "Not Available";
+VAL_ 2566787684 EPB_AHParkActvSts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_WorkMod 3 "Work Shop Mode" 2 "Brake Pressure Control Mode" 1 "External Brake Control Mode" 0 "Normal Mode";
+VAL_ 2566787684 EPB_ChildLckActvSts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_LoPrsrRelsPrkLimSts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_RespPrioSts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_IdepedtBrkOlySts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_ParkBrkFrceTestSts 3 "Error" 2 "Off" 1 "On" 0 "Not Available";
+VAL_ 2566787684 EPB_DrvHillSts 3 "Error" 2 "DownHill" 1 "UpHill" 0 "Level road";
+VAL_ 2566787684 EPB_BrkSwtSts 3 "Not available" 2 "Error" 1 "EPBBrakeSet" 0 "EPBBrakeNotSet";
+VAL_ 2566787684 EPB_ParkBtnSwtSts 3 "Not available" 2 "Error" 1 "Switch active" 0 "Switch passive";
+VAL_ 2566787684 EPB_RelsBtnSwtSts 3 "Not available" 2 "Error" 1 "Switch active" 0 "Switch passive";
+VAL_ 2566787684 EPB_AHBtnSwtSts 3 "Not available" 2 "Error" 1 "Switch active" 0 "Switch passive";
+VAL_ 2566787684 EPB_IdepedtBrkBtnSwtSts 3 "Not available" 2 "Error" 1 "Switch active" 0 "Switch passive";
+VAL_ 2566787684 EPB_ForcTestBtnSwtSts 3 "Not available" 2 "Error" 1 "Switch active" 0 "Switch passive";
+VAL_ 2566787684 EPB_SysSts 3 "Not available" 2 "Driverless Active" 1 "Driverless Ready" 0 "Driverless not Ready";
+VAL_ 2566787684 EPB_WarnSts 3 "Not available" 2 "SystemFault Warning（系统故障无法操作驻车，需要通过机械应急方式操作驻车）" 1 "Function Limit Warning(智能功能受限，熄火没有自动驻车需要手动操作开关驻车)" 0 "No Warning";
+VAL_ 2566834788 EPB_ProtLampSt 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2566834788 EPB_AmberWarnLampSt 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2566834788 EPB_RedStopLampSt 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2566834788 EPB_MalfunIndcrLampSt 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2565865828 EPB_HaltBrkSwtSt 3 "Not available" 2 "Error" 1 "Halt brake switch active" 0 "Halt brake switch passive";
+VAL_ 2466251060 EHPS_AmberWarningLamp 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2466251060 EHPS_RedStopLamp 3 "Invalid" 2 "Reserved" 1 "Lamp On" 0 "Lamp Off";
+VAL_ 2466251060 EHPS_noDrvModSts 15 "reserved" 14 "reserved" 13 "reserved" 12 "reserved" 11 "reserved" 10 "reserved" 9 "reserved" 8 "reserved" 7 "Error Mode错误模式（红色灯）" 6 "Warning Mode警告模式（琥珀灯）" 5 "Manual Intervent Mode 人工介入" 4 "EPS Mode EPS助力（当VCU发送人工介入清除或者助力模式，都会进入该状态）" 3 "Overlay_TQ_Mode 力矩叠加" 2 "reserved 预留" 1 "AutoSteering Mode 自动驾驶" 0 "Standby Mode 待机";
+VAL_ 2466251060 EHPS_noWrkModSts 15 "Invalid" 14 "Reserved" 13 "Reserved" 12 "Reserved" 11 "Reserved" 10 "Reserved" 9 "Reserved" 8 "Reserved" 7 "Reserved" 6 "Reserved" 5 "Reserved" 4 "反向驾驶" 3 "后桥锁止" 2 "蟹行" 1 "无偏摆" 0 "公路行驶模式";
+VAL_ 2466251060 EHPS_noFltLvl 3 "三级故障(完全失效，无助力)" 2 "二级故障(功能降级)" 1 "一级故障(警告级别)" 0 "正常运行";
+VAL_ 2466251060 EHPS_noFrntMot1WorkSts 8 "低压三级故障(严重级别)" 7 "低压二级故障(轻微级别)" 6 "低压一级故障(警告级别)" 5 "高压三级故障(严重级别)" 4 "高压二级故障(轻微级别)" 3 "高压一级故障(警告级别)" 2 "低压运行" 1 "高压运行" 0 "停机";
+VAL_ 2466251060 EHPS_noFrntMot2WorkSts 8 "低压三级故障(严重级别)" 7 "低压二级故障(轻微级别)" 6 "低压一级故障(警告级别)" 5 "高压三级故障(严重级别)" 4 "高压二级故障(轻微级别)" 3 "高压一级故障(警告级别)" 2 "低压运行" 1 "高压运行" 0 "停机";
+VAL_ 2466251060 EHPS_noRearMot1WorkSts 4 "三级故障(严重级别)" 3 "二级故障(轻微级别)" 2 "一级故障(警告级别)" 1 "运行" 0 "停机";
+VAL_ 2466251060 EHPS_noRearMot2WorkSts 4 "三级故障(严重级别)" 3 "二级故障(轻微级别)" 2 "一级故障(警告级别)" 1 "运行" 0 "停机";
+VAL_ 2466252084 EHPS_FltCode_Vcu 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_3AxTireAg_A 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_3AxTireAg_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_4AxTireAg_A 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_4AxTireAg_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_5AxTireAg_A 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_5AxTireAg_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_6AxTireAg_A 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_6AxTireAg_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_RAxSteerOvfP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_RAxSteerEgy 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_3AxSteerP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_4AxSteerP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_5AxSteerP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_6AxSteerP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_FAxSteerP 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerOvfP_L 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerEgy_H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerEgy_L 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_3AxTireAg 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_4AxTireAg 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_5AxTireAg 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_6AxTireAg 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerPFil_1H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerPFil_2H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxSteerPFil_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxOilLvl 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_FAxSteerPFil_1H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_FAxSteerPFil_2H 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_FAxSteerPFil_B 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_FAxOilLvl 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_FAxOilTemp 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_FAxOilTemp 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_RAxOilTemp 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_WarnCode_RAxOilTemp 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_3AxStrai 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_4AxStrai 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_5AxStrai 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_6AxStrai 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_3AxSteerTiOut 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_4AxSteerTiOut 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_5AxSteerTiOut 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_FltCode_6AxSteerTiOut 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_3AxVlvElec 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_4AxVlvElec 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_5AxVlvElec 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_6AxVlvElec 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_OvfVlvElec 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_Lock_WrkMod 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_ErrCode_VehSpeed 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_VehOverSpeedWarn 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_bFrntMot1BUSOFF 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_bFrntMot2BUSOFF 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_bECUBUSOFF 1 "故障" 0 "正常；";
+VAL_ 2466252084 EHPS_bRearFanErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTrqSnsrPwrErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTrqT2OverRangeErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTrqT1OverRangeErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTrqMismatchErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bMotSnsrPositionErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bECUNoAngelCalErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bAngelAOverRangeErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bAngelROverRangeErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bAngelMismatchErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bMotCurntErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bMotDriverErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bMotCurntMismatchErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bRlyInvaldErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bCurntSnsrErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTempSnsrLoErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTempSnsrHiErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bOverSpdErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bOverVoltgErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bLowVoltgErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bBusoffClosedErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bIPDMissErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bTBDErr 1 "故障" 0 "正常；";
+VAL_ 2466252340 EHPS_bIDSCmdMissErr 1 "故障" 0 "正常；";
+VAL_ 2566852903 VCU_noDrvModReq 15 "reserved预留" 14 "reserved预留" 13 "reserved预留" 12 "reserved预留" 11 "reserved预留" 10 "reserved预留" 9 "reserved预留" 8 "reserved预留" 7 "reserved预留" 6 "reserved预留" 5 "Intervent Recover Order人工介入清除（当收到EPS发送人工介入后，需要VCU先发05清除下，才能再次进入自动驾驶）" 4 "EPS Mode  OrderEPS助力模式 （人工模式下发）" 3 "Overlay_TQ_Order力矩叠加模式  （LKA本项目无此功能）" 2 "预留" 1 "AutoSteering Mode Order自动驾驶模式（自动驾驶发）" 0 "预留";
+VAL_ 2566852903 VCU_EHPS_noWorkModReq 15 "无效" 14 "预留" 13 "预留" 12 "预留" 11 "预留" 10 "预留" 9 "预留" 8 "预留" 7 "预留" 6 "预留" 5 "预留" 4 "反向驾驶（6桥变1桥）" 3 "后桥锁止（车速故障，也会锁死后桥）" 2 "蟹行" 1 "无偏摆（6个轮同方向）" 0 "公路行驶模式（正常驾驶，低速全轮转向，超过30锁止）";
+VAL_ 2566852903 VCU_EHPS_bRdySts 1 "Ready" 0 "No Ready";
+VAL_ 2566848808 TVM_bDrvEmgryStop 1 "开关激活" 0 "开关未激活；";
+VAL_ 2566848808 TVM_bFightActv 1 "开关激活" 0 "开关未激活；";
+VAL_ 2566848808 TVM_bSignalSwt1 1 "开关激活" 0 "开关未激活；";
+VAL_ 2566848808 TVM_bSignalSwt2 1 "开关激活" 0 "开关未激活；";
+VAL_ 2566848808 TVM_noWorkModReq 15 "无效" 14 "预留" 13 "预留" 12 "预留" 11 "预留" 10 "预留" 9 "预留" 8 "预留" 7 "预留" 6 "预留" 5 "预留" 4 "反向驾驶（6桥变1桥）" 3 "后桥锁止（车速故障，也会锁死后桥）" 2 "蟹行" 1 "无偏摆（6个轮同方向）" 0 "公路行驶模式（正常驾驶，低速全轮转向，超过30锁止）";
+VAL_ 2566848808 TVM_bTCSSwt 1 "开关激活" 0 "开关未激活；";
+VAL_ 2566848808 TVM_noVehDir 3 "保留" 2 "车辆处于前进方向" 1 "车辆处于倒退方向" 0 "车辆处于静止状态";
+VAL_ 2566848808 TVM_bMCU1AliveCntrErr 1 "故障" 0 "正常";
+VAL_ 2566848808 TVM_bMCU2AliveCntrErr 1 "故障" 0 "正常";
+VAL_ 2566848808 TVM_bMCU3AliveCntrErr 1 "故障" 0 "正常";
+VAL_ 2566848808 TVM_bMCU4AliveCntrErr 1 "故障" 0 "正常";
+VAL_ 2566848808 TVM_bMCU5AliveCntrErr 1 "故障" 0 "正常";
+VAL_ 2566074913 VCU_FightMod_Cmd1 3 "Invalid" 2 "Reserved" 1 "Active" 0 "Inactive";
+VAL_ 2364616993 VCU_28DCEna_Cmd1 3 "无效" 2 "Reserved" 1 "启动" 0 "关闭";
+VAL_ 2364616993 VCU_28DCQmod_Cmd1 3 "Reserved" 2 "恒功率" 1 "恒流" 0 "恒压";
+VAL_ 2566324609 DCDC1_Flt_St 7 "无效" 6 "Reserved" 5 "Reserved" 4 "需要下高压" 3 "致命故障；" 2 "严重故障；" 1 "轻微故障;" 0 "正常;";
+VAL_ 2566324609 DCDC1_Ena_St 3 "无效" 2 "Reserved" 1 "使能中" 0 "非使能";
+VAL_ 2566850855 VCU_bFightingModReq 1 "Active" 0 "Inactive";

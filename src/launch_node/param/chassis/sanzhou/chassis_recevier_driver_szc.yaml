@@ -1,0 +1,11 @@
+#YAML1.2
+  print_log_screen: true
+  save_log_to_file: true
+  can_interface: can0
+  can_interface_1: can1
+  dbc_file_name: 206_SZC_CAN1_Matrix_CAN_V01_20230324.dbc
+  dbc_file_name_1: 206_SZC_CAN2_Matrix_CAN_V01_20230324.dbc
+  # just for motor debug filters: "0x8cf3019e:1FFFFFFF,0x98f10186:1FFFFFFF,0x98f10186:1FFFFFFF,0x98f10187:1FFFFFFF,0x98f10188:1FFFFFFF,0x98f10189:1FFFFFFF,0x8cf3019e:1FFFFFFF"  
+  filters: "0x8cf3019e:1FFFFFFF"  
+  filters_1: "0x98f60221:1FFFFFFF"  
+  timeout_sec: 1.0

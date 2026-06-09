@@ -1,0 +1,7 @@
+#YAML1.2
+  print_log_screen: true
+  save_log_to_file: true
+  can_interface: can0
+  dbc_file_name: 206_SZC_CAN1_Matrix_CAN_V01_20230324.dbc
+  filters: ""  
+  timeout_sec: 1.0

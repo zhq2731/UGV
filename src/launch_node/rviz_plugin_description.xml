@@ -1,0 +1,9 @@
+<library path="lib/liblaunch_node_rviz_plugins">
+  <class name="launch_node/TwoVehicleMotionPanel"
+         type="launch_node::TwoVehicleMotionPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Publishes start and stop motion commands for the two-vehicle distributed simulation.
+    </description>
+  </class>
+</library>

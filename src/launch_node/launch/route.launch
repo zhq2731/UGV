@@ -1,0 +1,9 @@
+<launch>
+
+    <node pkg="rviz" type="rviz" name="rviz"  args="-d $(find launch_node)/param/rviz/route.rviz" required="true" />
+　　<node pkg="route" type="route" name="route" output="screen">
+		<rosparam file="$(find launch_node)/param/route/route.yaml"/>
+　　</node>
+
+</launch>
+

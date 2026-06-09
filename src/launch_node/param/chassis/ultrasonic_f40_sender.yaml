@@ -1,0 +1,4 @@
+#YAML1.2
+  can_interface: can1
+  timeout_sec: 0.5
+  

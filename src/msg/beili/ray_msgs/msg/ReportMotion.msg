@@ -1,0 +1,6 @@
+uint8 enable_status
+uint8 gear_status
+uint8 throttle_status
+uint8 brake_status
+float64 vehicle_speed
+float64 steering_angle

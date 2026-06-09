@@ -1,0 +1,7 @@
+#YAML1.2
+
+  boodrate: 230400
+  serialNode: /dev/ttyUSB0
+
+
+  

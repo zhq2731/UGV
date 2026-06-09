@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ChassisLightHornWiperDialog</class>
+ <widget class="QDialog" name="ChassisLightHornWiperDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>287</width>
+    <height>510</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>LightHornWiperDlg</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
+  </property>
+  <property name="modal">
+   <bool>false</bool>
+  </property>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>272</width>
+     <height>496</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QGroupBox{background-color:rgb(50,50,50);border:1px solid rgb(21,197,212);margin-top:10px;font-family:仿宋;font:bold 13pt;}
+QGroupBox::title{subcontrol-origin:margin;left:0px;margin-left:0px;padding 0 0px;color:rgb(21,197,212)}</string>
+   </property>
+   <property name="title">
+    <string>灯光喇叭雨刮状态</string>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="btnHeadLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>前照灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnLeftLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>左转向</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnRightLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>右转向 </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnHighBeam">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>远光灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnLowBeam">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>近光灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnBrakeLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>刹车指示灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnEmergencyLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>应急灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnFrontFoggyLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>前雾灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnRearFoggyLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>后雾灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnPositionLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>示廓灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnReverseLight">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>倒车灯</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnHorn">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>喇叭</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnWiper">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton{font:11pt;width:120px;color:rgb(50,223,249); background-color:rgb(28,50,69); border-radius:0px; border:1px groove gray;border-style:outset;}
+QPushButton:hover{background-color:rgb(50,223,249);color:rgb(28,50,69);}
+QPushButton:pressed{color:yellow;border-style:inset;}</string>
+          </property>
+          <property name="text">
+           <string>雨刮</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="1">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLineEdit" name="leHeadLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leLeftLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leRightLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leHighLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leLowLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leBrakeLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leEmergencyLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leFrontFoggyLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leRearFoggyLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lePositionLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leReverseLight">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leHorn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leWiper">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLineEdit{font:11pt '仿宋' bold; color:rgb(21,197,212);background-color: rgb(35, 35, 35);}</string>
+          </property>
+          <property name="text">
+           <string notr="true"/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
