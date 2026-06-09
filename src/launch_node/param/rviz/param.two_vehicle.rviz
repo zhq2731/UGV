@@ -82,6 +82,14 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /trajectory_conflict/markers
+      Name: Conflict Prediction
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
       Marker Topic: /vehicle_1/control/desired_velocity
       Name: Vehicle 1 Desired Velocity
       Namespaces:

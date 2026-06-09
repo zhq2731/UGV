@@ -7,9 +7,10 @@
     are remapped back into that namespace so the two stacks do not consume the
     same RViz goal or motion-start command by accident.
 
-    Cooperation nodes are intentionally not started here.  This launch is for
-    two independent single-vehicle stacks, and motion-start commands are sent
-    from the RViz two-vehicle panel.
+    Cooperation nodes are intentionally not started here.  Each vehicle has its
+    own planning/control stack and its own conflict resolver.  The resolver
+    subscribes to both vehicles' candidate trajectories but publishes only its
+    own vehicle's conflict constraint, keeping the conflict layer distributed.
   -->
 
   <arg name="vehicle_type" default="tank500"/>
@@ -17,7 +18,12 @@
   <arg name="vehicle_2_ns" default="vehicle_2"/>
   <arg name="vehicle_1_platform_file" default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
   <arg name="vehicle_2_platform_file" default="UGV/platform_files/vehicle_platform-tank-2.yaml"/>
+  <arg name="conflict_observer" default="true"/>
   <arg name="rviz" default="true"/>
+
+  <group if="$(arg conflict_observer)">
+    <rosparam file="$(find structured_road_conflict_sim)/config/ugv_two_vehicle_conflict.yaml"/>
+  </group>
 
   <group if="$(arg rviz)">
     <node pkg="rviz" type="rviz" name="rviz"
@@ -26,6 +32,13 @@
   </group>
 
   <group ns="$(arg vehicle_1_ns)">
+    <group if="$(arg conflict_observer)">
+      <node pkg="structured_road_conflict_sim" type="conflict_resolver_node"
+            name="conflict_resolver_node" output="screen">
+        <param name="ego_index" value="0"/>
+      </node>
+    </group>
+
     <node pkg="route" type="route" name="route" output="screen">
       <rosparam file="$(find launch_node)/param/route/route.yaml"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
@@ -78,6 +91,11 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_1_platform_file)"/>
+      <param name="enable_conflict_constraint" value="true"/>
+      <param name="conflict_constraint_timeout" value="1.5"/>
+      <param name="conflict_timeout_max_speed" value="1.0"/>
+      <param name="conflict_deceleration_limit" value="1.5"/>
+      <param name="conflict_stop_buffer" value="0.0"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>
@@ -107,6 +125,13 @@
   </group>
 
   <group ns="$(arg vehicle_2_ns)">
+    <group if="$(arg conflict_observer)">
+      <node pkg="structured_road_conflict_sim" type="conflict_resolver_node"
+            name="conflict_resolver_node" output="screen">
+        <param name="ego_index" value="1"/>
+      </node>
+    </group>
+
     <node pkg="route" type="route" name="route" output="screen">
       <rosparam file="$(find launch_node)/param/route/route.yaml"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
@@ -159,6 +184,11 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_2_platform_file)"/>
+      <param name="enable_conflict_constraint" value="true"/>
+      <param name="conflict_constraint_timeout" value="1.5"/>
+      <param name="conflict_timeout_max_speed" value="1.0"/>
+      <param name="conflict_deceleration_limit" value="1.5"/>
+      <param name="conflict_stop_buffer" value="0.0"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>

@@ -1,5 +1,8 @@
 #include "planning_node.h"
 
+#include <algorithm>
+#include <limits>
+
 using namespace ugv::planning;
 using namespace ugv::common::math;
 using namespace ugv::common;
@@ -29,6 +32,16 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 chassisSub = nh_.subscribe("chassis", 1, &PlanningNode::callbackChassis, this); 
 
 	 trajectoryPub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory", 1);
+	 trajectoryCandidatePub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory_candidate", 1);
+
+	 private_nh.param<bool>("enable_conflict_constraint", enable_conflict_constraint, false);
+	 private_nh.param<double>("conflict_constraint_timeout", conflict_constraint_timeout, 0.5);
+	 private_nh.param<double>("conflict_timeout_max_speed", conflict_timeout_max_speed, 1.0);
+	 private_nh.param<double>("conflict_deceleration_limit", conflict_deceleration_limit, 1.5);
+	 private_nh.param<double>("conflict_stop_buffer", conflict_stop_buffer, 0.0);
+	 if (enable_conflict_constraint){
+	     conflictConstraintSub = nh_.subscribe("conflict_constraint", 1, &PlanningNode::callbackConflictConstraint, this);
+	 }
 
 	 //replan_sub_ = nh_.subscribe("/replan", 1, &PlanningNode::callbackReplan, this); 
 
@@ -223,6 +236,100 @@ void PlanningNode::callbackDesireSpeed(const std_msgs::Float64::ConstPtr &msg)
 {
     std::cout <<"callbackDesireSpeed:: "<<msg->data<<std::endl;
     velocityPlanner->setSpeed( msg->data);
+}
+
+void PlanningNode::callbackConflictConstraint(const planning_msgs::ConflictConstraint::ConstPtr &msg)
+{
+    std::lock_guard<std::mutex> lock(conflict_mtx);
+    latest_conflict_constraint = *msg;
+    have_conflict_constraint = true;
+}
+
+void PlanningNode::applyConflictConstraint(planning_msgs::TrajectoryPointArray &trajectory)
+{
+    if (!enable_conflict_constraint || trajectory.points.empty())
+        return;
+
+    planning_msgs::ConflictConstraint constraint;
+    bool have_constraint = false;
+    {
+        std::lock_guard<std::mutex> lock(conflict_mtx);
+        if (have_conflict_constraint){
+            constraint = latest_conflict_constraint;
+            have_constraint = true;
+        }
+    }
+
+    if (!have_constraint)
+        return;
+
+    const ros::Time now = ros::Time::now();
+    const bool stamp_valid = !constraint.header.stamp.isZero();
+    const double age = stamp_valid ? (now - constraint.header.stamp).toSec()
+                                   : std::numeric_limits<double>::infinity();
+    const bool constraint_timeout =
+        !stamp_valid || age < 0.0 || age > conflict_constraint_timeout;
+
+    bool changed = false;
+    bool stop_by_constraint = false;
+    double speed_cap = std::numeric_limits<double>::infinity();
+    double stop_s = std::numeric_limits<double>::infinity();
+
+    if (constraint_timeout){
+        speed_cap = std::max(0.0, conflict_timeout_max_speed);
+        changed = true;
+        ROS_WARN_THROTTLE(1.0,
+                          "conflict_constraint timeout, applying conservative speed cap %.2f m/s",
+                          speed_cap);
+    }
+    else if (constraint.role == planning_msgs::ConflictConstraint::ROLE_YIELD){
+        if (std::isfinite(constraint.max_speed) && constraint.max_speed >= 0.0)
+            speed_cap = constraint.max_speed;
+        stop_s = std::max(0.0, constraint.stop_s - std::max(0.0, conflict_stop_buffer));
+        stop_by_constraint = std::isfinite(stop_s);
+        changed = true;
+    }
+    else{
+        return;
+    }
+
+    const double decel = std::max(0.1, conflict_deceleration_limit);
+    for (auto &point : trajectory.points){
+        double target_v = std::max(0.0, point.v);
+        if (std::isfinite(speed_cap))
+            target_v = std::min(target_v, speed_cap);
+
+        if (stop_by_constraint){
+            const double remain_s = stop_s - point.s;
+            if (remain_s <= 0.0){
+                target_v = 0.0;
+            }
+            else{
+                const double stop_limit_v = std::sqrt(std::max(0.0, 2.0 * decel * remain_s));
+                target_v = std::min(target_v, stop_limit_v);
+            }
+        }
+
+        if (std::fabs(point.v - target_v) > 1e-3){
+            point.v = target_v;
+            changed = true;
+        }
+    }
+
+    if (!changed)
+        return;
+
+    trajectory.points.front().relative_time = 0.0;
+    trajectory.points.front().a = 0.0;
+    for (size_t i = 1; i < trajectory.points.size(); ++i){
+        auto &prev = trajectory.points[i - 1];
+        auto &cur = trajectory.points[i];
+        const double ds = std::max(0.0, cur.s - prev.s);
+        const double avg_v = 0.5 * (std::max(0.0, prev.v) + std::max(0.0, cur.v));
+        const double dt = ds > 1e-3 ? ds / std::max(0.1, avg_v) : 0.1;
+        cur.relative_time = prev.relative_time + dt;
+        cur.a = (cur.v - prev.v) / std::max(0.1, dt);
+    }
 }
 
 
@@ -1587,7 +1694,12 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
 	trajectory.is_forward_shift = inputData.refArray.is_forward_shift;
     trajectory.task_area = inputData.refArray.task_area;
     trajectory.type = inputData.refArray.type;	
+	trajectory.header.stamp = time;
+	if (trajectory.header.frame_id.empty())
+		trajectory.header.frame_id = "map";
 	velocityPlanning(trajectory);
+	trajectoryCandidatePub.publish(trajectory);
+	applyConflictConstraint(trajectory);
 	trajectoryPub.publish(trajectory);
     std::vector<TrajectoryPoint>().swap(last_trajectory);
 	trajMsg2DiscretTraj(trajectory,last_trajectory);
@@ -1699,5 +1811,3 @@ int main( int argc, char** argv )
 	ROS_INFO(" planning The iteration end.");
 	return 0;
 }
-
-

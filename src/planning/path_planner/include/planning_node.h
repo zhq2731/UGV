@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "planning_msgs/TrajectoryPointArray.h"
+#include "planning_msgs/ConflictConstraint.h"
 #include "ins_msgs/Ins.h"
 #include "localization_msgs/Localization.h"
 #include "driver_msgs/ChassisReport.h"
@@ -109,6 +110,7 @@ public:
     ros::Subscriber chassisSub;
     ros::Subscriber obstaclesSub;
     ros::Publisher	trajectoryPub;
+    ros::Publisher	trajectoryCandidatePub;
     ros::Publisher	pub_trajectory;
     ros::Publisher	pub_obs;
     ros::Publisher	pub_to_beili;
@@ -139,9 +141,11 @@ public:
 	/***新增***/
 	ros::Subscriber trajectory_point_sub_;
 	ros::Subscriber speedSub;
+	ros::Subscriber conflictConstraintSub;
   
 	void callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr msg);
 	void velocityPlanning(planning_msgs::TrajectoryPointArray &trajectory);
+	void applyConflictConstraint(planning_msgs::TrajectoryPointArray &trajectory);
 	void pubReplan(const Obstacle *obstacle);
 	Obstacle*   memberToObs(int num);
     void planning(PLANNER_TYPE planner_type);
@@ -163,6 +167,7 @@ public:
     const TrajectoryPoint *planning_start_point = nullptr ,const PathBoundary *lane_boundry = nullptr,const PathBoundary *planning_boundry = nullptr,const ReferenceLine *reference_line = nullptr) ;  
 private:
 	std::mutex mtx;
+	std::mutex conflict_mtx;
 	bool  newReplan = true;
 	driver_msgs::ChassisReport current_chassis;
 	double current_velocity;
@@ -193,10 +198,18 @@ private:
 
 	unsigned char    navUncertainty;
 	bool specialSituation = false;
+	bool enable_conflict_constraint = false;
+	bool have_conflict_constraint = false;
+	double conflict_constraint_timeout = 0.5;
+	double conflict_timeout_max_speed = 1.0;
+	double conflict_deceleration_limit = 1.5;
+	double conflict_stop_buffer = 0.0;
+	planning_msgs::ConflictConstraint latest_conflict_constraint;
     void callbackReferenceLine(const planning_msgs::TrajectoryPointArray::Ptr);
     void callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg);
     void callbackPose(const localization_msgs::Localization::ConstPtr &msg);	
 	void callbackObstacles(const perception_msgs::PredictionObstacles::ConstPtr &msg);
+	void callbackConflictConstraint(const planning_msgs::ConflictConstraint::ConstPtr &msg);
 	void callBackinitialPose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
 	void callBackGoal(const geometry_msgs::PoseStamped::ConstPtr msg);
 	void loadPlanningParam(ros::NodeHandle &private_nh_);
@@ -258,4 +271,3 @@ PathBoundary PlanningNode::planning_boundry_;
 ReferenceLine PlanningNode::reference_line_;
 planning_msgs::TrajectoryPointArray PlanningNode::planned_trajectory_;
 TrajectoryPoint PlanningNode::planning_start_point_;
-

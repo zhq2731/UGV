@@ -1,0 +1,36 @@
+场景 1：同一路径对向行驶
+
+车 1：76609 -> 76368
+车 2：76368 -> 76609
+
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -46.77, y: -31.63, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956681, w: 0.291138}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -53.76, y: -70.63, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.897288, w: 0.441445}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -46.77, y: -31.63, z: 0.0}}"
+场景 2：一车主路下行，一车侧路汇入
+
+车 1：76606 -> 76368
+车 2：76435 -> 76370
+
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -14.20, y: -9.83, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956804, w: 0.290732}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -108.43, y: -72.42, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.286475, w: 0.958088}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -40.49, y: -89.96, z: 0.0}}"
+场景 3：两车在 76369 附近交汇
+
+车 1：76606 -> 76368
+车 2：76583 -> 76435
+
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -14.20, y: -9.83, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956804, w: 0.290732}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -87.73, y: -21.17, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.487122, w: 0.873334}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -108.43, y: -72.42, z: 0.0}}"
