@@ -22,7 +22,7 @@
   <arg name="rviz" default="true"/>
 
   <group if="$(arg conflict_observer)">
-    <rosparam file="$(find structured_road_conflict_sim)/config/ugv_two_vehicle_conflict.yaml"/>
+    <rosparam file="$(find conflict_prediction_resolution)/config/ugv_two_vehicle_conflict.yaml"/>
   </group>
 
   <group if="$(arg rviz)">
@@ -33,7 +33,7 @@
 
   <group ns="$(arg vehicle_1_ns)">
     <group if="$(arg conflict_observer)">
-      <node pkg="structured_road_conflict_sim" type="conflict_resolver_node"
+      <node pkg="conflict_prediction_resolution" type="conflict_resolver_node"
             name="conflict_resolver_node" output="screen">
         <param name="ego_index" value="0"/>
       </node>
@@ -95,7 +95,12 @@
       <param name="conflict_constraint_timeout" value="1.5"/>
       <param name="conflict_timeout_max_speed" value="1.0"/>
       <param name="conflict_deceleration_limit" value="1.5"/>
+      <param name="conflict_stop_margin" value="1.0"/>
       <param name="conflict_stop_buffer" value="0.0"/>
+      <!-- 让行速度低于该值时停车等待；投影阈值用于确认旧冲突路段仍在当前轨迹上。 -->
+      <param name="conflict_min_smooth_yield_speed" value="0.3"/>
+      <param name="conflict_projection_max_lateral_error" value="2.0"/>
+      <param name="conflict_projection_min_s_gap" value="0.2"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>
@@ -126,7 +131,7 @@
 
   <group ns="$(arg vehicle_2_ns)">
     <group if="$(arg conflict_observer)">
-      <node pkg="structured_road_conflict_sim" type="conflict_resolver_node"
+      <node pkg="conflict_prediction_resolution" type="conflict_resolver_node"
             name="conflict_resolver_node" output="screen">
         <param name="ego_index" value="1"/>
       </node>
@@ -188,7 +193,12 @@
       <param name="conflict_constraint_timeout" value="1.5"/>
       <param name="conflict_timeout_max_speed" value="1.0"/>
       <param name="conflict_deceleration_limit" value="1.5"/>
+      <param name="conflict_stop_margin" value="1.0"/>
       <param name="conflict_stop_buffer" value="0.0"/>
+      <!-- 让行速度低于该值时停车等待；投影阈值用于确认旧冲突路段仍在当前轨迹上。 -->
+      <param name="conflict_min_smooth_yield_speed" value="0.3"/>
+      <param name="conflict_projection_max_lateral_error" value="2.0"/>
+      <param name="conflict_projection_min_s_gap" value="0.2"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>

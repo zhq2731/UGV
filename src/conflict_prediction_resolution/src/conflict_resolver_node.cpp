@@ -1,4 +1,4 @@
-#include "structured_road_conflict_sim/conflict_resolver_node.hpp"
+#include "conflict_prediction_resolution/conflict_resolver_node.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -8,12 +8,13 @@
 
 #include <boost/bind.hpp>
 #include <planning_msgs/ConflictConstraint.h>
+#include <std_msgs/ColorRGBA.h>
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/Marker.h>
 
-#include "structured_road_conflict_sim/common.hpp"
+#include "conflict_prediction_resolution/common.hpp"
 
-namespace structured_road_conflict_sim
+namespace conflict_prediction_resolution
 {
 namespace
 {
@@ -261,16 +262,8 @@ coordination::CoordinatorConfig ConflictResolverNode::loadCoordinatorConfig() co
   readParam("prediction_horizon", config.prediction_horizon, config.prediction_horizon);
   readParam("footprint_safety_margin", config.footprint_safety_margin, config.footprint_safety_margin);
   readParam("conflict_time_clearance", config.conflict_time_clearance, config.conflict_time_clearance);
-  readParam("minimum_yield_speed", config.minimum_yield_speed, config.minimum_yield_speed);
-  readParam("yield_stop_time_threshold", config.yield_stop_time_threshold, config.yield_stop_time_threshold);
   readParam("comfortable_deceleration", config.comfortable_deceleration, config.comfortable_deceleration);
   readParam("stop_margin", config.stop_margin, config.stop_margin);
-  readParam("retiming_acceleration_limit",
-            config.retiming_acceleration_limit,
-            config.retiming_acceleration_limit);
-  readParam("retiming_deceleration_limit",
-            config.retiming_deceleration_limit,
-            config.retiming_deceleration_limit);
   readParam("priority_weight", config.priority_weight, config.priority_weight);
   readParam("speed_weight", config.speed_weight, config.speed_weight);
   readParam("progress_weight", config.progress_weight, config.progress_weight);
@@ -283,7 +276,6 @@ coordination::CoordinatorConfig ConflictResolverNode::loadCoordinatorConfig() co
   readParam("minimum_lock_hold_time", config.minimum_lock_hold_time, config.minimum_lock_hold_time);
   readParam("decision_switch_margin", config.decision_switch_margin, config.decision_switch_margin);
   readParam("enable_conflict_resolution", config.enable_conflict_resolution, config.enable_conflict_resolution);
-  readParam("enable_longitudinal_retiming", config.enable_longitudinal_retiming, config.enable_longitudinal_retiming);
   readParam("enable_decision_lock", config.enable_decision_lock, config.enable_decision_lock);
   return config;
 }
@@ -292,16 +284,16 @@ void ConflictResolverNode::loadVehicles()
 {
   int vehicle_count = 2;
   const bool has_private_vehicle_count = private_nh_.getParam("vehicle_count", vehicle_count);
-  if (!has_private_vehicle_count && !nh_.getParam("/conflict_resolver_node/vehicle_count", vehicle_count))
+  if (!has_private_vehicle_count)
   {
-    nh_.getParam("/road_network_node/vehicle_count", vehicle_count);
+    nh_.getParam("/conflict_resolver_node/vehicle_count", vehicle_count);
   }
   if (vehicle_count <= 0)
   {
     std::string scenario = "four_way_straight";
-    // 车辆数为 0 表示自动模式；此时以 road_network_node 的场景为准，
-    // 确保协调器等待的车辆数量和实际发布候选轨迹的车辆数量一致。
-    ros::param::get("/road_network_node/scenario", scenario);
+    // 车辆数为 0 表示按场景自动推断。当前工程通常直接配置 vehicle_count=2，
+    // 这里保留场景推断只作为兼容兜底，不再依赖已删除的轻量化道路生成节点。
+    readParam<std::string>("scenario", scenario, scenario);
     vehicle_count = defaultVehicleCountForScenario(normalizeScenarioName(scenario));
   }
   vehicle_count = std::max(1, vehicle_count);
@@ -338,15 +330,11 @@ void ConflictResolverNode::setupRosInterfaces()
     std::string localization_topic = defaultVehicleTopic(vehicle.agent.id, "odomData");
     std::string chassis_topic = defaultVehicleTopic(vehicle.agent.id, "chassis");
     std::string candidate_topic = defaultVehicleTopic(vehicle.agent.id, "trajectory_candidate");
-    std::string approved_topic = defaultVehicleTopic(vehicle.agent.id, "approved_trajectory");
-    std::string speed_limit_topic = defaultVehicleTopic(vehicle.agent.id, "speed_limit");
     std::string constraint_topic = defaultVehicleTopic(vehicle.agent.id, "conflict_constraint");
 
     readParam<std::string>(prefix + "localization_topic", localization_topic, localization_topic);
     readParam<std::string>(prefix + "chassis_topic", chassis_topic, chassis_topic);
     readParam<std::string>(prefix + "candidate_topic", candidate_topic, candidate_topic);
-    readParam<std::string>(prefix + "approved_topic", approved_topic, approved_topic);
-    readParam<std::string>(prefix + "speed_limit_topic", speed_limit_topic, speed_limit_topic);
     readParam<std::string>(prefix + "constraint_topic", constraint_topic, constraint_topic);
 
     vehicle.localization_sub = nh_.subscribe<localization_msgs::Localization>(
@@ -357,8 +345,6 @@ void ConflictResolverNode::setupRosInterfaces()
         candidate_topic, 1, boost::bind(&ConflictResolverNode::onCandidate, this, i, _1));
     if (shouldPublishVehicle(i))
     {
-      vehicle.approved_pub = nh_.advertise<planning_msgs::TrajectoryPointArray>(approved_topic, 1, true);
-      vehicle.speed_limit_pub = nh_.advertise<std_msgs::Float64>(speed_limit_topic, 1, true);
       vehicle.constraint_pub = nh_.advertise<planning_msgs::ConflictConstraint>(constraint_topic, 1, true);
     }
   }
@@ -442,41 +428,20 @@ coordination::Trajectory ConflictResolverNode::toCoreTrajectory(
   return trajectory;
 }
 
-planning_msgs::TrajectoryPointArray ConflictResolverNode::fromCoreTrajectory(
-    const coordination::Trajectory& trajectory,
-    const planning_msgs::TrajectoryPointArray& original,
-    const ros::Time& stamp) const
-{
-  // 保留原消息中的 header/task_area/shape 等元数据，只覆盖被重定时的轨迹点字段。
-  planning_msgs::TrajectoryPointArray msg = original;
-  msg.header.stamp = stamp;
-  const size_t count = std::min(msg.points.size(), trajectory.points.size());
-  for (size_t i = 0; i < count; ++i)
-  {
-    msg.points[i].relative_time = trajectory.points[i].relative_time;
-    msg.points[i].x = trajectory.points[i].x;
-    msg.points[i].y = trajectory.points[i].y;
-    msg.points[i].theta = trajectory.points[i].yaw;
-    msg.points[i].s = trajectory.points[i].s;
-    msg.points[i].v = trajectory.points[i].v;
-    msg.points[i].a = trajectory.points[i].a;
-  }
-  return msg;
-}
-
 void ConflictResolverNode::publishResult(const coordination::CoordinationResult& result,
                                          const ros::Time& stamp)
 {
   const auto make_constraint_msg = [&](const size_t vehicle_index) {
-    // 将 pair 决策转成单车视角 ST 约束：每辆车只收到“我是谁、对方是谁、
-    // 我应先行还是让行、我的 s/t 冲突窗口、让行目标时间和当前速度上限”。
+    // 将 pair 决策转成单车视角冲突约束：每辆车只收到“我是谁、对方是谁、
+    // 我应先行还是让行、冲突路段的 map 坐标入口/出口、让行目标时间和当前速度上限”。
+    // 注意：消息不再携带旧候选轨迹上的 s。planner 会把入口/出口点投影到当前轨迹，
+    // 在本轮轨迹坐标系下临时生成 s_in/s_out/stop_s。
     planning_msgs::ConflictConstraint msg;
     msg.header.frame_id = frame_id_;
     msg.header.stamp = stamp;
     msg.role = planning_msgs::ConflictConstraint::ROLE_NONE;
     msg.ego_id = vehicles_[vehicle_index].agent.id;
-    msg.max_speed = 100.0;
-    msg.stop_s = 0.0;
+    msg.has_spatial_constraint = false;
 
     if (!result.ready || !result.conflict_active)
     {
@@ -506,33 +471,34 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
 
       std::ostringstream conflict_id;
       conflict_id.precision(1);
+      const auto first_entry_pose = entryPoseFor(conflict, conflict.first_index);
+      const auto second_entry_pose = entryPoseFor(conflict, conflict.second_index);
       conflict_id << std::fixed
                   << vehicles_[static_cast<size_t>(conflict.first_index)].agent.id << "_"
                   << vehicles_[static_cast<size_t>(conflict.second_index)].agent.id
-                  << "_s" << conflict.first_s_in << "_" << conflict.second_s_in;
+                  << "_xy" << first_entry_pose.x << "_" << first_entry_pose.y
+                  << "_" << second_entry_pose.x << "_" << second_entry_pose.y;
 
       msg.conflict_id = conflict_id.str();
       msg.peer_id = vehicles_[static_cast<size_t>(peer_index)].agent.id;
       msg.role = static_cast<int>(vehicle_index) == conflict.yield_index
                      ? planning_msgs::ConflictConstraint::ROLE_YIELD
                      : planning_msgs::ConflictConstraint::ROLE_PROCEED;
-      msg.ego_s_in = sInFor(conflict, static_cast<int>(vehicle_index));
-      msg.ego_s_out = sOutFor(conflict, static_cast<int>(vehicle_index));
+      // 仅输出 map 坐标下的冲突入口/出口点，避免把低频冲突模块中上一帧轨迹的 s
+      // 泄露给高频 planner。后续速度处理完全基于当前轨迹重新投影。
+      msg.has_spatial_constraint = true;
+      msg.ego_entry_point = makeMarkerPoint(entryPoseFor(conflict, static_cast<int>(vehicle_index)), 0.0);
+      msg.ego_exit_point = makeMarkerPoint(exitPoseFor(conflict, static_cast<int>(vehicle_index)), 0.0);
+      msg.peer_entry_point = makeMarkerPoint(entryPoseFor(conflict, peer_index), 0.0);
+      msg.peer_exit_point = makeMarkerPoint(exitPoseFor(conflict, peer_index), 0.0);
       msg.ego_t_in = tInFor(conflict, static_cast<int>(vehicle_index));
       msg.ego_t_out = tOutFor(conflict, static_cast<int>(vehicle_index));
-      msg.peer_s_in = sInFor(conflict, peer_index);
-      msg.peer_s_out = sOutFor(conflict, peer_index);
       msg.peer_t_in = tInFor(conflict, peer_index);
       msg.peer_t_out = tOutFor(conflict, peer_index);
       msg.earliest_entry_time = msg.ego_t_in;
       msg.target_entry_time = msg.role == planning_msgs::ConflictConstraint::ROLE_YIELD
                                   ? tOutFor(conflict, conflict.proceed_index) + config_.conflict_time_clearance
                                   : msg.ego_t_in;
-      msg.stop_s = std::max(0.0, msg.ego_s_in - config_.stop_margin);
-      msg.max_speed =
-          (vehicle_index < result.speed_limits.size() && std::isfinite(result.speed_limits[vehicle_index]))
-              ? result.speed_limits[vehicle_index]
-              : 100.0;
       msg.decision_locked = conflict.decision_locked;
       msg.decision_source = conflict.decision_source;
       msg.decision_reason = conflict.decision_reason;
@@ -583,45 +549,25 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
 
   if (!result.ready)
   {
-    // 启动阶段车辆仿真需要先拿到一条轨迹，才能发布自身位姿；
-    // 此时协调器还没等到位姿，所以先透传候选轨迹，打破初始化等待。
+    // 启动阶段可能尚未收齐两车候选轨迹/位姿。此时仍发布 ROLE_NONE，
+    // 让 planner 明确知道当前没有可用冲突决策。
     for (size_t i = 0; i < vehicles_.size(); ++i)
     {
-      auto& vehicle = vehicles_[i];
       if (!shouldPublishVehicle(i))
       {
         continue;
       }
-      if (!vehicle.have_candidate)
-      {
-        continue;
-      }
-
-      planning_msgs::TrajectoryPointArray approved = vehicle.latest_candidate;
-      approved.header.stamp = stamp;
-      vehicle.approved_pub.publish(approved);
-
-      std_msgs::Float64 speed_limit_msg;
-      speed_limit_msg.data = 100.0;
-      vehicle.speed_limit_pub.publish(speed_limit_msg);
-      vehicle.constraint_pub.publish(make_constraint_msg(i));
+      vehicles_[i].constraint_pub.publish(make_constraint_msg(i));
     }
     return;
   }
 
-  for (size_t i = 0; i < vehicles_.size() && i < result.approved_trajectories.size(); ++i)
+  for (size_t i = 0; i < vehicles_.size(); ++i)
   {
     if (!shouldPublishVehicle(i))
     {
       continue;
     }
-    const planning_msgs::TrajectoryPointArray approved =
-        fromCoreTrajectory(result.approved_trajectories[i], vehicles_[i].latest_candidate, stamp);
-    vehicles_[i].approved_pub.publish(approved);
-
-    std_msgs::Float64 speed_limit_msg;
-    speed_limit_msg.data = std::isfinite(result.speed_limits[i]) ? result.speed_limits[i] : 100.0;
-    vehicles_[i].speed_limit_pub.publish(speed_limit_msg);
     vehicles_[i].constraint_pub.publish(make_constraint_msg(i));
   }
 }
@@ -725,11 +671,6 @@ visualization_msgs::MarkerArray ConflictResolverNode::makeConflictMarkers(
 
     const VehicleIo& proceed_vehicle = vehicles_[static_cast<size_t>(conflict.proceed_index)];
     const VehicleIo& yield_vehicle = vehicles_[static_cast<size_t>(conflict.yield_index)];
-    const double yield_limit =
-        (static_cast<size_t>(conflict.yield_index) < result.speed_limits.size() &&
-         std::isfinite(result.speed_limits[static_cast<size_t>(conflict.yield_index)]))
-            ? result.speed_limits[static_cast<size_t>(conflict.yield_index)]
-            : 100.0;
 
     const auto add_section_marker = [&](const planning_msgs::TrajectoryPointArray& trajectory,
                                         const std::string& label,
@@ -846,21 +787,18 @@ visualization_msgs::MarkerArray ConflictResolverNode::makeConflictMarkers(
                                           2.15);
     yield_label.scale.z = 0.42;
     yield_label.color = makeColor(0.82, 0.25, 0.02, 1.0);
-    std::ostringstream yield_text;
-    yield_text.precision(2);
-    yield_text << std::fixed << "YIELD\nlimit " << yield_limit << " m/s";
-    yield_label.text = yield_text.str();
+    yield_label.text = "YIELD";
     markers.markers.push_back(yield_label);
   }
   return markers;
 }
 
-}  // namespace structured_road_conflict_sim
+}  // namespace conflict_prediction_resolution
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "conflict_resolver_node");
-  structured_road_conflict_sim::ConflictResolverNode node;
+  conflict_prediction_resolution::ConflictResolverNode node;
   ros::spin();
   return 0;
 }

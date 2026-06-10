@@ -5,14 +5,9 @@ conflict_resolver_node:
   prediction_horizon: 20.0
   footprint_safety_margin: 0.7
   enable_conflict_resolution: true
-  enable_longitudinal_retiming: false
   conflict_time_clearance: 2.0
-  minimum_yield_speed: 0.0
-  yield_stop_time_threshold: 1.0
   comfortable_deceleration: 2.0
   stop_margin: 1.0
-  retiming_acceleration_limit: 1.4
-  retiming_deceleration_limit: 2.5
   priority_weight: 0.0
   speed_weight: 0.25
   progress_weight: 0.25
@@ -37,8 +32,6 @@ conflict_resolver_node:
       localization_topic: /vehicle_1/odomData
       chassis_topic: /vehicle_1/chassis
       candidate_topic: /vehicle_1/trajectory_candidate
-      approved_topic: /vehicle_1/approved_trajectory
-      speed_limit_topic: /vehicle_1/speed_limit
       constraint_topic: /vehicle_1/conflict_constraint
     "1":
       id: vehicle_2
@@ -49,6 +42,4 @@ conflict_resolver_node:
       localization_topic: /vehicle_2/odomData
       chassis_topic: /vehicle_2/chassis
       candidate_topic: /vehicle_2/trajectory_candidate
-      approved_topic: /vehicle_2/approved_trajectory
-      speed_limit_topic: /vehicle_2/speed_limit
       constraint_topic: /vehicle_2/conflict_constraint

@@ -34,6 +34,8 @@
   <build_depend>platoon_common</build_depend>   
   <build_depend>common</build_depend>   
   <build_depend>planner_common</build_depend>   
+  <build_depend>conflict_prediction_resolution</build_depend>   
   <build_depend>route_msgs</build_depend>   
   <build_depend>open_space_planner</build_depend> 
+  <exec_depend>conflict_prediction_resolution</exec_depend>   
 </package>

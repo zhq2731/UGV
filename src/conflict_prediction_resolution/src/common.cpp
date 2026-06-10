@@ -1,11 +1,11 @@
-#include "structured_road_conflict_sim/common.hpp"
+#include "conflict_prediction_resolution/common.hpp"
 
 #include <algorithm>
 
 #include <ros/time.h>
 #include <tf/transform_datatypes.h>
 
-namespace structured_road_conflict_sim
+namespace conflict_prediction_resolution
 {
 
 double clamp(const double value, const double lower, const double upper)
@@ -87,4 +87,4 @@ std_msgs::ColorRGBA makeColor(const double r, const double g, const double b, co
   return color;
 }
 
-}  // namespace structured_road_conflict_sim
+}  // namespace conflict_prediction_resolution

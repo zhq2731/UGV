@@ -10,7 +10,7 @@
 #include <ros/time.h>
 #include <std_msgs/ColorRGBA.h>
 
-namespace structured_road_conflict_sim
+namespace conflict_prediction_resolution
 {
 
 struct Pose2d
@@ -35,4 +35,4 @@ geometry_msgs::PoseStamped makePoseStamped(const std::string& frame_id,
 Pose2d pose2dFromMsg(const geometry_msgs::Pose& pose);
 std_msgs::ColorRGBA makeColor(double r, double g, double b, double a);
 
-}  // namespace structured_road_conflict_sim
+}  // namespace conflict_prediction_resolution

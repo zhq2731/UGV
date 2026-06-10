@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace structured_road_conflict_sim
+namespace conflict_prediction_resolution
 {
 namespace coordination
 {
@@ -57,13 +57,8 @@ struct CoordinatorConfig
   double prediction_horizon = 20.0;
   double footprint_safety_margin = 0.25;
   double conflict_time_clearance = 1.0;
-  double minimum_yield_speed = 0.25;
-  double yield_stop_time_threshold = 2.0;
   double comfortable_deceleration = 2.0;
   double stop_margin = 1.0;
-  // 重定时阶段使用的纵向加减速约束。
-  double retiming_acceleration_limit = 1.4;
-  double retiming_deceleration_limit = 2.5;
   // 软评分权重：只有硬规则无法确定顺序时，才综合这些分量决定谁先行。
   double priority_weight = 0.5;
   double speed_weight = 0.25;
@@ -78,7 +73,6 @@ struct CoordinatorConfig
   double minimum_lock_hold_time = 2.0;
   double decision_switch_margin = 0.15;
   bool enable_conflict_resolution = true;
-  bool enable_longitudinal_retiming = true;
   bool enable_decision_lock = true;
 };
 
@@ -115,12 +109,10 @@ struct PairConflict
 
 struct CoordinationResult
 {
-  // resolve() 的输出：批准轨迹、速度限制、冲突状态和可读状态文本。
+  // resolve() 的输出：冲突状态、pair 决策和可读状态文本。
   bool ready = false;
   bool conflict_active = false;
   std::string status;
-  std::vector<Trajectory> approved_trajectories;
-  std::vector<double> speed_limits;
   std::vector<PairConflict> conflicts;
 };
 
@@ -147,12 +139,6 @@ private:
   void chooseOrder(const std::vector<VehicleAgent>& agents,
                    const std::vector<bool>& already_yielding,
                    PairConflict& conflict);
-  Trajectory retimeYieldTrajectory(const VehicleAgent& yielding_agent,
-                                   const PairConflict& conflict,
-                                   double target_conflict_time) const;
-  double computeYieldSpeedCap(const VehicleAgent& yielding_agent,
-                              const PairConflict& conflict,
-                              double target_conflict_time) const;
 
   double estimateProgress(const Trajectory& trajectory, const Pose2d& pose) const;
   double trajectoryLength(const Trajectory& trajectory) const;
@@ -203,4 +189,4 @@ private:
 };
 
 }  // namespace coordination
-}  // namespace structured_road_conflict_sim
+}  // namespace conflict_prediction_resolution

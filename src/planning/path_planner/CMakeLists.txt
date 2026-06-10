@@ -36,6 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
   pid
   platoon_common
   common
+  conflict_prediction_resolution
   planner_common
   route_msgs
   open_space_planner

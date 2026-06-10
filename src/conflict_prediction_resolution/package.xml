@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>structured_road_conflict_sim</name>
+  <name>conflict_prediction_resolution</name>
   <version>0.1.0</version>
   <description>Structured-road conflict prediction and resolution observer for UGV simulation.</description>
   <maintainer email="user@example.com">UGV Developer</maintainer>
@@ -11,11 +11,10 @@
   <depend>geometry_msgs</depend>
   <depend>driver_msgs</depend>
   <depend>localization_msgs</depend>
-  <depend>nav_msgs</depend>
   <depend>planning_msgs</depend>
+  <depend>planner_common</depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>tf</depend>
-  <depend>tf2_ros</depend>
   <depend>visualization_msgs</depend>
 </package>

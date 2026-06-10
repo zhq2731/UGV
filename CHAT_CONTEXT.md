@@ -88,17 +88,18 @@ planner 最终输出：
 已从轻量化工程迁移：
 
 ```text
-src/structured_road_conflict_sim/
+src/conflict_prediction_resolution/
 ```
 
 当前只编译核心冲突判断与消解：
 
 ```text
-structured_road_conflict_sim_core
+conflict_prediction_resolution_core
 conflict_resolver_node
+conflict_constraint_processor
 ```
 
-没有接入轻量化工程中的：
+已从该模块目录删除轻量化原型中与当前工程无关的：
 
 ```text
 speed_planner_node
@@ -141,8 +142,8 @@ planner 和 conflict_resolver 使用该消息传递让行/通行/限速约束。
 关键文件：
 
 ```text
-src/structured_road_conflict_sim/include/structured_road_conflict_sim/conflict_resolver_node.hpp
-src/structured_road_conflict_sim/src/conflict_resolver_node.cpp
+src/conflict_prediction_resolution/include/conflict_prediction_resolution/conflict_resolver_node.hpp
+src/conflict_prediction_resolution/src/conflict_resolver_node.cpp
 ```
 
 现在回调包括：
@@ -172,7 +173,7 @@ msg->current_velocity
 配置文件：
 
 ```text
-src/structured_road_conflict_sim/config/ugv_two_vehicle_conflict.yaml
+src/conflict_prediction_resolution/config/ugv_two_vehicle_conflict.yaml
 ```
 
 关键参数：
@@ -302,7 +303,7 @@ src/launch_node/rviz_plugin_description.xml
 冲突模块配置：
 
 ```text
-src/structured_road_conflict_sim/config/ugv_two_vehicle_conflict.yaml
+src/conflict_prediction_resolution/config/ugv_two_vehicle_conflict.yaml
 ```
 
 当前核心内容：
@@ -348,7 +349,7 @@ planner 侧参数在 launch 中设置：
 编译验证通过：
 
 ```bash
-source /opt/ros/noetic/setup.bash && catkin_make --pkg structured_road_conflict_sim launch_node planner
+source /opt/ros/noetic/setup.bash && catkin_make --pkg conflict_prediction_resolution launch_node planner
 ```
 
 启动两车仿真建议命令：
@@ -395,7 +396,7 @@ rostopic info /vehicle_2/trajectory_candidate
 文件：
 
 ```text
-src/structured_road_conflict_sim/launch/se.txt
+src/conflict_prediction_resolution/launch/se.txt
 ```
 
 当前文件中记录了可手动发布的起点/终点。
@@ -424,10 +425,10 @@ src/msg/planning_msgs/CMakeLists.txt
 src/msg/planning_msgs/msg/ConflictConstraint.msg
 src/planning/path_planner/include/planning_node.h
 src/planning/path_planner/src/planning_node.cpp
-src/structured_road_conflict_sim/
+src/conflict_prediction_resolution/
 ```
 
-注意：`src/structured_road_conflict_sim/` 是新增包，整体可能仍处于 untracked 状态。
+注意：`src/conflict_prediction_resolution/` 是新增包，整体可能仍处于 untracked 状态。
 
 ## 后续建议检查点
 

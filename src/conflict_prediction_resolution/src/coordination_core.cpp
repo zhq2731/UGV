@@ -1,4 +1,4 @@
-#include "structured_road_conflict_sim/coordination_core.hpp"
+#include "conflict_prediction_resolution/coordination_core.hpp"
 
 #include <algorithm>
 #include <array>
@@ -7,7 +7,7 @@
 #include <set>
 #include <sstream>
 
-namespace structured_road_conflict_sim
+namespace conflict_prediction_resolution
 {
 namespace coordination
 {
@@ -123,32 +123,6 @@ double conflictExitSFor(const PairConflict& conflict, const int vehicle_index)
   return 0.0;
 }
 
-double conflictEntryTimeFor(const PairConflict& conflict, const int vehicle_index)
-{
-  if (vehicle_index == conflict.first_index)
-  {
-    return conflict.first_t_in;
-  }
-  if (vehicle_index == conflict.second_index)
-  {
-    return conflict.second_t_in;
-  }
-  return 0.0;
-}
-
-double conflictExitTimeFor(const PairConflict& conflict, const int vehicle_index)
-{
-  if (vehicle_index == conflict.first_index)
-  {
-    return conflict.first_t_out;
-  }
-  if (vehicle_index == conflict.second_index)
-  {
-    return conflict.second_t_out;
-  }
-  return 0.0;
-}
-
 }  // namespace
 
 MultiVehicleCoordinator::MultiVehicleCoordinator(CoordinatorConfig config) : config_(config) {}
@@ -157,18 +131,11 @@ CoordinationResult MultiVehicleCoordinator::resolve(const std::vector<VehicleAge
                                                     const int ego_index)
 {
   CoordinationResult result;
-  result.approved_trajectories.reserve(agents.size());
-  result.speed_limits.assign(agents.size(), std::numeric_limits<double>::infinity());
   const bool centralized_mode = ego_index < 0;
   const bool ego_index_valid = !centralized_mode && static_cast<size_t>(ego_index) < agents.size();
   const auto agent_ready = [](const VehicleAgent& agent) {
     return agent.have_pose && agent.have_trajectory && !agent.trajectory.points.empty();
   };
-
-  for (const auto& agent : agents)
-  {
-    result.approved_trajectories.push_back(agent.trajectory);
-  }
 
   if (centralized_mode)
   {
@@ -230,27 +197,6 @@ CoordinationResult MultiVehicleCoordinator::resolve(const std::vector<VehicleAge
       {
         already_yielding[static_cast<size_t>(conflict.yield_index)] = true;
       }
-
-      // 若开启纵向重规划，则让行车辆通过降速把到达冲突点的时间向后推。
-      if (!config_.enable_conflict_resolution || !config_.enable_longitudinal_retiming ||
-          conflict.yield_index < 0)
-      {
-        continue;
-      }
-
-      const double leader_clear_time = conflictExitTimeFor(conflict, conflict.proceed_index);
-      const double target_time = leader_clear_time + config_.conflict_time_clearance;
-      double speed_cap =
-          computeYieldSpeedCap(agents[static_cast<size_t>(conflict.yield_index)], conflict, target_time);
-      // 冲突已经很近时，让行车必须原地等待；只给一个很小速度会继续爬入冲突区。
-      if (conflictEntryTimeFor(conflict, conflict.yield_index) <= config_.yield_stop_time_threshold)
-      {
-        speed_cap = 0.0;
-      }
-      result.speed_limits[static_cast<size_t>(conflict.yield_index)] =
-          std::min(result.speed_limits[static_cast<size_t>(conflict.yield_index)], speed_cap);
-      result.approved_trajectories[static_cast<size_t>(conflict.yield_index)] =
-          retimeYieldTrajectory(agents[static_cast<size_t>(conflict.yield_index)], conflict, target_time);
     }
   }
   clearInactiveDecisionLocks(active_pairs);
@@ -535,73 +481,6 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
     decision_locks_[key] = LockedDecision{conflict.proceed_index, conflict.yield_index};
     conflict.decision_locked = true;
   }
-}
-
-Trajectory MultiVehicleCoordinator::retimeYieldTrajectory(const VehicleAgent& yielding_agent,
-                                                          const PairConflict& conflict,
-                                                          const double target_conflict_time) const
-{
-  Trajectory retimed = yielding_agent.trajectory;
-  if (retimed.points.size() < 2)
-  {
-    return retimed;
-  }
-
-  const double speed_cap = computeYieldSpeedCap(yielding_agent, conflict, target_conflict_time);
-
-  double accumulated_time = 0.0;
-  retimed.points.front().relative_time = 0.0;
-  retimed.points.front().a = 0.0;
-  retimed.points.front().v = std::min(std::max(0.0, retimed.points.front().v), speed_cap);
-  double previous_v = retimed.points.front().v;
-
-  const double current_s = estimateProgress(retimed, yielding_agent.pose);
-  const double conflict_s = std::max(current_s, conflictEntrySFor(conflict, conflict.yield_index));
-  for (size_t i = 1; i < retimed.points.size(); ++i)
-  {
-    const double ds = std::max(0.0, retimed.points[i].s - retimed.points[i - 1].s);
-    const bool before_conflict = retimed.points[i].s <= conflict_s;
-    const double original_v = std::max(0.0, retimed.points[i].v);
-    double target_v = before_conflict ? std::min(original_v, speed_cap) : original_v;
-    target_v = std::max(config_.minimum_yield_speed, target_v);
-
-    // 速度被压到 0 时仍保持 relative_time 有限；仿真真正停车依靠 speed_limit=0。
-    const double segment_speed = std::max(0.1, 0.5 * (previous_v + target_v));
-    const double dt = ds / segment_speed;
-    accumulated_time += dt;
-    retimed.points[i].relative_time = accumulated_time;
-    retimed.points[i].a = dt > kEpsilon ? (target_v - previous_v) / dt : 0.0;
-    retimed.points[i].a = clamp(retimed.points[i].a,
-                                -std::abs(config_.retiming_deceleration_limit),
-                                std::abs(config_.retiming_acceleration_limit));
-    retimed.points[i].v = target_v;
-    previous_v = target_v;
-  }
-
-  if (!retimed.points.empty())
-  {
-    retimed.points.back().v = 0.0;
-    retimed.points.back().a = 0.0;
-  }
-  return retimed;
-}
-
-double MultiVehicleCoordinator::computeYieldSpeedCap(const VehicleAgent& yielding_agent,
-                                                     const PairConflict& conflict,
-                                                     const double target_conflict_time) const
-{
-  const Trajectory& trajectory = yielding_agent.trajectory;
-  if (trajectory.points.size() < 2)
-  {
-    return std::max(0.0, yielding_agent.nominal_speed);
-  }
-
-  const double current_s = estimateProgress(trajectory, yielding_agent.pose);
-  const double conflict_s = std::max(current_s, conflictEntrySFor(conflict, conflict.yield_index));
-  const double distance_to_conflict = std::max(0.1, conflict_s - current_s);
-  // 根据优先车完全离开冲突重叠区后的目标时间，反推让行车允许速度。
-  return std::max(config_.minimum_yield_speed,
-                  distance_to_conflict / std::max(0.1, target_conflict_time));
 }
 
 double MultiVehicleCoordinator::estimateProgress(const Trajectory& trajectory, const Pose2d& pose) const
@@ -991,4 +870,4 @@ void MultiVehicleCoordinator::clearInactiveDecisionLocks(const std::vector<std::
 }
 
 }  // namespace coordination
-}  // namespace structured_road_conflict_sim
+}  // namespace conflict_prediction_resolution

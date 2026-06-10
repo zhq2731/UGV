@@ -8,6 +8,7 @@
 
 #include "planning_msgs/TrajectoryPointArray.h"
 #include "planning_msgs/ConflictConstraint.h"
+#include "conflict_prediction_resolution/conflict_constraint_processor.hpp"
 #include "ins_msgs/Ins.h"
 #include "localization_msgs/Localization.h"
 #include "driver_msgs/ChassisReport.h"
@@ -145,7 +146,6 @@ public:
   
 	void callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr msg);
 	void velocityPlanning(planning_msgs::TrajectoryPointArray &trajectory);
-	void applyConflictConstraint(planning_msgs::TrajectoryPointArray &trajectory);
 	void pubReplan(const Obstacle *obstacle);
 	Obstacle*   memberToObs(int num);
     void planning(PLANNER_TYPE planner_type);
@@ -167,7 +167,6 @@ public:
     const TrajectoryPoint *planning_start_point = nullptr ,const PathBoundary *lane_boundry = nullptr,const PathBoundary *planning_boundry = nullptr,const ReferenceLine *reference_line = nullptr) ;  
 private:
 	std::mutex mtx;
-	std::mutex conflict_mtx;
 	bool  newReplan = true;
 	driver_msgs::ChassisReport current_chassis;
 	double current_velocity;
@@ -198,13 +197,7 @@ private:
 
 	unsigned char    navUncertainty;
 	bool specialSituation = false;
-	bool enable_conflict_constraint = false;
-	bool have_conflict_constraint = false;
-	double conflict_constraint_timeout = 0.5;
-	double conflict_timeout_max_speed = 1.0;
-	double conflict_deceleration_limit = 1.5;
-	double conflict_stop_buffer = 0.0;
-	planning_msgs::ConflictConstraint latest_conflict_constraint;
+	conflict_prediction_resolution::ConflictConstraintProcessor conflict_constraint_processor_;
     void callbackReferenceLine(const planning_msgs::TrajectoryPointArray::Ptr);
     void callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg);
     void callbackPose(const localization_msgs::Localization::ConstPtr &msg);	
