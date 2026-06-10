@@ -32,11 +32,12 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 chassisSub = nh_.subscribe("chassis", 1, &PlanningNode::callbackChassis, this); 
 
 	 trajectoryPub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory", 1);
-	 trajectoryCandidatePub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory_candidate", 1);
 
 	 // 冲突消解决策的具体解释和速度修正由独立处理器负责，PlanningNode 只保留流程连接。
 	 conflict_constraint_processor_.loadParam(private_nh);
 	 if (conflict_constraint_processor_.enabled()){
+	     // 只有开启冲突消解时才发布候选轨迹和订阅冲突约束；关闭时保持原规划链路运行。
+	     trajectoryCandidatePub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory_candidate", 1);
 	     conflictConstraintSub = nh_.subscribe("conflict_constraint", 1, &PlanningNode::callbackConflictConstraint, this);
 	 }
 
@@ -1606,8 +1607,11 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
 	if (trajectory.header.frame_id.empty())
 		trajectory.header.frame_id = "map";
 	velocityPlanning(trajectory);
-	trajectoryCandidatePub.publish(trajectory);
-	conflict_constraint_processor_.apply(trajectory);
+	if (conflict_constraint_processor_.enabled()){
+		// 先把基础速度规划后的候选轨迹给冲突判定节点，再用最近一次冲突消解决策修正本帧速度。
+		trajectoryCandidatePub.publish(trajectory);
+		conflict_constraint_processor_.apply(trajectory);
+	}
 	trajectoryPub.publish(trajectory);
     std::vector<TrajectoryPoint>().swap(last_trajectory);
 	trajMsg2DiscretTraj(trajectory,last_trajectory);

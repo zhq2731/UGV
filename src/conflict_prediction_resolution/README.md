@@ -61,10 +61,10 @@ decision_reason
 
 ## 关键参数
 
-冲突模块参数：
+冲突判定/预判/决策节点参数：
 
 ```text
-src/conflict_prediction_resolution/config/ugv_two_vehicle_conflict.yaml
+src/conflict_prediction_resolution/config/conflict_prediction.yaml
 ```
 
 常用项：
@@ -78,21 +78,30 @@ stop_margin: 1.0
 enable_decision_lock: true
 ```
 
-planner 侧约束处理参数在两车 launch 中配置：
+planner 是否启用冲突消解由 `src/launch_node/param/planning/planning.yaml` 控制：
 
-```xml
-<param name="enable_conflict_constraint" value="true"/>
-<param name="conflict_constraint_timeout" value="1.5"/>
-<param name="conflict_timeout_max_speed" value="1.0"/>
-<param name="conflict_deceleration_limit" value="1.5"/>
-<param name="conflict_stop_margin" value="1.0"/>
-<param name="conflict_stop_buffer" value="0.0"/>
-<param name="conflict_min_smooth_yield_speed" value="0.3"/>
-<param name="conflict_projection_max_lateral_error" value="2.0"/>
-<param name="conflict_projection_min_s_gap" value="0.2"/>
+```yaml
+enable_conflict_constraint: true
 ```
 
-其中 `conflict_stop_margin` 是从投影出的冲突入口点向后预留的停车距离；`conflict_projection_max_lateral_error` 用于判断上一轮冲突路段是否仍落在当前轨迹上。
+planner 侧冲突消解算法参数在冲突模块内单独配置：
+
+```text
+src/conflict_prediction_resolution/config/conflict_resolution.yaml
+```
+
+```yaml
+conflict_constraint_timeout: 1.5
+conflict_timeout_max_speed: 1.0
+conflict_deceleration_limit: 1.5
+conflict_stop_margin: 1.0
+conflict_stop_buffer: 0.0
+conflict_min_smooth_yield_speed: 0.3
+conflict_projection_max_lateral_error: 2.0
+conflict_projection_min_s_gap: 0.2
+```
+
+其中 `enable_conflict_constraint=false` 时，planner 不发布 `trajectory_candidate`、不订阅 `conflict_constraint`，也不执行冲突速度修正；`conflict_stop_margin` 是从投影出的冲突入口点向后预留的停车距离；`conflict_projection_max_lateral_error` 用于判断上一轮冲突路段是否仍落在当前轨迹上。
 
 ## 验证命令
 

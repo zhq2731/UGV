@@ -2,6 +2,14 @@ kPathBoundsDeciderHorizon: 100.0
 kPathBoundsDeciderResolution: 0.5
 kDefaultLaneWidth: 8.0
 kDefaultRoadWidth: 20.0
+
+# =========================
+# 冲突消解处理参数（planner 内部使用）
+# =========================
+# 冲突消解总开关。false 时 planner 不订阅 conflict_constraint，不发布 trajectory_candidate，
+# 也不对原始速度规划结果做冲突让行修正，车辆按原规划流程运行。
+enable_conflict_constraint: true
+
 static_obstacle_nudge_l_buffer: 0.3
 kNumExtraTailBoundPoint: 0
 enable_osqp_debug: false
