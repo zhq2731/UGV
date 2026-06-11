@@ -7,6 +7,8 @@
 #include <planning_msgs/TrajectoryPointArray.h>
 #include <ros/node_handle.h>
 
+#include "conflict_prediction_resolution/conflict_velocity_optimizer.hpp"
+
 namespace conflict_prediction_resolution
 {
 
@@ -51,9 +53,17 @@ private:
   double stitching_start_match_max_distance_ = 1.0;
   // 冲突规则速度修正后，将非拼接段粗轨迹重采样到固定时间间隔，便于后续定时间 QP 使用。
   double fixed_time_coarse_dt_ = 0.1;
+  // 固定时间粗轨迹最多保留的非拼接后缀点数，避免低速让行把轨迹采样成数千点。
+  int fixed_time_max_points_ = 160;
   // 单次规划循环时间，拼接段末点 planning_start_point 的 relative_time 会被规范为该值。
   double planning_cycle_time_ = 0.1;
+  // 低速等待段截断阈值：相邻点几乎不动且速度低于该值时，认为后续是在原地等待。
+  double waiting_truncation_speed_threshold_ = 0.15;
+  // 判断等待平台段时使用的最小 s/xy 变化阈值。
+  double waiting_truncation_s_gap_ = 0.01;
+  double waiting_truncation_xy_gap_ = 0.01;
 
+  ConflictVelocityOptimizer velocity_optimizer_;
   planning_msgs::ConflictConstraint latest_constraint_;
   std::mutex mutex_;
 };

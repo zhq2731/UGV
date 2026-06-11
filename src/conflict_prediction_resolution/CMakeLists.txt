@@ -12,8 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   tf
+  velocity_planner
   visualization_msgs
 )
+
+find_package(Eigen3 REQUIRED)
+find_package(osqp REQUIRED)
+get_target_property(osqp_INCLUDE_DIR osqp::osqpstatic INTERFACE_INCLUDE_DIRECTORIES)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -29,12 +34,15 @@ catkin_package(
     roscpp
     std_msgs
     tf
+    velocity_planner
     visualization_msgs
 )
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${osqp_INCLUDE_DIR}
 )
 
 add_library(conflict_prediction_resolution_core
@@ -46,8 +54,9 @@ add_dependencies(conflict_prediction_resolution_core ${catkin_EXPORTED_TARGETS})
 
 add_library(conflict_constraint_processor
   src/conflict_constraint_processor.cpp
+  src/conflict_velocity_optimizer.cpp
 )
-target_link_libraries(conflict_constraint_processor ${catkin_LIBRARIES})
+target_link_libraries(conflict_constraint_processor ${catkin_LIBRARIES} osqp::osqp)
 add_dependencies(conflict_constraint_processor ${catkin_EXPORTED_TARGETS})
 
 add_executable(conflict_resolver_node src/conflict_resolver_node.cpp)

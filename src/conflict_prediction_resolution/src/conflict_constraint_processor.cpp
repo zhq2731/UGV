@@ -225,6 +225,242 @@ void recomputeTimingFrom(planning_msgs::TrajectoryPointArray& trajectory, const 
   }
 }
 
+void enforceStrictlyIncreasingRelativeTime(planning_msgs::TrajectoryPointArray& trajectory,
+                                           const double min_dt)
+{
+  // 控制器按 relative_time 做轨迹插值。若相邻点时间相等或倒退，
+  // lower_bound/插值比例都可能出现异常，因此在冲突模块最终输出前做一次兜底修正。
+  if (trajectory.points.empty())
+  {
+    return;
+  }
+
+  const double dt_floor = std::max(1.0e-3, min_dt);
+  for (size_t i = 1; i < trajectory.points.size(); ++i)
+  {
+    const double min_time = trajectory.points[i - 1].relative_time + dt_floor;
+    if (!std::isfinite(trajectory.points[i].relative_time) ||
+        trajectory.points[i].relative_time < min_time)
+    {
+      trajectory.points[i].relative_time = min_time;
+    }
+  }
+
+  for (size_t i = 1; i < trajectory.points.size(); ++i)
+  {
+    const double dt = std::max(dt_floor,
+                               trajectory.points[i].relative_time -
+                                   trajectory.points[i - 1].relative_time);
+    trajectory.points[i].a = (trajectory.points[i].v - trajectory.points[i - 1].v) / dt;
+  }
+}
+
+bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& trajectory)
+{
+  // 冲突速度处理后的最终轨迹要交给 trajectory_follower。
+  // 这里做轻量但关键的输入保护：发现非有限数、时间不递增、s 回退、
+  // 或整条轨迹几何退化时，直接回退到冲突处理前轨迹。
+  if (trajectory.points.size() < 2)
+  {
+    return false;
+  }
+
+  size_t unique_geometry_count = 1;
+  for (size_t i = 0; i < trajectory.points.size(); ++i)
+  {
+    const auto& point = trajectory.points[i];
+    const bool finite =
+        std::isfinite(point.x) &&
+        std::isfinite(point.y) &&
+        std::isfinite(point.z) &&
+        std::isfinite(point.theta) &&
+        std::isfinite(point.s) &&
+        std::isfinite(point.v) &&
+        std::isfinite(point.a) &&
+        std::isfinite(point.relative_time);
+    if (!finite || point.v < -1.0e-3)
+    {
+      return false;
+    }
+
+    if (i == 0)
+    {
+      continue;
+    }
+
+    const auto& prev = trajectory.points[i - 1];
+    if (point.relative_time <= prev.relative_time + 1.0e-4)
+    {
+      return false;
+    }
+    if (point.s < prev.s - 1.0e-4)
+    {
+      return false;
+    }
+
+    const double ds = point.s - prev.s;
+    const double dxy = std::hypot(point.x - prev.x, point.y - prev.y);
+    if (ds <= 1.0e-4 && dxy <= 1.0e-4)
+    {
+      // MPC 横向控制会按几何弧长重采样。相邻重复点会让累计弧长出现相等值，
+      // 进而触发 “base_keys is not sorted” 异常，所以这里必须严格拦住。
+      return false;
+    }
+
+    if (dxy > 1.0e-3 || ds > 1.0e-3)
+    {
+      ++unique_geometry_count;
+    }
+  }
+
+  return unique_geometry_count >= 2;
+}
+
+planning_msgs::TrajectoryPoint interpolatePointByS(
+    const planning_msgs::TrajectoryPointArray& trajectory,
+    const size_t begin_index,
+    const double query_s)
+{
+  // 在当前轨迹上按 s 插值得到停车点。
+  // 规则停车时不应该继续保留 stop_s 之后的路径点，否则速度为 0 但几何仍向前，
+  // 后续固定时间重采样/QP 很容易生成“低速平台”或重复点。
+  if (trajectory.points.empty())
+  {
+    return planning_msgs::TrajectoryPoint();
+  }
+
+  const size_t begin = std::min(begin_index, trajectory.points.size() - 1);
+  if (query_s <= trajectory.points[begin].s)
+  {
+    return trajectory.points[begin];
+  }
+
+  for (size_t i = begin + 1; i < trajectory.points.size(); ++i)
+  {
+    const auto& prev = trajectory.points[i - 1];
+    const auto& next = trajectory.points[i];
+    if (query_s > next.s)
+    {
+      continue;
+    }
+
+    const double ds = next.s - prev.s;
+    const double ratio = ds > 1.0e-6 ? std::max(0.0, std::min(1.0, (query_s - prev.s) / ds))
+                                     : 0.0;
+    planning_msgs::TrajectoryPoint out = prev;
+    out.relative_time = lerp(prev.relative_time, 0.0, next.relative_time, 1.0, ratio);
+    out.x = lerp(prev.x, 0.0, next.x, 1.0, ratio);
+    out.y = lerp(prev.y, 0.0, next.y, 1.0, ratio);
+    out.z = lerp(prev.z, 0.0, next.z, 1.0, ratio);
+    out.theta = lerp(prev.theta, 0.0, next.theta, 1.0, ratio);
+    out.s = query_s;
+    out.kappa = lerp(prev.kappa, 0.0, next.kappa, 1.0, ratio);
+    out.dkappa = lerp(prev.dkappa, 0.0, next.dkappa, 1.0, ratio);
+    out.v = 0.0;
+    out.a = 0.0;
+    return out;
+  }
+
+  auto out = trajectory.points.back();
+  out.v = 0.0;
+  out.a = 0.0;
+  return out;
+}
+
+bool truncateTrajectoryAtStopS(planning_msgs::TrajectoryPointArray& trajectory,
+                               const size_t fixed_prefix_end_index,
+                               const double stop_s)
+{
+  // 停车等待的表达方式采用“截断到停车点”，而不是在停车点后保留一串相同位置点。
+  // 当前 trajectory_follower 会按几何弧长做插值，相同位置点会让弧长 key 不严格递增，
+  // 因此 stop_s 之后的轨迹必须删掉，等待动作交给下一轮规划继续处理。
+  if (!std::isfinite(stop_s) || trajectory.points.empty() ||
+      fixed_prefix_end_index + 1 >= trajectory.points.size())
+  {
+    return false;
+  }
+
+  const size_t begin = std::min(fixed_prefix_end_index + 1, trajectory.points.size() - 1);
+  if (stop_s >= trajectory.points.back().s)
+  {
+    return false;
+  }
+
+  size_t stop_index = begin;
+  while (stop_index < trajectory.points.size() && trajectory.points[stop_index].s < stop_s)
+  {
+    ++stop_index;
+  }
+
+  if (stop_index >= trajectory.points.size())
+  {
+    return false;
+  }
+
+  planning_msgs::TrajectoryPoint stop_point;
+  if (stop_index == begin && stop_s <= trajectory.points[fixed_prefix_end_index].s + 1.0e-4)
+  {
+    // 停车点已经落在拼接末点之前或几乎重合，说明本轮应立即停在拼接末点附近。
+    // 控制器仍需要一个向前的几何目标点，因此保留第一个非拼接点作为零速停止目标，
+    // 而不是只剩拼接前缀或复制同一几何点。
+    trajectory.points.resize(begin + 1);
+    trajectory.points.back().v = 0.0;
+    trajectory.points.back().a = 0.0;
+    return true;
+  }
+
+  stop_point = interpolatePointByS(trajectory, fixed_prefix_end_index, stop_s);
+  trajectory.points.resize(stop_index);
+  trajectory.points.push_back(stop_point);
+  return true;
+}
+
+bool truncateLowSpeedWaitingTail(planning_msgs::TrajectoryPointArray& trajectory,
+                                 const size_t fixed_prefix_end_index,
+                                 const double speed_threshold,
+                                 const double min_s_gap,
+                                 const double min_xy_gap)
+{
+  // QP 的“不早于冲突时间进入”约束可能让若干固定时间节点贴在同一个 s 上；
+  // 规则停车也可能在低速末端形成平台段。平台段对速度语义是“等待”，
+  // 但对控制器几何插值是非法重复点，因此这里把等待段截断到第一个静止点。
+  if (trajectory.points.empty() || fixed_prefix_end_index + 1 >= trajectory.points.size())
+  {
+    return false;
+  }
+
+  const double v_threshold = std::max(0.0, speed_threshold);
+  const double s_gap = std::max(0.0, min_s_gap);
+  const double xy_gap = std::max(0.0, min_xy_gap);
+  for (size_t i = fixed_prefix_end_index + 1; i < trajectory.points.size(); ++i)
+  {
+    const auto& prev = trajectory.points[i - 1];
+    const auto& cur = trajectory.points[i];
+    const double ds = cur.s - prev.s;
+    const double dxy = std::hypot(cur.x - prev.x, cur.y - prev.y);
+    const bool almost_same_geometry = ds <= s_gap && dxy <= xy_gap;
+    const bool almost_stopped =
+        std::max(std::fabs(prev.v), std::fabs(cur.v)) <= v_threshold;
+    if (almost_same_geometry)
+    {
+      // 即使速度字段尚未降到阈值，只要几何已经重复，就不能继续交给控制器。
+      // 这种情况通常来自 QP/粗解的时间约束与几何路径不一致：速度语义还在变化，
+      // 但 x/y/s 已经停在同一个点。这里优先保证控制器输入合法，截断后由下一轮规划接续。
+      trajectory.points.resize(i);
+      trajectory.points.back().v = 0.0;
+      trajectory.points.back().a = 0.0;
+      ROS_WARN_THROTTLE(1.0,
+                        "conflict waiting tail truncated at index=%zu, "
+                        "avoid duplicated geometry points for controller. low_speed=%d",
+                        i - 1,
+                        almost_stopped);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 planning_msgs::TrajectoryPoint interpolatePointByTime(
     const planning_msgs::TrajectoryPointArray& trajectory,
     const double query_time,
@@ -270,11 +506,14 @@ planning_msgs::TrajectoryPoint interpolatePointByTime(
 
 void resampleNonStitchedSuffixToFixedTime(planning_msgs::TrajectoryPointArray& trajectory,
                                           const size_t fixed_prefix_end_index,
-                                          const double fixed_dt)
+                                          const double fixed_dt,
+                                          const int max_suffix_points)
 {
   // 将非拼接段转为固定时间间隔粗轨迹：
   // - 拼接前缀保持原样，避免破坏上一帧承接段；
   // - 后缀按固定 dt 在 relative_time 上插值；
+  // - 后缀点数做硬限制，避免低速让行时把几十秒轨迹采成数千点，
+  //   从而导致后续 QP dense 矩阵和控制器输入同时膨胀。
   // - 若后缀太短，不强行重采样，避免生成空轨迹。
   if (trajectory.points.empty() || fixed_prefix_end_index + 1 >= trajectory.points.size())
   {
@@ -302,9 +541,23 @@ void resampleNonStitchedSuffixToFixedTime(planning_msgs::TrajectoryPointArray& t
                           trajectory.points.begin() + fixed_prefix_end_index + 1);
 
   size_t search_index = fixed_prefix_end_index;
-  for (double t = start_time + dt; t <= end_time + 1.0e-6; t += dt)
+  const size_t max_generated_points =
+      max_suffix_points > 0 ? static_cast<size_t>(max_suffix_points)
+                            : trajectory.points.size();
+  size_t generated_points = 0;
+  for (double t = start_time + dt;
+       t <= end_time + 1.0e-6 && generated_points < max_generated_points;
+       t += dt, ++generated_points)
   {
     resampled.points.push_back(interpolatePointByTime(trajectory, t, search_index));
+  }
+
+  if (generated_points >= max_generated_points && end_time > resampled.points.back().relative_time + dt)
+  {
+    ROS_WARN_THROTTLE(1.0,
+                      "conflict fixed-time coarse trajectory truncated: suffix_points=%zu max=%zu",
+                      generated_points,
+                      max_generated_points);
   }
 
   if (resampled.points.size() > fixed_prefix_end_index + 1)
@@ -329,7 +582,13 @@ void ConflictConstraintProcessor::loadParam(ros::NodeHandle& private_nh)
   private_nh.param<double>("conflict_stitching_start_match_max_distance",
                            stitching_start_match_max_distance_, 1.0);
   private_nh.param<double>("conflict_fixed_time_coarse_dt", fixed_time_coarse_dt_, 0.1);
+  private_nh.param<int>("conflict_fixed_time_max_points", fixed_time_max_points_, 160);
   private_nh.param<double>("conflict_planning_cycle_time", planning_cycle_time_, 0.1);
+  private_nh.param<double>("conflict_waiting_truncation_speed_threshold",
+                           waiting_truncation_speed_threshold_, 0.15);
+  private_nh.param<double>("conflict_waiting_truncation_s_gap", waiting_truncation_s_gap_, 0.01);
+  private_nh.param<double>("conflict_waiting_truncation_xy_gap", waiting_truncation_xy_gap_, 0.01);
+  velocity_optimizer_.loadParam(private_nh);
 }
 
 void ConflictConstraintProcessor::updateConstraint(const planning_msgs::ConflictConstraint& constraint)
@@ -377,6 +636,7 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
   double yield_speed_cap = std::numeric_limits<double>::infinity();
   double yield_entry_s = std::numeric_limits<double>::infinity();
   double stop_s = std::numeric_limits<double>::infinity();
+  double target_entry_time_from_now = std::numeric_limits<double>::infinity();
 
   if (constraint_timeout)
   {
@@ -456,6 +716,7 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
   // 只有在确实需要执行冲突速度处理时，才识别拼接段并规范拼接前缀时间。
   // 这样无约束、直行、空间约束失效等正常场景不会被冲突模块额外改写轨迹。
+  const planning_msgs::TrajectoryPointArray original_trajectory = trajectory;
   const size_t stitching_end_index = findStitchingEndIndex(
       trajectory, planning_start_point, stitching_start_match_max_distance_);
   planning_msgs::TrajectoryPointArray normalized_trajectory = trajectory;
@@ -465,7 +726,7 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
   if (std::isfinite(yield_entry_s))
   {
-    const double target_entry_time_from_now =
+    target_entry_time_from_now =
         std::max(0.0, constraint.target_entry_time - std::max(0.0, age));
     const double current_entry_time = relativeTimeAtS(normalized_trajectory, yield_entry_s);
     const bool need_delay =
@@ -548,8 +809,39 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
   if (changed)
   {
+    if (stop_by_constraint)
+    {
+      truncateTrajectoryAtStopS(trajectory, stitching_end_index, stop_s);
+    }
     recomputeTimingFrom(trajectory, stitching_end_index);
-    resampleNonStitchedSuffixToFixedTime(trajectory, stitching_end_index, fixed_time_coarse_dt_);
+    resampleNonStitchedSuffixToFixedTime(trajectory,
+                                         stitching_end_index,
+                                         fixed_time_coarse_dt_,
+                                         fixed_time_max_points_);
+    if (!velocity_optimizer_.optimize(trajectory,
+                                      stitching_end_index,
+                                      speed_cap,
+                                      std::isfinite(yield_entry_s),
+                                      yield_entry_s,
+                                      target_entry_time_from_now))
+    {
+      ROS_WARN_THROTTLE(1.0, "conflict velocity QP fallback to rule-based profile");
+    }
+
+    truncateLowSpeedWaitingTail(trajectory,
+                                stitching_end_index,
+                                waiting_truncation_speed_threshold_,
+                                waiting_truncation_s_gap_,
+                                waiting_truncation_xy_gap_);
+    enforceStrictlyIncreasingRelativeTime(
+        trajectory, std::min(std::max(1.0e-3, fixed_time_coarse_dt_), 0.02));
+    if (!validateTrajectoryForController(trajectory))
+    {
+      ROS_WARN_THROTTLE(1.0,
+                        "conflict velocity result rejected before publish, "
+                        "restore original planner trajectory");
+      trajectory = original_trajectory;
+    }
   }
 }
 

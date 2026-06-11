@@ -35,6 +35,88 @@ conflict_stitching_start_match_max_distance: 1.0
 # 该参数用于把规则速度结果转换为定时间域粗解，方便后续接入时间域 QP。
 conflict_fixed_time_coarse_dt: 0.1
 
+# 固定时间粗轨迹最多保留的非拼接后缀点数。
+# 低速让行会显著拉长到达终点时间，如果不限制点数，0.1s 采样可能生成数千点，
+# 进而导致 QP 矩阵和控制器输入过大。160 点约等于 16s 速度优化视野。
+conflict_fixed_time_max_points: 160
+
 # 单次规划循环时间，单位秒。冲突处理器会把匹配到的 planning_start_point
 # 即拼接段末点的 relative_time 规范为该值，其余拼接前缀点按时间间隔向前递推。
 conflict_planning_cycle_time: 0.1
+
+# 低速等待段截断速度阈值，单位 m/s。
+# 如果相邻轨迹点几乎没有 s/xy 变化，且两点速度都低于该值，则认为后续是停车等待段。
+# 等待段会被截断，不直接发送一串重复位置点给控制器。
+conflict_waiting_truncation_speed_threshold: 0.15
+
+# 判断低速等待段时，相邻点允许的最大 s 变化，单位米。
+# 小于该阈值且 xy 也几乎不变时，认为两个点在纵向上重复。
+conflict_waiting_truncation_s_gap: 0.01
+
+# 判断低速等待段时，相邻点允许的最大平面几何距离，单位米。
+# 该参数用于保护 trajectory_follower 的弧长插值输入必须严格向前。
+conflict_waiting_truncation_xy_gap: 0.01
+
+# 是否启用冲突速度定时间 QP。若 QP 失败，会自动保留规则速度粗解。
+enable_conflict_velocity_qp: true
+
+# QP 中 s 贴近规则粗解的权重。越大越不愿改变路径进度。
+conflict_qp_weight_s_ref: 0.1
+
+# QP 中速度贴近规则粗解的权重。越大越接近规则冲突速度规划结果。
+conflict_qp_weight_v_ref: 3.0
+
+# QP 中加速度平方惩罚权重。越大，加速度绝对值越小。
+conflict_qp_weight_acc: 0.5
+
+# QP 中 jerk 平滑权重，对 (a[i+1]-a[i])^2/dt 加惩罚。越大，速度变化越平滑。
+conflict_qp_weight_jerk: 10.0
+
+# QP 纵向最小加速度，单位 m/s^2。
+conflict_qp_min_acc: -1.5
+
+# QP 纵向最大加速度，单位 m/s^2。
+conflict_qp_max_acc: 1.0
+
+# QP 全局速度上限，单位 m/s。最终还会叠加规则速度上限和曲率速度上限。
+conflict_qp_max_speed: 6.0
+
+# QP 曲率限速使用的横向加速度上限，单位 m/s^2。
+conflict_qp_max_lateral_acc: 1.5
+
+# 不早于冲突时间进入约束的 s 安全余量，单位米。
+# 在 target_entry_time 之前，优化后的 s 不能超过 yield_entry_s - 该余量。
+conflict_qp_not_early_s_margin: 0.05
+
+# 是否检查 QP 输出轨迹。开启后，如果优化结果出现时间不递增、s 回退、
+# 非拼接段几乎全部重复等异常，会丢弃 QP 结果并回退到规则速度粗解。
+conflict_qp_enable_output_validation: true
+
+# QP 输出有效性检查使用的最小 s 变化量，单位米。
+# 相邻点 s 变化超过该值时，认为轨迹在纵向上产生了一个有效新点。
+conflict_qp_min_output_s_gap: 0.01
+
+# QP 输出有效性检查使用的最小 xy 几何变化量，单位米。
+# 相邻点平面距离超过该值时，认为轨迹在几何上产生了一个有效新点。
+conflict_qp_min_output_xy_gap: 0.01
+
+# QP 最大优化节点数。当前 QP 使用 dense 矩阵，复杂度和内存随点数平方增长；
+# 超过该值时跳过 QP，直接使用规则速度粗解，避免 planner 因超大矩阵崩溃。
+# 固定时间粗轨迹默认保留 160 个后缀点，加上拼接末点后约 161 个 QP 节点，
+# 因此这里略大一些，给正常 16s 视野留出余量。
+conflict_qp_max_points: 180
+
+# QP 允许的最小时间步长，单位秒。低于该值认为固定时间轨迹异常，跳过 QP。
+conflict_qp_min_dt: 0.02
+
+# OSQP 最大迭代次数。
+conflict_qp_max_iter: 4000
+
+# OSQP 绝对收敛阈值。
+conflict_qp_eps_abs: 0.00001
+
+# OSQP 相对收敛阈值。
+conflict_qp_eps_rel: 0.0001
+
+# 是否输出 OSQP 求解日志。
+conflict_qp_verbose: false

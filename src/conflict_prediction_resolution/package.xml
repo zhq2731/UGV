@@ -16,5 +16,6 @@
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>tf</depend>
+  <depend>velocity_planner</depend>
   <depend>visualization_msgs</depend>
 </package>
