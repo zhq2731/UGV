@@ -91,7 +91,7 @@ src/conflict_prediction_resolution/config/conflict_resolution.yaml
 ```
 
 ```yaml
-conflict_constraint_timeout: 1.5
+conflict_constraint_timeout: 2.1
 conflict_timeout_max_speed: 1.0
 conflict_deceleration_limit: 1.5
 conflict_stop_margin: 1.0

@@ -2,9 +2,10 @@
 # 该文件只描述“收到冲突决策后，如何在当前规划轨迹上做让行速度处理”。
 
 # 冲突约束消息超时时间，单位秒。超过该时间未收到新约束时，不继续使用旧让行决策。
-conflict_constraint_timeout: 1.5
+conflict_constraint_timeout: 2.1
 
-# 冲突约束超时时的保守限速，单位 m/s。该参数不是冲突模块输出速度，只是通信/决策中断兜底。
+# 冲突约束超时时的保守速度上限，单位 m/s。
+# 超时后不再使用旧冲突入口/目标时间，但会限制非拼接段速度，避免车辆恢复高速。
 conflict_timeout_max_speed: 1.0
 
 # 停车兜底减速度，单位 m/s^2。越大表示允许更晚、更急地降速到停车点。
@@ -24,3 +25,16 @@ conflict_projection_max_lateral_error: 2.0
 
 # 投影后的冲突入口/出口在当前轨迹 s 坐标上至少应有的间隔，单位米。
 conflict_projection_min_s_gap: 0.2
+
+# planning_start_point 与当前轨迹最近点的最大匹配距离，单位米。
+# 冲突规则速度处理器用该点检测拼接段末点，只修改该点之后的非拼接轨迹段。
+# 若最近距离超过该阈值，则认为无法可靠识别拼接段，退化为从轨迹起点后开始处理。
+conflict_stitching_start_match_max_distance: 1.0
+
+# 冲突规则速度修正后，非拼接段粗轨迹的固定时间间隔，单位秒。
+# 该参数用于把规则速度结果转换为定时间域粗解，方便后续接入时间域 QP。
+conflict_fixed_time_coarse_dt: 0.1
+
+# 单次规划循环时间，单位秒。冲突处理器会把匹配到的 planning_start_point
+# 即拼接段末点的 relative_time 规范为该值，其余拼接前缀点按时间间隔向前递推。
+conflict_planning_cycle_time: 0.1

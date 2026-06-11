@@ -1955,7 +1955,11 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
 		// 先把基础速度规划后的候选轨迹给冲突判定节点，再用最近一次冲突消解决策修正本帧速度。
 		candidate_trajectory = trajectory;
 		trajectoryCandidatePub.publish(trajectory);
-		conflict_constraint_processor_.apply(trajectory);
+		geometry_msgs::Point planning_start_point;
+		planning_start_point.x = planning_start_point_.path_point().x();
+		planning_start_point.y = planning_start_point_.path_point().y();
+		planning_start_point.z = planning_start_point_.path_point().z();
+		conflict_constraint_processor_.apply(trajectory, planning_start_point);
 	}
 	publishVelocityCurveMarker(candidate_trajectory, trajectory);
 	publishActualVelocityCurveMarker();
