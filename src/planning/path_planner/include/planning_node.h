@@ -2,6 +2,7 @@
 
 #include <ctime>
 #include <cmath>
+#include <deque>
 #include <ros/ros.h>
 #include <mutex>
 #include <thread>
@@ -113,6 +114,8 @@ public:
     ros::Publisher	trajectoryPub;
     ros::Publisher	trajectoryCandidatePub;
     ros::Publisher	pub_trajectory;
+    ros::Publisher	pub_velocity_curve;
+    ros::Publisher	pub_actual_velocity_curve;
     ros::Publisher	pub_obs;
     ros::Publisher	pub_to_beili;
     ros::Publisher	pub_heart;
@@ -162,6 +165,10 @@ public:
     void sendHeart(unsigned char flag);
     void caculateAccumulated_s(planning_msgs::TrajectoryPointArray &trajectory);
     void addExtraPath(planning_msgs::TrajectoryPointArray &inPath);
+    void publishVelocityCurveMarker(const planning_msgs::TrajectoryPointArray &candidate_trajectory,
+                                    const planning_msgs::TrajectoryPointArray &final_trajectory);
+    void recordActualVelocity(const ros::Time &stamp, double velocity);
+    void publishActualVelocityCurveMarker();
     void callbackGlobalPath84InPlanning(const lanelet_map_msgs::Way::ConstPtr &msg);
   	static void collectDisplayInfo(const   planning_msgs::TrajectoryPointArray *planned_trajectory,\
     const TrajectoryPoint *planning_start_point = nullptr ,const PathBoundary *lane_boundry = nullptr,const PathBoundary *planning_boundry = nullptr,const ReferenceLine *reference_line = nullptr) ;  
@@ -198,6 +205,19 @@ private:
 	unsigned char    navUncertainty;
 	bool specialSituation = false;
 	conflict_prediction_resolution::ConflictConstraintProcessor conflict_constraint_processor_;
+	bool enable_velocity_curve_marker_ = true;
+	double velocity_curve_time_horizon_ = 8.0;
+	double velocity_curve_time_scale_ = 1.0;
+	double velocity_curve_speed_scale_ = 1.5;
+	double velocity_curve_front_offset_ = 4.0;
+	double velocity_curve_left_offset_ = 6.0;
+	bool enable_actual_velocity_curve_marker_ = true;
+	double actual_velocity_curve_history_duration_ = 10.0;
+	double actual_velocity_curve_time_scale_ = 1.0;
+	double actual_velocity_curve_speed_scale_ = 1.5;
+	double actual_velocity_curve_front_offset_ = 4.0;
+	double actual_velocity_curve_side_offset_ = -6.0;
+	std::deque<std::pair<double, double>> actual_velocity_history_;
     void callbackReferenceLine(const planning_msgs::TrajectoryPointArray::Ptr);
     void callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg);
     void callbackPose(const localization_msgs::Localization::ConstPtr &msg);	

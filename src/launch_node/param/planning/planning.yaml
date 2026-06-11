@@ -10,6 +10,27 @@ kDefaultRoadWidth: 20.0
 # 也不对原始速度规划结果做冲突让行修正，车辆按原规划流程运行。
 enable_conflict_constraint: true
 
+# =========================
+# 速度曲线 RViz 可视化参数
+# =========================
+# 速度曲线显示开关。true 时 planner 会发布 velocity_curve_marker，用于观察速度规划结果。
+enable_velocity_curve_marker: true
+
+# 速度曲线横轴显示的未来时间范围，单位秒。数值越大，曲线显示得越长。
+velocity_curve_time_horizon: 8.0
+
+# 速度曲线横轴比例，单位 m/screen_second。数值越大，同样时间范围在 RViz 中占用越长。
+velocity_curve_time_scale: 1.0
+
+# 速度曲线纵轴比例，单位 m/(m/s)。数值越大，同样速度在 RViz 中显示得越高。
+velocity_curve_speed_scale: 1.5
+
+# 速度曲线相对车辆坐标系的前向偏移，单位米。用于避免曲线压在车体上。
+velocity_curve_front_offset: 4.0
+
+# 速度曲线相对车辆坐标系的左向偏移，单位米。若遮挡道路，可调大或调小。
+velocity_curve_left_offset: 6.0
+
 static_obstacle_nudge_l_buffer: 0.3
 kNumExtraTailBoundPoint: 0
 enable_osqp_debug: false

@@ -1,11 +1,110 @@
 #include "planning_node.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <limits>
+#include <sstream>
+#include <std_msgs/ColorRGBA.h>
 
 using namespace ugv::planning;
 using namespace ugv::common::math;
 using namespace ugv::common;
+
+namespace {
+
+visualization_msgs::Marker makeDeleteAllMarker()
+{
+	visualization_msgs::Marker marker;
+	marker.action = visualization_msgs::Marker::DELETEALL;
+	return marker;
+}
+
+geometry_msgs::Point makeVelocityCurvePoint(const geometry_msgs::Point &origin,
+                                            const double yaw,
+                                            const double local_x,
+                                            const double local_y,
+                                            const double z)
+{
+	geometry_msgs::Point local_point;
+	local_point.x = local_x;
+	local_point.y = local_y;
+
+	geometry_msgs::Point global_point = amathutils::localToGlobal(origin, yaw, local_point);
+	global_point.z = z;
+	return global_point;
+}
+
+visualization_msgs::Marker makeVelocityCurveLine(const planning_msgs::TrajectoryPointArray &trajectory,
+                                                 const geometry_msgs::Point &origin,
+                                                 const double yaw,
+                                                 const double front_offset,
+                                                 const double left_offset,
+                                                 const double time_horizon,
+                                                 const double time_scale,
+                                                 const double speed_scale,
+                                                 const std::string &ns,
+                                                 const int id,
+                                                 const std_msgs::ColorRGBA &color)
+{
+	visualization_msgs::Marker marker;
+	marker.header.frame_id = "map";
+	marker.header.stamp = ros::Time::now();
+	marker.ns = ns;
+	marker.id = id;
+	marker.type = visualization_msgs::Marker::LINE_STRIP;
+	marker.action = visualization_msgs::Marker::ADD;
+	marker.pose.orientation.w = 1.0;
+	marker.scale.x = 0.08;
+	marker.color = color;
+
+	for (const auto &point : trajectory.points) {
+		const double relative_time = std::max(0.0, point.relative_time);
+		if (relative_time > time_horizon) {
+			break;
+		}
+
+		// 横轴使用 relative_time，纵轴使用速度 v；放在车辆左前方，避免和真实轨迹混在一起。
+		marker.points.push_back(makeVelocityCurvePoint(
+			origin, yaw, front_offset + relative_time * time_scale,
+			left_offset + std::max(0.0, point.v) * speed_scale, 1.2));
+	}
+
+	return marker;
+}
+
+visualization_msgs::Marker makeVelocityCurveText(const geometry_msgs::Point &position,
+                                                 const std::string &text,
+                                                 const std::string &ns,
+                                                 const int id,
+                                                 const std_msgs::ColorRGBA &color,
+                                                 const double scale)
+{
+	visualization_msgs::Marker marker;
+	marker.header.frame_id = "map";
+	marker.header.stamp = ros::Time::now();
+	marker.ns = ns;
+	marker.id = id;
+	marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+	marker.action = visualization_msgs::Marker::ADD;
+	marker.pose.position = position;
+	marker.pose.orientation.w = 1.0;
+	marker.scale.z = scale;
+	marker.color = color;
+	marker.text = text;
+	return marker;
+}
+
+std_msgs::ColorRGBA makeColor(const float r, const float g, const float b, const float a)
+{
+	std_msgs::ColorRGBA color;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	return color;
+}
+
+}
 
 
 
@@ -15,6 +114,20 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 vehicle_util->loadVehicleingParam(private_nh);
 	 loadPlanningParam(private_nh); 
 	 private_nh.param<double>("heading_compensation_degree",  heading_compensation_degree, 0.0);
+	 // 速度曲线只用于 RViz 调试：横轴为轨迹点 relative_time，纵轴为轨迹点速度 v。
+	 private_nh.param<bool>("enable_velocity_curve_marker", enable_velocity_curve_marker_, true);
+	 private_nh.param<double>("velocity_curve_time_horizon", velocity_curve_time_horizon_, 8.0);
+	 private_nh.param<double>("velocity_curve_time_scale", velocity_curve_time_scale_, 1.0);
+	 private_nh.param<double>("velocity_curve_speed_scale", velocity_curve_speed_scale_, 1.5);
+	 private_nh.param<double>("velocity_curve_front_offset", velocity_curve_front_offset_, 4.0);
+	 private_nh.param<double>("velocity_curve_left_offset", velocity_curve_left_offset_, 6.0);
+	 // 实际速度曲线用于观察底盘反馈速度的历史变化，和规划速度曲线分开显示。
+	 private_nh.param<bool>("enable_actual_velocity_curve_marker", enable_actual_velocity_curve_marker_, true);
+	 private_nh.param<double>("actual_velocity_curve_history_duration", actual_velocity_curve_history_duration_, 10.0);
+	 private_nh.param<double>("actual_velocity_curve_time_scale", actual_velocity_curve_time_scale_, 1.0);
+	 private_nh.param<double>("actual_velocity_curve_speed_scale", actual_velocity_curve_speed_scale_, 1.5);
+	 private_nh.param<double>("actual_velocity_curve_front_offset", actual_velocity_curve_front_offset_, 4.0);
+	 private_nh.param<double>("actual_velocity_curve_side_offset", actual_velocity_curve_side_offset_, -6.0);
 
 	 std::string vehicle_platform_file;
 	 private_nh.param<std::string>("vehicle_platform_file", vehicle_platform_file, "vehicle_platform.yaml");
@@ -47,6 +160,12 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 
 	 pub_trajectory = nh_.advertise<visualization_msgs::MarkerArray>(
 		"planning_marker", 1);
+
+	 pub_velocity_curve = nh_.advertise<visualization_msgs::MarkerArray>(
+		"velocity_curve_marker", 1);
+
+	 pub_actual_velocity_curve = nh_.advertise<visualization_msgs::MarkerArray>(
+		"actual_velocity_curve_marker", 1);
 
 	 pub_obs = nh_.advertise<visualization_msgs::MarkerArray>(
 		"perception_obs", 1);
@@ -922,6 +1041,7 @@ void PlanningNode::callbackChassis(const driver_msgs::ChassisReport::ConstPtr &m
 	
 	current_velocity = (7 == msg->gear_location)?(-msg->current_velocity):msg->current_velocity;
 	current_chassis.current_velocity  = current_velocity;
+	recordActualVelocity(msg->header.stamp.isZero() ? ros::Time::now() : msg->header.stamp, current_velocity);
 
 	cur_vehicle_state.steering  = (double)(msg->steering_wheel_angle )/vehicle_util->w2s_primary_coeff/ 180.0 * M_PI;
     cur_vehicle_state.v = current_velocity;
@@ -1224,6 +1344,229 @@ void PlanningNode::displayLoop()
         }
         
 	}
+}
+
+void PlanningNode::publishVelocityCurveMarker(
+	const planning_msgs::TrajectoryPointArray &candidate_trajectory,
+	const planning_msgs::TrajectoryPointArray &final_trajectory)
+{
+	visualization_msgs::MarkerArray marker_array;
+	marker_array.markers.push_back(makeDeleteAllMarker());
+
+	if (!enable_velocity_curve_marker_) {
+		pub_velocity_curve.publish(marker_array);
+		return;
+	}
+
+	if (final_trajectory.points.empty()) {
+		pub_velocity_curve.publish(marker_array);
+		return;
+	}
+
+	const double time_horizon = std::max(0.5, velocity_curve_time_horizon_);
+	const double time_scale = std::max(0.1, velocity_curve_time_scale_);
+	const double speed_scale = std::max(0.1, velocity_curve_speed_scale_);
+
+	// 曲线默认挂在当前车辆左前方；若定位还未初始化，则退化为挂在轨迹首点附近。
+	geometry_msgs::Point origin;
+	double yaw_for_curve = 0.0;
+	if (pose_inited_) {
+		origin = current_pose_.pose.pose.position;
+		yaw_for_curve = amathutils::getPoseYawAngle(current_pose_.pose.pose);
+	} else {
+		origin.x = final_trajectory.points.front().x;
+		origin.y = final_trajectory.points.front().y;
+		origin.z = 0.0;
+	}
+
+	double max_speed = 1.0;
+	const auto collect_max_speed = [&](const planning_msgs::TrajectoryPointArray &trajectory) {
+		for (const auto &point : trajectory.points) {
+			if (point.relative_time > time_horizon) {
+				break;
+			}
+			max_speed = std::max(max_speed, std::max(0.0, point.v));
+		}
+	};
+	collect_max_speed(candidate_trajectory);
+	collect_max_speed(final_trajectory);
+
+	const double front_offset = velocity_curve_front_offset_;
+	const double left_offset = velocity_curve_left_offset_;
+	const double axis_z = 1.0;
+
+	const std_msgs::ColorRGBA axis_color = makeColor(1.0f, 1.0f, 1.0f, 0.65f);
+	const std_msgs::ColorRGBA candidate_color = makeColor(0.05f, 0.35f, 1.0f, 0.75f);
+	const std_msgs::ColorRGBA final_color = makeColor(0.0f, 1.0f, 0.25f, 0.95f);
+
+	// 坐标轴：横轴为未来时间，纵轴为速度。该图只是调试图，不参与规划计算。
+	visualization_msgs::Marker time_axis;
+	time_axis.header.frame_id = "map";
+	time_axis.header.stamp = ros::Time::now();
+	time_axis.ns = "velocity_curve/axis";
+	time_axis.id = 1;
+	time_axis.type = visualization_msgs::Marker::LINE_STRIP;
+	time_axis.action = visualization_msgs::Marker::ADD;
+	time_axis.pose.orientation.w = 1.0;
+	time_axis.scale.x = 0.04;
+	time_axis.color = axis_color;
+	time_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve, front_offset, left_offset, axis_z));
+	time_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset + time_horizon * time_scale, left_offset, axis_z));
+	marker_array.markers.push_back(time_axis);
+
+	visualization_msgs::Marker speed_axis = time_axis;
+	speed_axis.id = 2;
+	speed_axis.points.clear();
+	speed_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve, front_offset, left_offset, axis_z));
+	speed_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset, left_offset + max_speed * speed_scale, axis_z));
+	marker_array.markers.push_back(speed_axis);
+
+	if (!candidate_trajectory.points.empty()) {
+		// candidate 表示基础速度规划结果，冲突消解开启时可用于对比消解前后的变化。
+		marker_array.markers.push_back(makeVelocityCurveLine(
+			candidate_trajectory, origin, yaw_for_curve, front_offset, left_offset,
+			time_horizon, time_scale, speed_scale, "velocity_curve/candidate", 3, candidate_color));
+	}
+
+	// final 表示真正发布给控制器的速度规划结果，冲突修正后的降速/停车都体现在这条线上。
+	marker_array.markers.push_back(makeVelocityCurveLine(
+		final_trajectory, origin, yaw_for_curve, front_offset, left_offset,
+		time_horizon, time_scale, speed_scale, "velocity_curve/final", 4, final_color));
+
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve, front_offset, left_offset - 0.8, 1.4),
+		"v-t curve", "velocity_curve/text", 5, axis_color, 0.45));
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve, front_offset + time_horizon * time_scale + 0.4,
+			left_offset, 1.4),
+		"t", "velocity_curve/text", 6, axis_color, 0.4));
+
+	std::ostringstream speed_label;
+	speed_label << std::fixed << std::setprecision(1) << max_speed << " m/s";
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve, front_offset,
+			left_offset + max_speed * speed_scale + 0.4, 1.4),
+		speed_label.str(), "velocity_curve/text", 7, axis_color, 0.4));
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve, front_offset + 1.2,
+			left_offset + max_speed * speed_scale + 0.9, 1.4),
+		"blue:candidate  green:final", "velocity_curve/text", 8, axis_color, 0.35));
+
+	pub_velocity_curve.publish(marker_array);
+}
+
+void PlanningNode::recordActualVelocity(const ros::Time &stamp, const double velocity)
+{
+	const double now = stamp.toSec();
+	actual_velocity_history_.emplace_back(now, velocity);
+
+	const double history_duration = std::max(1.0, actual_velocity_curve_history_duration_);
+	while (!actual_velocity_history_.empty() &&
+	       now - actual_velocity_history_.front().first > history_duration) {
+		actual_velocity_history_.pop_front();
+	}
+}
+
+void PlanningNode::publishActualVelocityCurveMarker()
+{
+	visualization_msgs::MarkerArray marker_array;
+	marker_array.markers.push_back(makeDeleteAllMarker());
+
+	if (!enable_actual_velocity_curve_marker_) {
+		pub_actual_velocity_curve.publish(marker_array);
+		return;
+	}
+
+	if (!pose_inited_ || actual_velocity_history_.empty()) {
+		pub_actual_velocity_curve.publish(marker_array);
+		return;
+	}
+
+	const double history_duration = std::max(1.0, actual_velocity_curve_history_duration_);
+	const double time_scale = std::max(0.1, actual_velocity_curve_time_scale_);
+	const double speed_scale = std::max(0.1, actual_velocity_curve_speed_scale_);
+	const double front_offset = actual_velocity_curve_front_offset_;
+	const double side_offset = actual_velocity_curve_side_offset_;
+	const double axis_z = 1.0;
+
+	const geometry_msgs::Point origin = current_pose_.pose.pose.position;
+	const double yaw_for_curve = amathutils::getPoseYawAngle(current_pose_.pose.pose);
+	const double now = ros::Time::now().toSec();
+
+	double max_speed = 1.0;
+	for (const auto &sample : actual_velocity_history_) {
+		max_speed = std::max(max_speed, std::fabs(sample.second));
+	}
+
+	const std_msgs::ColorRGBA axis_color = makeColor(1.0f, 1.0f, 1.0f, 0.65f);
+	const std_msgs::ColorRGBA actual_color = makeColor(1.0f, 0.85f, 0.05f, 0.95f);
+
+	// 坐标轴：横轴从过去 history_duration 秒延伸到当前时刻，纵轴为实际车速绝对值。
+	visualization_msgs::Marker time_axis;
+	time_axis.header.frame_id = "map";
+	time_axis.header.stamp = ros::Time::now();
+	time_axis.ns = "actual_velocity_curve/axis";
+	time_axis.id = 1;
+	time_axis.type = visualization_msgs::Marker::LINE_STRIP;
+	time_axis.action = visualization_msgs::Marker::ADD;
+	time_axis.pose.orientation.w = 1.0;
+	time_axis.scale.x = 0.04;
+	time_axis.color = axis_color;
+	time_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset - history_duration * time_scale, side_offset, axis_z));
+	time_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset, side_offset, axis_z));
+	marker_array.markers.push_back(time_axis);
+
+	visualization_msgs::Marker speed_axis = time_axis;
+	speed_axis.id = 2;
+	speed_axis.points.clear();
+	speed_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset - history_duration * time_scale, side_offset, axis_z));
+	speed_axis.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+		front_offset - history_duration * time_scale, side_offset + max_speed * speed_scale, axis_z));
+	marker_array.markers.push_back(speed_axis);
+
+	visualization_msgs::Marker actual_curve;
+	actual_curve.header.frame_id = "map";
+	actual_curve.header.stamp = ros::Time::now();
+	actual_curve.ns = "actual_velocity_curve/speed";
+	actual_curve.id = 3;
+	actual_curve.type = visualization_msgs::Marker::LINE_STRIP;
+	actual_curve.action = visualization_msgs::Marker::ADD;
+	actual_curve.pose.orientation.w = 1.0;
+	actual_curve.scale.x = 0.08;
+	actual_curve.color = actual_color;
+	for (const auto &sample : actual_velocity_history_) {
+		const double age = std::max(0.0, now - sample.first);
+		if (age > history_duration) {
+			continue;
+		}
+		// 当前时刻位于横轴右端，越早的实际速度点越靠左。
+		actual_curve.points.push_back(makeVelocityCurvePoint(origin, yaw_for_curve,
+			front_offset - age * time_scale, side_offset + std::fabs(sample.second) * speed_scale, 1.2));
+	}
+	marker_array.markers.push_back(actual_curve);
+
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve,
+			front_offset - history_duration * time_scale, side_offset - 0.8, 1.4),
+		"actual v history", "actual_velocity_curve/text", 4, axis_color, 0.45));
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve, front_offset + 0.4, side_offset, 1.4),
+		"now", "actual_velocity_curve/text", 5, axis_color, 0.4));
+
+	std::ostringstream speed_label;
+	speed_label << std::fixed << std::setprecision(1) << max_speed << " m/s";
+	marker_array.markers.push_back(makeVelocityCurveText(
+		makeVelocityCurvePoint(origin, yaw_for_curve,
+			front_offset - history_duration * time_scale,
+			side_offset + max_speed * speed_scale + 0.4, 1.4),
+		speed_label.str(), "actual_velocity_curve/text", 6, axis_color, 0.4));
+
+	pub_actual_velocity_curve.publish(marker_array);
 }
 
 void PlanningNode::collectDiplayObsInfo(const std::vector<const Obstacle *> obs_list)  
@@ -1607,11 +1950,15 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
 	if (trajectory.header.frame_id.empty())
 		trajectory.header.frame_id = "map";
 	velocityPlanning(trajectory);
+	planning_msgs::TrajectoryPointArray candidate_trajectory;
 	if (conflict_constraint_processor_.enabled()){
 		// 先把基础速度规划后的候选轨迹给冲突判定节点，再用最近一次冲突消解决策修正本帧速度。
+		candidate_trajectory = trajectory;
 		trajectoryCandidatePub.publish(trajectory);
 		conflict_constraint_processor_.apply(trajectory);
 	}
+	publishVelocityCurveMarker(candidate_trajectory, trajectory);
+	publishActualVelocityCurveMarker();
 	trajectoryPub.publish(trajectory);
     std::vector<TrajectoryPoint>().swap(last_trajectory);
 	trajMsg2DiscretTraj(trajectory,last_trajectory);

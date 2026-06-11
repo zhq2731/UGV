@@ -82,6 +82,22 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /vehicle_1/velocity_curve_marker
+      Name: Vehicle 1 Velocity Curve
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_1/actual_velocity_curve_marker
+      Name: Vehicle 1 Actual Velocity
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
       Marker Topic: /trajectory_conflict/markers
       Name: Conflict Prediction
       Namespaces:
@@ -135,6 +151,22 @@ Visualization Manager:
       Enabled: true
       Marker Topic: /vehicle_2/rviz/planning_marker
       Name: Vehicle 2 Planning
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/velocity_curve_marker
+      Name: Vehicle 2 Velocity Curve
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vehicle_2/actual_velocity_curve_marker
+      Name: Vehicle 2 Actual Velocity
       Namespaces:
         {}
       Queue Size: 100
