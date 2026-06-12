@@ -454,3 +454,112 @@ conflict_constraint_timeout = 1.5
 ```
 
 两者需要配套。如果后续把 `decision_rate` 改成更高频，可以同步缩短 timeout。
+
+## 2026-06-12：场景 2 纯规则速度规划验证
+
+本轮验证目的：
+
+```text
+关闭冲突速度 QP，只使用规则速度规划，判断是否可以完整完成场景 2 的冲突规避。
+```
+
+当前配置确认：
+
+```yaml
+# src/conflict_prediction_resolution/config/conflict_resolution.yaml
+enable_conflict_velocity_qp: false
+
+# src/launch_node/param/planning/planning.yaml
+enable_conflict_constraint: true
+```
+
+使用场景：
+
+```text
+场景 2：一车主路下行，一车侧路汇入
+车 1：76606 -> 76368
+车 2：76435 -> 76370
+```
+
+启动方式：
+
+```bash
+source /opt/ros/noetic/setup.bash
+source devel/setup.bash
+export ROS_MASTER_URI=http://localhost:11334
+export ROS_HOME=/tmp/ugv_ros_home_11334_rule
+export ROS_LOG_DIR=/tmp/ugv_ros_log_11334_rule
+roslaunch launch_node two-vehicle-distributed-simulate.launch rviz:=false
+```
+
+场景输入：
+
+```bash
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -14.20, y: -9.83, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956804, w: 0.290732}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -108.43, y: -72.42, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.286475, w: 0.958088}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -40.49, y: -89.96, z: 0.0}}"
+
+rostopic pub -1 /vehicle_1/chassis_motion_start_cmd driver_msgs/MotionStartCmd "{motion_start: 1}"
+rostopic pub -1 /vehicle_2/chassis_motion_start_cmd driver_msgs/MotionStartCmd "{motion_start: 1}"
+```
+
+实测现象摘要：
+
+```text
+T≈1s ~ T≈3s：
+  vehicle_1: PROCEED
+  vehicle_2: YIELD
+  vehicle_2 最终轨迹被规则速度规划限制，未出现重复几何点。
+
+T≈4s ~ T≈8s：
+  conflict_resolver 曾短暂输出 ROLE_NONE。
+  由于 conflict_constraint_processor 中加入了最近 YIELD 决策保持，
+  vehicle_2 最终轨迹仍保持受限，没有立即释放到原始高速。
+
+T≈9s ~ T≈17s：
+  vehicle_2 再次进入 YIELD。
+  规则速度规划先进行降速，随后切到停车让行。
+
+T≈18s 之后：
+  vehicle_2 实际速度降为 0。
+  vehicle_2 final trajectory 变为零速停车轨迹，未发现重复几何点导致控制器崩溃。
+  但 vehicle_1 实际速度也变为 0，冲突决策仍持续：
+      vehicle_1: PROCEED
+      vehicle_2: YIELD
+  到 T≈66s 仍未自动释放，vehicle_2 一直等待。
+```
+
+本轮结论：
+
+```text
+纯规则速度规划可以做到“安全保守停车”，目前没有观察到控制器崩溃或重复几何点问题。
+
+但它还不能称为“完美完成冲突规避”，因为场景 2 中出现了先行车 vehicle_1 也停住，
+而冲突决策仍保持 vehicle_1 PROCEED / vehicle_2 YIELD，导致避让车长期等待，无法恢复通行。
+```
+
+因此当前主要问题不在 QP，而在冲突决策/释放逻辑：
+
+```text
+1. conflict_resolver 的 decision lock 只保持先行/让行关系，但缺少“先行车是否真正通过冲突区”的可靠释放判断。
+2. 当先行车也停住时，YIELD 车会继续等待，系统容易进入互相等待。
+3. 需要增加以下判断之一：
+   - 先行车已经通过 peer/ego 冲突出口，释放该 conflict_id；
+   - 先行车长期未移动，重新仲裁或切换为安全重规划；
+   - 对 LOCK 状态增加 stale/blocked 判断，避免永久锁定。
+```
+
+下一步建议：
+
+```text
+优先检查 conflict_prediction_resolution/src/coordination_core.cpp 中 decision_locks_ 的释放条件。
+当前锁定释放主要依赖 minimum_lock_hold_time 和 decision_unlock_distance，
+但场景 2 中先行车停在冲突相关区域时，该条件可能长期不满足。
+
+建议新增“通过冲突区”或“先行车停滞超时”的释放/重仲裁机制。
+在这之前，不建议把问题归因到 QP，也不建议急着恢复 QP 参数。
+```

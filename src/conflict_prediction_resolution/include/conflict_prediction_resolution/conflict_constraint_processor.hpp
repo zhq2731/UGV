@@ -38,6 +38,10 @@ private:
   double timeout_max_speed_ = 1.0;
   // 依据当前轨迹投影出的 stop_s 停车兜底时使用的最大减速度，越大越靠近停车点才明显降速。
   double deceleration_limit_ = 1.5;
+  // 冲突速度规划和 QP 都无法给出可靠结果时使用的安全兜底减速度，通常高于舒适减速度。
+  double emergency_stop_deceleration_ = 2.5;
+  // 平滑让行规则粗解使用的额定舒适减速度，车辆会先按该减速度逐步降到巡航让行速度。
+  double smooth_yield_deceleration_ = 0.8;
   // 从冲突入口点向后预留的基础停车安全距离。由于 ConflictConstraint 不再携带 stop_s，
   // 停车点由 planner 使用当前轨迹投影结果实时计算。
   double stop_margin_ = 1.0;
@@ -57,14 +61,16 @@ private:
   int fixed_time_max_points_ = 160;
   // 单次规划循环时间，拼接段末点 planning_start_point 的 relative_time 会被规范为该值。
   double planning_cycle_time_ = 0.1;
-  // 低速等待段截断阈值：相邻点几乎不动且速度低于该值时，认为后续是在原地等待。
-  double waiting_truncation_speed_threshold_ = 0.15;
-  // 判断等待平台段时使用的最小 s/xy 变化阈值。
-  double waiting_truncation_s_gap_ = 0.01;
-  double waiting_truncation_xy_gap_ = 0.01;
 
   ConflictVelocityOptimizer velocity_optimizer_;
   planning_msgs::ConflictConstraint latest_constraint_;
+  // 最近一次完整的让行决策缓存。
+  // 用途：冲突预判在避让车减速后可能短暂输出 ROLE_NONE，若 planner 立即释放约束，
+  // 车辆会重新加速并再次触发冲突，形成速度上下波动。这里缓存 YIELD 决策，
+  // 在很短的释放保持时间内继续让行，具体是否还能使用仍由 cpp 中的空间投影校验决定。
+  planning_msgs::ConflictConstraint last_yield_constraint_;
+  ros::Time last_yield_update_time_;
+  bool have_last_yield_constraint_ = false;
   std::mutex mutex_;
 };
 

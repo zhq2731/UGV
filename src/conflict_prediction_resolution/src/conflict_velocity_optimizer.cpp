@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -14,6 +16,17 @@ namespace conflict_prediction_resolution
 {
 namespace
 {
+
+// 以下常量是 QP 求解器输入/输出保护阈值，不作为实验参数开放：
+// 1. 它们用于防止 dense QP 规模失控、dt 过小导致矩阵病态、输出重复几何点进入控制器；
+// 2. 它们不是冲突消解策略的调参维度，固定后可以减少参数文件噪声；
+// 3. 若未来更换稀疏 QP 或控制器接口，再统一在代码层面审查这些保护值。
+constexpr bool kEnableOutputValidation = true;
+constexpr double kMinOutputSGap = 0.01;   // m，QP 输出相邻点至少需要的 s 间隔。
+constexpr double kMinOutputXYGap = 0.01;  // m，QP 输出相邻点至少需要的平面距离。
+constexpr size_t kMaxQpPoints = 180;      // dense QP 最大节点数，避免矩阵规模过大。
+constexpr double kMinQpDt = 0.02;         // s，低于该时间步长时动力学约束容易病态。
+constexpr double kEntryTimeTolerance = 0.2;  // s，冲突进入时间的工程容差，避免毫秒级误差触发急停。
 
 size_t sIndex(const size_t i)
 {
@@ -38,6 +51,37 @@ size_t aIndex(const size_t n, const size_t i)
 double clampValue(const double value, const double lower, const double upper)
 {
   return std::max(lower, std::min(upper, value));
+}
+
+double relativeTimeAtS(const planning_msgs::TrajectoryPointArray& trajectory, const double query_s)
+{
+  // 在轨迹上按 s 查询 relative_time。QP 使用固定时间节点表达
+  // “不早于目标时间进入冲突区”，最终验收时仍需要把冲突入口 s 反查成时间。
+  if (trajectory.points.empty())
+  {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  if (query_s <= trajectory.points.front().s)
+  {
+    return trajectory.points.front().relative_time;
+  }
+
+  for (size_t i = 1; i < trajectory.points.size(); ++i)
+  {
+    const auto& prev = trajectory.points[i - 1];
+    const auto& cur = trajectory.points[i];
+    if (query_s > cur.s)
+    {
+      continue;
+    }
+
+    const double ds = cur.s - prev.s;
+    const double ratio = ds > 1.0e-6 ? clampValue((query_s - prev.s) / ds, 0.0, 1.0) : 0.0;
+    return prev.relative_time + (cur.relative_time - prev.relative_time) * ratio;
+  }
+
+  return trajectory.points.back().relative_time;
 }
 
 double curvatureSpeedLimit(const double kappa, const double max_lateral_acc, const double max_speed)
@@ -67,7 +111,8 @@ bool isFiniteTrajectoryPoint(const planning_msgs::TrajectoryPoint& point)
 bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& trajectory,
                                  const size_t start_index,
                                  const double min_s_gap,
-                                 const double min_xy_gap)
+                                 const double min_xy_gap,
+                                 std::string* reject_reason)
 {
   // 控制器会对轨迹点做样条/时间插值，因此 QP 输出必须满足几个基本条件：
   // 1. 数值全部有限；
@@ -76,6 +121,10 @@ bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& traj
   // 4. 非拼接段不能被压成大量重复几何点，否则控制器去重后可能点数不足而崩溃。
   if (trajectory.points.empty() || start_index + 1 >= trajectory.points.size())
   {
+    if (reject_reason)
+    {
+      *reject_reason = "too_few_points";
+    }
     return false;
   }
 
@@ -85,6 +134,10 @@ bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& traj
     const auto& current = trajectory.points[i];
     if (!isFiniteTrajectoryPoint(current) || current.v < -1.0e-3)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "non_finite_or_negative_velocity index=" + std::to_string(i);
+      }
       return false;
     }
 
@@ -97,12 +150,22 @@ bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& traj
     const double dt = current.relative_time - previous.relative_time;
     if (dt <= 1.0e-4)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "non_increasing_time index=" + std::to_string(i) +
+                         " dt=" + std::to_string(dt);
+      }
       return false;
     }
 
     const double ds = current.s - previous.s;
     if (ds < -1.0e-4)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "s_regression index=" + std::to_string(i) +
+                         " ds=" + std::to_string(ds);
+      }
       return false;
     }
 
@@ -110,6 +173,13 @@ bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& traj
     const double dy = current.y - previous.y;
     if (ds <= min_s_gap && std::hypot(dx, dy) <= min_xy_gap)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "duplicate_geometry index=" + std::to_string(i) +
+                         " ds=" + std::to_string(ds) +
+                         " dxy=" + std::to_string(std::hypot(dx, dy)) +
+                         " v=" + std::to_string(current.v);
+      }
       return false;
     }
     if (ds > min_s_gap || std::hypot(dx, dy) > min_xy_gap)
@@ -118,7 +188,59 @@ bool validateOptimizedTrajectory(const planning_msgs::TrajectoryPointArray& traj
     }
   }
 
+  if (unique_count < 2 && reject_reason)
+  {
+    *reject_reason = "geometry_degenerated unique_count=" + std::to_string(unique_count);
+  }
+
   return unique_count >= 2;
+}
+
+bool truncateDuplicateGeometryTailForController(planning_msgs::TrajectoryPointArray& trajectory,
+                                                const size_t start_index,
+                                                const double min_s_gap,
+                                                const double min_xy_gap)
+{
+  // 定时间 QP 为满足“不早于冲突时间进入”的约束，可能会让多个时间节点停在同一个 s。
+  // 这在速度语义上表示“等待”，但 trajectory_follower 的几何弧长插值要求相邻点严格向前。
+  // 因此在 QP 输出校验前，先把第一个重复几何点之后的等待平台截掉，
+  // 用“轨迹在停车点结束”表达等待，而不是向控制器发送一串重复点。
+  if (trajectory.points.empty() || start_index + 1 >= trajectory.points.size())
+  {
+    return false;
+  }
+
+  const double s_gap = std::max(0.0, min_s_gap);
+  const double xy_gap = std::max(0.0, min_xy_gap);
+  for (size_t i = start_index + 1; i < trajectory.points.size(); ++i)
+  {
+    const auto& prev = trajectory.points[i - 1];
+    const auto& cur = trajectory.points[i];
+    const double ds = cur.s - prev.s;
+    const double dxy = std::hypot(cur.x - prev.x, cur.y - prev.y);
+    if (ds <= s_gap && dxy <= xy_gap)
+    {
+      // 若重复点紧贴 QP 起点，说明本轮 QP 没有生成任何可用的前向几何，
+      // 继续截断会只剩拼接点，控制器仍无法跟踪，因此交给调用方回退规则粗解。
+      if (i <= start_index + 1)
+      {
+        return false;
+      }
+
+      trajectory.points.resize(i);
+      trajectory.points.back().v = 0.0;
+      trajectory.points.back().a = 0.0;
+      ROS_WARN_THROTTLE(1.0,
+                        "conflict velocity QP waiting tail truncated before validation. "
+                        "index=%zu ds=%.6f dxy=%.6f",
+                        i,
+                        ds,
+                        dxy);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 planning_msgs::TrajectoryPoint interpolatePointByS(const planning_msgs::TrajectoryPointArray& reference,
@@ -184,17 +306,51 @@ void ConflictVelocityOptimizer::loadParam(ros::NodeHandle& private_nh)
   private_nh.param<double>("conflict_qp_max_speed", max_speed_, max_speed_);
   private_nh.param<double>("conflict_qp_max_lateral_acc", max_lateral_acc_, max_lateral_acc_);
   private_nh.param<double>("conflict_qp_not_early_s_margin", not_early_s_margin_, not_early_s_margin_);
-  private_nh.param<bool>("conflict_qp_enable_output_validation",
-                         enable_output_validation_,
-                         enable_output_validation_);
-  private_nh.param<double>("conflict_qp_min_output_s_gap", min_output_s_gap_, min_output_s_gap_);
-  private_nh.param<double>("conflict_qp_min_output_xy_gap", min_output_xy_gap_, min_output_xy_gap_);
-  private_nh.param<int>("conflict_qp_max_points", max_points_, max_points_);
-  private_nh.param<double>("conflict_qp_min_dt", min_dt_, min_dt_);
   private_nh.param<int>("conflict_qp_max_iter", max_iter_, max_iter_);
   private_nh.param<double>("conflict_qp_eps_abs", eps_abs_, eps_abs_);
   private_nh.param<double>("conflict_qp_eps_rel", eps_rel_, eps_rel_);
   private_nh.param<bool>("conflict_qp_verbose", verbose_, verbose_);
+}
+
+bool ConflictVelocityOptimizer::satisfiesEntryTimeConstraint(
+    const planning_msgs::TrajectoryPointArray& trajectory,
+    const double yield_entry_s,
+    const double target_entry_time_from_now,
+    double* checked_entry_time) const
+{
+  // 规则粗解和 QP 结果共用这个验收逻辑：
+  // 1. 没有有效时间约束时直接通过；
+  // 2. 输出轨迹如果还没走到冲突入口前的保护位置，说明车辆会在入口前等待；
+  // 3. 否则按当前输出轨迹重新计算入口时间，必须不早于目标进入时间。
+  if (checked_entry_time)
+  {
+    *checked_entry_time = std::numeric_limits<double>::infinity();
+  }
+
+  if (!std::isfinite(yield_entry_s) || !std::isfinite(target_entry_time_from_now))
+  {
+    return true;
+  }
+
+  if (trajectory.points.empty())
+  {
+    return false;
+  }
+
+  const double protected_entry_s = yield_entry_s - std::max(0.0, not_early_s_margin_);
+  if (trajectory.points.back().s < protected_entry_s)
+  {
+    return true;
+  }
+
+  const double entry_time = relativeTimeAtS(trajectory, protected_entry_s);
+  if (checked_entry_time)
+  {
+    *checked_entry_time = entry_time;
+  }
+
+  return std::isfinite(entry_time) &&
+         entry_time + kEntryTimeTolerance >= target_entry_time_from_now;
 }
 
 bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& trajectory,
@@ -220,7 +376,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
   {
     return false;
   }
-  if (max_points_ > 0 && n > static_cast<size_t>(max_points_))
+  if (n > kMaxQpPoints)
   {
     // 当前实现复用 velocity_planner 的 dense OSQPInterface，矩阵规模随 N^2 增长。
     // 低速让行时如果固定时间粗轨迹被采成数千点，会导致内存/耗时急剧放大，
@@ -228,7 +384,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     ROS_WARN_THROTTLE(1.0,
                       "conflict velocity QP skipped: too many points n=%zu max=%d",
                       n,
-                      max_points_);
+                      static_cast<int>(kMaxQpPoints));
     return false;
   }
 
@@ -283,7 +439,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     const size_t aj = aIndex(n, i + 1);
     const double dt = reference.points[start + i + 1].relative_time -
                       reference.points[start + i].relative_time;
-    if (dt < min_dt_)
+    if (dt < kMinQpDt)
     {
       ROS_WARN_THROTTLE(1.0, "conflict velocity QP skipped: dt %.4f is too small", dt);
       return false;
@@ -293,7 +449,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     // 展开：
     //   w/dt * (a_i^2 - 2*a_i*a_{i+1} + a_{i+1}^2)
     // 因为 OSQP 目标函数前面有 1/2，所以矩阵里写入 2*w/dt 和 -2*w/dt。
-    const double jerk_weight = std::max(0.0, weight_jerk_) / std::max(min_dt_, dt);
+    const double jerk_weight = std::max(0.0, weight_jerk_) / std::max(kMinQpDt, dt);
     hessian(ai, ai) += 2.0 * jerk_weight;
     hessian(aj, aj) += 2.0 * jerk_weight;
     hessian(ai, aj) += -2.0 * jerk_weight;
@@ -320,7 +476,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     if (has_entry_time_constraint &&
         std::isfinite(yield_entry_s) &&
         std::isfinite(target_entry_time_from_now) &&
-        node_time + 1.0e-6 < target_entry_time_from_now)
+        node_time + kEntryTimeTolerance < target_entry_time_from_now)
     {
       // “不早于目标时间进入冲突区”转成线性空间约束：
       // 在目标时间之前的所有固定时间节点，都不能越过冲突入口。
@@ -466,15 +622,31 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     optimized_trajectory.points[global_index] = out;
   }
 
-  if (enable_output_validation_ &&
-      !validateOptimizedTrajectory(optimized_trajectory,
-                                   start,
-                                   std::max(0.0, min_output_s_gap_),
-                                   std::max(0.0, min_output_xy_gap_)))
+  truncateDuplicateGeometryTailForController(optimized_trajectory,
+                                             start,
+                                             kMinOutputSGap,
+                                             kMinOutputXYGap);
+
+  if (kEnableOutputValidation &&
+      [&]() {
+        std::string reject_reason;
+        const bool valid = validateOptimizedTrajectory(optimized_trajectory,
+                                                       start,
+                                                       kMinOutputSGap,
+                                                       kMinOutputXYGap,
+                                                       &reject_reason);
+        if (!valid)
+        {
+          ROS_WARN_THROTTLE(1.0,
+                            "conflict velocity QP output rejected, keep rule-based profile. "
+                            "reason=%s start=%zu points=%zu",
+                            reject_reason.c_str(),
+                            start,
+                            optimized_trajectory.points.size());
+        }
+        return !valid;
+      }())
   {
-    ROS_WARN_THROTTLE(1.0,
-                      "conflict velocity QP output rejected, keep rule-based profile. "
-                      "reason=invalid_time_or_duplicate_points");
     return false;
   }
 

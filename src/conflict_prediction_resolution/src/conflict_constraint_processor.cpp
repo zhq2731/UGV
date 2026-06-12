@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <geometry_msgs/Point.h>
@@ -25,6 +26,16 @@ using ugv::common::math::Vec2d;
 using ugv::common::math::lerp;
 using ugv::planning::DiscretizedTrajectory;
 using ugv::planning::PathPoint;
+
+// 以下常量属于控制器输入保护和拼接稳定性的内部阈值，不作为外部参数开放：
+// 1. 它们不是冲突消解策略本身的调参项；
+// 2. 数值只用于避免重复几何点、过短停车视野等工程异常；
+// 3. 频繁改动反而会让实验参数含义变乱，因此固定在代码中并在这里集中说明。
+constexpr double kMinStopTimeHorizon = 3.0;                // s，停车点至少保留的时间视野。
+constexpr double kFinalTimeDtFloor = 0.02;                 // s，最终输出轨迹最小时间间隔保护。
+constexpr double kStoppedTailLength = 6.0;                 // m，停车后保留给控制器横向跟踪的零速几何尾迹。
+constexpr double kStoppedTailCreepSpeed = 0.02;            // m/s，零速尾迹的时间展开速度，避免控制器认为应快速前进。
+constexpr double kYieldReleaseHoldTime = 3.0;              // s，ROLE_NONE 后继续保持最近让行决策的滞回时间。
 
 std::vector<PathPoint> makePathPoints(const planning_msgs::TrajectoryPointArray& trajectory)
 {
@@ -75,6 +86,86 @@ double relativeTimeAtS(const planning_msgs::TrajectoryPointArray& trajectory, co
   }
 
   return trajectory.points.back().relative_time;
+}
+
+bool computeComfortYieldCruiseSpeed(const double distance_to_entry,
+                                    const double target_entry_time,
+                                    const double initial_speed,
+                                    const double comfortable_deceleration,
+                                    double& cruise_speed)
+{
+  // 根据“先舒适减速，再低速巡航”的模型，反推为了不早于目标时间进入冲突区，
+  // 需要降到的巡航让行速度。
+  //
+  // 运动模型：
+  //   1. 车辆从初速度 v0 开始，以额定舒适减速度 b 降到 v_c；
+  //   2. 到达 v_c 后保持 v_c 巡航；
+  //   3. 在 target_entry_time 时刻刚好走完 distance_to_entry。
+  //
+  // 若减速阶段能在目标时间内完成：
+  //   D = v_c * T + (v0 - v_c)^2 / (2b)
+  // 这里通过一元二次方程求 v_c。若目标时间/距离要求过严，说明靠舒适降速已经
+  // 无法满足，需要退化为停车让行。
+  const double distance = std::max(0.0, distance_to_entry);
+  const double target_time = target_entry_time;
+  const double v0 = std::max(0.0, initial_speed);
+  const double decel = std::max(1.0e-3, comfortable_deceleration);
+
+  if (!std::isfinite(distance) || !std::isfinite(target_time) ||
+      !std::isfinite(v0) || target_time <= 1.0e-3)
+  {
+    return false;
+  }
+
+  if (distance >= v0 * target_time)
+  {
+    // 按初速度走都不会早到，不需要为了冲突额外降速。
+    cruise_speed = v0;
+    return true;
+  }
+
+  const double stop_time = v0 / decel;
+  const double min_distance =
+      stop_time <= target_time
+          ? v0 * v0 / (2.0 * decel)
+          : v0 * target_time - 0.5 * decel * target_time * target_time;
+  if (distance < min_distance - 1.0e-3)
+  {
+    // 在额定舒适减速度下，即使持续减速也会越过目标距离。
+    // 这种情况不能再给“巡航让行速度”，应由上层切换为停车让行。
+    return false;
+  }
+
+  const double discriminant =
+      decel * decel * target_time * target_time -
+      2.0 * decel * (v0 * target_time - distance);
+  if (discriminant < -1.0e-6)
+  {
+    return false;
+  }
+
+  const double delta_v = decel * target_time - std::sqrt(std::max(0.0, discriminant));
+  cruise_speed = std::max(0.0, v0 - std::max(0.0, delta_v));
+  return std::isfinite(cruise_speed);
+}
+
+double comfortDecelSpeedCapAtS(const double query_s,
+                               const double start_s,
+                               const double initial_speed,
+                               const double cruise_speed,
+                               const double comfortable_deceleration)
+{
+  // 生成“从初速度按舒适减速度逐渐降到巡航让行速度”的速度包络。
+  // 该包络不会在规划起点直接跳到低速，而是随 s 增长逐步降低：
+  //   v(s)^2 = v0^2 - 2*b*(s - s0)
+  // 并且最低不低于 cruise_speed。
+  const double ds = std::max(0.0, query_s - start_s);
+  const double v0 = std::max(0.0, initial_speed);
+  const double cruise = std::max(0.0, cruise_speed);
+  const double decel = std::max(1.0e-3, comfortable_deceleration);
+  const double decel_speed =
+      std::sqrt(std::max(0.0, v0 * v0 - 2.0 * decel * ds));
+  return std::max(cruise, decel_speed);
 }
 
 bool projectPointToCurrentTrajectory(const planning_msgs::TrajectoryPointArray& trajectory,
@@ -163,10 +254,14 @@ void normalizeStitchedPrefixTiming(planning_msgs::TrajectoryPointArray& trajecto
                                    const double planning_cycle_time)
 {
   // 当前工程的 RefLinePlanner 中，planning_start_point 等于 traj_stitcher.back()。
-  // 为了让冲突速度粗解的时间零点更清晰，这里只规范拼接前缀的 relative_time：
-  // 1. 拼接段末点，也就是本轮路径规划起点，固定为单次规划循环时间；
-  // 2. 末点之前的拼接点按原相邻时间间隔向前递推；
+  // 这里参考 Apollo 的拼接时间表达原则：
+  // 1. 拼接段末点，也就是本轮路径规划起点，表示“当前时刻向前一个规划周期”的点，
+  //    因此固定为单次规划循环时间；
+  // 2. 末点之前的拼接点按原相邻时间间隔向前递推，可以小于规划周期，也允许为负；
   // 3. 不在这里修改非拼接后缀，后缀由规则速度修正和固定时间重采样负责。
+  //
+  // 注意：旧实现会把前缀点 relative_time 强制夹到 0 以上，这不符合 Apollo。
+  // Apollo 中已经落在当前时刻之前的拼接点会表现为负 relative_time。
   if (trajectory.points.empty())
   {
     return;
@@ -190,8 +285,7 @@ void normalizeStitchedPrefixTiming(planning_msgs::TrajectoryPointArray& trajecto
                                         trajectory.points[i],
                                         old_relative_times[i - 1],
                                         old_relative_times[i]);
-    trajectory.points[i - 1].relative_time =
-        std::max(0.0, trajectory.points[i].relative_time - dt);
+    trajectory.points[i - 1].relative_time = trajectory.points[i].relative_time - dt;
   }
 
   for (size_t i = 1; i <= end_index; ++i)
@@ -201,6 +295,45 @@ void normalizeStitchedPrefixTiming(planning_msgs::TrajectoryPointArray& trajecto
     {
       trajectory.points[i].a = (trajectory.points[i].v - trajectory.points[i - 1].v) / dt;
     }
+  }
+}
+
+void normalizeNonStitchedSuffixS(planning_msgs::TrajectoryPointArray& trajectory,
+                                 const size_t stitching_end_index)
+{
+  // 当前 path planner 的拼接轨迹里，拼接前缀来自上一帧轨迹，新规划后缀来自本帧路径。
+  // 这里参考 Apollo 的拼接 s 表达原则：
+  // 1. 以拼接段末点作为 s=0；
+  // 2. 拼接前缀点用 old_s - stitching_end_old_s 表达，因此通常为负；
+  // 3. 非拼接后缀从拼接末点开始，按 x/y 弧长继续向前累加，因此为正。
+  //
+  // 这样冲突消解内部看到的纵向坐标和 Apollo 一样，以“规划连接点”为零点，
+  // 可以避免拼接前缀 s 已经走到 2~3m，而新规划后缀又从 0.5m 开始造成 s 回退。
+  // 注意：该归一化只作用于冲突模块内部传递的 trajectory，不改全局路径规划器的拼接实现。
+  if (trajectory.points.empty())
+  {
+    return;
+  }
+
+  const size_t end_index = std::min(stitching_end_index, trajectory.points.size() - 1);
+  const double zero_s = trajectory.points[end_index].s;
+
+  for (size_t i = 0; i <= end_index; ++i)
+  {
+    trajectory.points[i].s -= zero_s;
+  }
+
+  if (end_index + 1 >= trajectory.points.size())
+  {
+    return;
+  }
+
+  for (size_t i = end_index + 1; i < trajectory.points.size(); ++i)
+  {
+    const auto& prev = trajectory.points[i - 1];
+    auto& cur = trajectory.points[i];
+    const double ds_xy = std::hypot(cur.x - prev.x, cur.y - prev.y);
+    cur.s = prev.s + std::max(0.0, ds_xy);
   }
 }
 
@@ -219,11 +352,18 @@ void recomputeTimingFrom(planning_msgs::TrajectoryPointArray& trajectory, const 
     auto& cur = trajectory.points[i];
     const double ds = std::max(0.0, cur.s - prev.s);
     const double avg_v = 0.5 * (std::max(0.0, prev.v) + std::max(0.0, cur.v));
-    const double dt = ds > 1e-3 ? ds / std::max(0.1, avg_v) : 0.1;
+    const bool stopped_tail = prev.v < 1.0e-3 && cur.v < 1.0e-3 && ds > 1.0e-3;
+    const double dt = stopped_tail
+                          ? ds / kStoppedTailCreepSpeed
+                          : (ds > 1e-3 ? ds / std::max(0.1, avg_v) : 0.1);
     cur.relative_time = prev.relative_time + dt;
     cur.a = (cur.v - prev.v) / std::max(0.1, dt);
   }
 }
+
+bool truncateTrajectoryAtStopS(planning_msgs::TrajectoryPointArray& trajectory,
+                               size_t fixed_prefix_end_index,
+                               double stop_s);
 
 void enforceStrictlyIncreasingRelativeTime(planning_msgs::TrajectoryPointArray& trajectory,
                                            const double min_dt)
@@ -255,17 +395,30 @@ void enforceStrictlyIncreasingRelativeTime(planning_msgs::TrajectoryPointArray& 
   }
 }
 
-bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& trajectory)
+bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& trajectory,
+                                     const size_t strict_check_start_index,
+                                     std::string* reject_reason = nullptr)
 {
   // 冲突速度处理后的最终轨迹要交给 trajectory_follower。
-  // 这里做轻量但关键的输入保护：发现非有限数、时间不递增、s 回退、
-  // 或整条轨迹几何退化时，直接回退到冲突处理前轨迹。
+  // 这里做轻量但关键的输入保护：
+  // 1. 全轨迹检查非有限数和 relative_time 递增，因为这些一定会破坏插值；
+  // 2. 只从 strict_check_start_index 开始严格检查 s 回退/重复几何。
+  //
+  // 原因是拼接前缀来自上一帧规划，里面偶尔会存在很小的 s 抖动，
+  // 但它不是冲突模块本轮新增的问题；如果把前缀也当成冲突输出错误，
+  // 会触发“冲突消解失败 -> 恢复原始轨迹 -> 下一帧继续失败”的循环。
+  // 真正需要拦截的是冲突模块改写后的非拼接后缀，以及拼接末点到后缀的边界。
   if (trajectory.points.size() < 2)
   {
+    if (reject_reason)
+    {
+      *reject_reason = "too_few_points";
+    }
     return false;
   }
 
-  size_t unique_geometry_count = 1;
+  const size_t check_start =
+      std::min(strict_check_start_index, trajectory.points.size() - 1);
   for (size_t i = 0; i < trajectory.points.size(); ++i)
   {
     const auto& point = trajectory.points[i];
@@ -280,6 +433,10 @@ bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& 
         std::isfinite(point.relative_time);
     if (!finite || point.v < -1.0e-3)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "non_finite_or_negative_velocity index=" + std::to_string(i);
+      }
       return false;
     }
 
@@ -291,10 +448,28 @@ bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& 
     const auto& prev = trajectory.points[i - 1];
     if (point.relative_time <= prev.relative_time + 1.0e-4)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "non_increasing_time index=" + std::to_string(i) +
+                         " prev_t=" + std::to_string(prev.relative_time) +
+                         " cur_t=" + std::to_string(point.relative_time);
+      }
       return false;
     }
+
+    if (i < check_start)
+    {
+      continue;
+    }
+
     if (point.s < prev.s - 1.0e-4)
     {
+      if (reject_reason)
+      {
+        *reject_reason = "s_regression index=" + std::to_string(i) +
+                         " prev_s=" + std::to_string(prev.s) +
+                         " cur_s=" + std::to_string(point.s);
+      }
       return false;
     }
 
@@ -304,16 +479,19 @@ bool validateTrajectoryForController(const planning_msgs::TrajectoryPointArray& 
     {
       // MPC 横向控制会按几何弧长重采样。相邻重复点会让累计弧长出现相等值，
       // 进而触发 “base_keys is not sorted” 异常，所以这里必须严格拦住。
+      if (reject_reason)
+      {
+        *reject_reason = "duplicate_geometry index=" + std::to_string(i) +
+                         " ds=" + std::to_string(ds) +
+                         " dxy=" + std::to_string(dxy) +
+                         " prev_v=" + std::to_string(prev.v) +
+                         " cur_v=" + std::to_string(point.v);
+      }
       return false;
-    }
-
-    if (dxy > 1.0e-3 || ds > 1.0e-3)
-    {
-      ++unique_geometry_count;
     }
   }
 
-  return unique_geometry_count >= 2;
+  return true;
 }
 
 planning_msgs::TrajectoryPoint interpolatePointByS(
@@ -371,9 +549,14 @@ bool truncateTrajectoryAtStopS(planning_msgs::TrajectoryPointArray& trajectory,
                                const size_t fixed_prefix_end_index,
                                const double stop_s)
 {
-  // 停车等待的表达方式采用“截断到停车点”，而不是在停车点后保留一串相同位置点。
-  // 当前 trajectory_follower 会按几何弧长做插值，相同位置点会让弧长 key 不严格递增，
-  // 因此 stop_s 之后的轨迹必须删掉，等待动作交给下一轮规划继续处理。
+  // 停车等待不能在停车点后复制一串相同位置点，因为 trajectory_follower 会按几何弧长插值，
+  // 重复几何点会让弧长 key 不严格递增。
+  //
+  // 但也不能只保留“当前位置 + 停车点”两个点：本工程 MPC 横向控制需要足够长的几何路径
+  // 做预测，过短轨迹会让车辆看起来脱离实际轨迹。因此这里采用折中表达：
+  //   1. 在 stop_s 处插入一个零速停车点；
+  //   2. stop_s 之后沿原路径保留约 kStoppedTailLength 的几何尾迹；
+  //   3. 尾迹点全部置零速，表示车辆到停车点后等待，不允许继续驶入冲突区。
   if (!std::isfinite(stop_s) || trajectory.points.empty() ||
       fixed_prefix_end_index + 1 >= trajectory.points.size())
   {
@@ -397,6 +580,32 @@ bool truncateTrajectoryAtStopS(planning_msgs::TrajectoryPointArray& trajectory,
     return false;
   }
 
+  const auto original_points = trajectory.points;
+  auto append_stopped_tail = [&](const size_t first_tail_index) {
+    const double tail_end_s = stop_s + kStoppedTailLength;
+    for (size_t i = first_tail_index; i < original_points.size(); ++i)
+    {
+      if (original_points[i].s > tail_end_s)
+      {
+        break;
+      }
+
+      const auto& previous = trajectory.points.back();
+      const double ds = original_points[i].s - previous.s;
+      const double dxy = std::hypot(original_points[i].x - previous.x,
+                                    original_points[i].y - previous.y);
+      if (ds <= 1.0e-4 && dxy <= 1.0e-4)
+      {
+        continue;
+      }
+
+      auto tail_point = original_points[i];
+      tail_point.v = 0.0;
+      tail_point.a = 0.0;
+      trajectory.points.push_back(tail_point);
+    }
+  };
+
   planning_msgs::TrajectoryPoint stop_point;
   if (stop_index == begin && stop_s <= trajectory.points[fixed_prefix_end_index].s + 1.0e-4)
   {
@@ -406,59 +615,15 @@ bool truncateTrajectoryAtStopS(planning_msgs::TrajectoryPointArray& trajectory,
     trajectory.points.resize(begin + 1);
     trajectory.points.back().v = 0.0;
     trajectory.points.back().a = 0.0;
+    append_stopped_tail(begin + 1);
     return true;
   }
 
   stop_point = interpolatePointByS(trajectory, fixed_prefix_end_index, stop_s);
   trajectory.points.resize(stop_index);
   trajectory.points.push_back(stop_point);
+  append_stopped_tail(stop_index);
   return true;
-}
-
-bool truncateLowSpeedWaitingTail(planning_msgs::TrajectoryPointArray& trajectory,
-                                 const size_t fixed_prefix_end_index,
-                                 const double speed_threshold,
-                                 const double min_s_gap,
-                                 const double min_xy_gap)
-{
-  // QP 的“不早于冲突时间进入”约束可能让若干固定时间节点贴在同一个 s 上；
-  // 规则停车也可能在低速末端形成平台段。平台段对速度语义是“等待”，
-  // 但对控制器几何插值是非法重复点，因此这里把等待段截断到第一个静止点。
-  if (trajectory.points.empty() || fixed_prefix_end_index + 1 >= trajectory.points.size())
-  {
-    return false;
-  }
-
-  const double v_threshold = std::max(0.0, speed_threshold);
-  const double s_gap = std::max(0.0, min_s_gap);
-  const double xy_gap = std::max(0.0, min_xy_gap);
-  for (size_t i = fixed_prefix_end_index + 1; i < trajectory.points.size(); ++i)
-  {
-    const auto& prev = trajectory.points[i - 1];
-    const auto& cur = trajectory.points[i];
-    const double ds = cur.s - prev.s;
-    const double dxy = std::hypot(cur.x - prev.x, cur.y - prev.y);
-    const bool almost_same_geometry = ds <= s_gap && dxy <= xy_gap;
-    const bool almost_stopped =
-        std::max(std::fabs(prev.v), std::fabs(cur.v)) <= v_threshold;
-    if (almost_same_geometry)
-    {
-      // 即使速度字段尚未降到阈值，只要几何已经重复，就不能继续交给控制器。
-      // 这种情况通常来自 QP/粗解的时间约束与几何路径不一致：速度语义还在变化，
-      // 但 x/y/s 已经停在同一个点。这里优先保证控制器输入合法，截断后由下一轮规划接续。
-      trajectory.points.resize(i);
-      trajectory.points.back().v = 0.0;
-      trajectory.points.back().a = 0.0;
-      ROS_WARN_THROTTLE(1.0,
-                        "conflict waiting tail truncated at index=%zu, "
-                        "avoid duplicated geometry points for controller. low_speed=%d",
-                        i - 1,
-                        almost_stopped);
-      return true;
-    }
-  }
-
-  return false;
 }
 
 planning_msgs::TrajectoryPoint interpolatePointByTime(
@@ -520,6 +685,14 @@ void resampleNonStitchedSuffixToFixedTime(planning_msgs::TrajectoryPointArray& t
     return;
   }
 
+  if (trajectory.points.size() <= fixed_prefix_end_index + 2)
+  {
+    // 如果截断后只剩“拼接末点 + 停车点”，不要为了凑固定时间间隔强行插出
+    // 一串很密的几何点。近距离停车时这些点的 xy/s 间隔会非常小，
+    // 反而更容易被控制器识别成重复点。
+    return;
+  }
+
   const double dt = std::max(0.02, fixed_dt);
   const double start_time = trajectory.points[fixed_prefix_end_index].relative_time;
   const double end_time = trajectory.points.back().relative_time;
@@ -566,6 +739,120 @@ void resampleNonStitchedSuffixToFixedTime(planning_msgs::TrajectoryPointArray& t
   }
 }
 
+void extendStopPointTimeHorizon(planning_msgs::TrajectoryPointArray& trajectory,
+                                const size_t fixed_prefix_end_index,
+                                const double min_stop_horizon)
+{
+  // 停车让行时轨迹会被截断到 stop_s。若 stop_s 离拼接末点很近，
+  // 输出轨迹的最后 relative_time 可能只有 0.1~0.2s，下一轮规划就会认为
+  // “current time beyond the previous trajectory's last time”，从而频繁重规划。
+  //
+  // 这里不复制停车点，也不追加重复几何点；只把最后一个停车点的时间戳向后拉长。
+  // 这样控制器仍只看到一个合法的停车几何目标，同时 planner 有足够的时间视野
+  // 用于下一帧轨迹拼接。
+  if (trajectory.points.empty() || fixed_prefix_end_index + 1 >= trajectory.points.size())
+  {
+    return;
+  }
+
+  const double horizon = std::max(0.0, min_stop_horizon);
+  if (horizon <= 1.0e-3)
+  {
+    return;
+  }
+
+  const double start_time = trajectory.points[fixed_prefix_end_index].relative_time;
+  const double start_s = trajectory.points[fixed_prefix_end_index].s;
+  const double start_v = std::max(0.0, trajectory.points[fixed_prefix_end_index].v);
+  auto& stop_point = trajectory.points.back();
+
+  if (trajectory.points.size() <= fixed_prefix_end_index + 2 && start_v > 0.2)
+  {
+    // 近距离停车时，轨迹经常只剩“拼接末点 + 停车点”两个点。
+    // 这种情况下不能为了给 planner 留 3s 拼接视野，直接把停车点时间拉长：
+    // 例如 0.2m 后停车却给 3s，会让控制器看到“很短几何距离 + 较高初速度 + 很长时间”，
+    // 速度、时间、空间三者不一致，车辆容易继续按初速度滑行。
+    //
+    // 因此两点停车轨迹采用物理一致的刹停时间：
+    //   匀减速到 0 时，平均速度约为 v0/2，所以 t_stop = 2 * ds / v0。
+    // 这里仍保留一个很小的下限，避免时间戳过密；但不再强行扩展到 min_stop_horizon。
+    const double stop_distance = std::max(0.0, stop_point.s - start_s);
+    const double physical_stop_time = 2.0 * stop_distance / std::max(0.1, start_v);
+    stop_point.relative_time =
+        std::max(stop_point.relative_time, start_time + std::max(0.1, physical_stop_time));
+  }
+  else
+  {
+    // 已经接近静止，或停车轨迹还有多个前向几何点时，拉长最后停车点时间是安全的：
+    // 它表达“到停车点后等待”，同时不会形成重复几何点序列。
+    stop_point.relative_time = std::max(stop_point.relative_time, start_time + horizon);
+  }
+  stop_point.v = 0.0;
+  stop_point.a = 0.0;
+}
+
+bool buildEmergencyStopFallback(planning_msgs::TrajectoryPointArray& trajectory,
+                                const size_t stitching_end_index,
+                                const size_t mutable_start_index,
+                                const double requested_stop_s,
+                                const double emergency_deceleration,
+                                const double min_stop_horizon,
+                                const double time_dt_floor,
+                                std::string* reject_reason)
+{
+  // 当规则速度规划和 QP 都无法形成可信轨迹时，最后的安全冗余不应恢复原始高速轨迹，
+  // 而应生成一条“尽快停车”的轨迹。这里使用比舒适让行更大的减速度：
+  // - 若有冲突停车点 stop_s，则优先保证不越过该停车点；
+  // - 若没有可用 stop_s，则按当前速度和紧急减速度估计一个刹停距离；
+  // - 只修改非拼接段，拼接前缀仍交给上游规划/控制承接。
+  if (trajectory.points.empty() || mutable_start_index >= trajectory.points.size())
+  {
+    if (reject_reason)
+    {
+      *reject_reason = "emergency_stop_too_few_points";
+    }
+    return false;
+  }
+
+  const size_t start_index = std::min(stitching_end_index, trajectory.points.size() - 1);
+  const double start_s = trajectory.points[start_index].s;
+  const double start_v = std::max(0.0, trajectory.points[start_index].v);
+  const double decel = std::max(0.1, emergency_deceleration);
+  const double estimated_stop_s = start_s + start_v * start_v / (2.0 * decel);
+
+  double emergency_stop_s = estimated_stop_s;
+  if (std::isfinite(requested_stop_s))
+  {
+    // requested_stop_s 来自冲突入口前的停车点，不能为了“平滑”越过它。
+    emergency_stop_s = std::min(requested_stop_s, estimated_stop_s);
+  }
+  emergency_stop_s = std::max(start_s + 1.0e-3, emergency_stop_s);
+
+  for (size_t i = mutable_start_index; i < trajectory.points.size(); ++i)
+  {
+    auto& point = trajectory.points[i];
+    const double remain_s = emergency_stop_s - point.s;
+    if (remain_s <= 0.0)
+    {
+      point.v = 0.0;
+      point.a = 0.0;
+      continue;
+    }
+
+    // 紧急停车包络：v^2 <= 2*a*s。该速度上限会随停车点临近快速降低，
+    // 比舒适让行更保守，作为规则/QP 都失败时的最后保护。
+    const double stop_limit_v = std::sqrt(std::max(0.0, 2.0 * decel * remain_s));
+    point.v = std::min(std::max(0.0, point.v), stop_limit_v);
+  }
+
+  truncateTrajectoryAtStopS(trajectory, stitching_end_index, emergency_stop_s);
+  recomputeTimingFrom(trajectory, stitching_end_index);
+  extendStopPointTimeHorizon(trajectory, stitching_end_index, min_stop_horizon);
+  enforceStrictlyIncreasingRelativeTime(trajectory, time_dt_floor);
+
+  return validateTrajectoryForController(trajectory, mutable_start_index, reject_reason);
+}
+
 }  // namespace
 
 void ConflictConstraintProcessor::loadParam(ros::NodeHandle& private_nh)
@@ -574,6 +861,12 @@ void ConflictConstraintProcessor::loadParam(ros::NodeHandle& private_nh)
   private_nh.param<double>("conflict_constraint_timeout", constraint_timeout_, 2.1);
   private_nh.param<double>("conflict_timeout_max_speed", timeout_max_speed_, 1.0);
   private_nh.param<double>("conflict_deceleration_limit", deceleration_limit_, 1.5);
+  private_nh.param<double>("conflict_emergency_stop_deceleration",
+                           emergency_stop_deceleration_,
+                           2.5);
+  private_nh.param<double>("conflict_smooth_yield_deceleration",
+                           smooth_yield_deceleration_,
+                           0.8);
   private_nh.param<double>("conflict_stop_margin", stop_margin_, 1.0);
   private_nh.param<double>("conflict_stop_buffer", stop_buffer_, 0.0);
   private_nh.param<double>("conflict_min_smooth_yield_speed", min_smooth_yield_speed_, 0.3);
@@ -584,10 +877,6 @@ void ConflictConstraintProcessor::loadParam(ros::NodeHandle& private_nh)
   private_nh.param<double>("conflict_fixed_time_coarse_dt", fixed_time_coarse_dt_, 0.1);
   private_nh.param<int>("conflict_fixed_time_max_points", fixed_time_max_points_, 160);
   private_nh.param<double>("conflict_planning_cycle_time", planning_cycle_time_, 0.1);
-  private_nh.param<double>("conflict_waiting_truncation_speed_threshold",
-                           waiting_truncation_speed_threshold_, 0.15);
-  private_nh.param<double>("conflict_waiting_truncation_s_gap", waiting_truncation_s_gap_, 0.01);
-  private_nh.param<double>("conflict_waiting_truncation_xy_gap", waiting_truncation_xy_gap_, 0.01);
   velocity_optimizer_.loadParam(private_nh);
 }
 
@@ -596,6 +885,24 @@ void ConflictConstraintProcessor::updateConstraint(const planning_msgs::Conflict
   std::lock_guard<std::mutex> lock(mutex_);
   latest_constraint_ = constraint;
   have_constraint_ = true;
+
+  const bool complete_yield_constraint =
+      constraint.role == planning_msgs::ConflictConstraint::ROLE_YIELD &&
+      !constraint.decision_source.empty() &&
+      constraint.has_spatial_constraint;
+  if (complete_yield_constraint)
+  {
+    // 只缓存“完整的 YIELD 决策”：必须有决策来源和冲突入口/出口空间信息。
+    // 这样后续 ROLE_NONE 抖动时可以短时间继续让行，但不会拿半成品消息约束车辆。
+    last_yield_constraint_ = constraint;
+    last_yield_update_time_ = ros::Time::now();
+    have_last_yield_constraint_ = true;
+  }
+  else if (constraint.role == planning_msgs::ConflictConstraint::ROLE_PROCEED)
+  {
+    // 如果冲突模块明确授权本车先行，说明上一条让行缓存已经不应继续生效。
+    have_last_yield_constraint_ = false;
+  }
 }
 
 void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& trajectory,
@@ -607,13 +914,22 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
   }
 
   planning_msgs::ConflictConstraint constraint;
+  planning_msgs::ConflictConstraint held_yield_constraint;
   bool have_constraint = false;
+  bool have_held_yield_constraint = false;
+  ros::Time held_yield_update_time;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (have_constraint_)
     {
       constraint = latest_constraint_;
       have_constraint = true;
+    }
+    if (have_last_yield_constraint_)
+    {
+      held_yield_constraint = last_yield_constraint_;
+      held_yield_update_time = last_yield_update_time_;
+      have_held_yield_constraint = true;
     }
   }
 
@@ -623,6 +939,30 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
   }
 
   const ros::Time now = ros::Time::now();
+  bool using_held_yield_constraint = false;
+  if (constraint.role == planning_msgs::ConflictConstraint::ROLE_NONE &&
+      have_held_yield_constraint &&
+      !held_yield_update_time.isZero())
+  {
+    const double hold_age = (now - held_yield_update_time).toSec();
+    if (hold_age >= 0.0 && hold_age <= kYieldReleaseHoldTime)
+    {
+      // 释放滞回：避让车减速后，冲突预判可能因为时间窗暂时错开而输出 ROLE_NONE。
+      // 如果 planner 立即恢复原始速度，车辆会再次进入冲突预测区，形成“让行-释放-再让行”
+      // 的闭环振荡。这里短时间继续使用最近一次完整 YIELD 决策，并把目标进入时间
+      // 按已经过去的时间扣减，避免把旧决策无条件刷新成新的长等待。
+      constraint = held_yield_constraint;
+      constraint.header.stamp = now;
+      constraint.target_entry_time = std::max(0.0, constraint.target_entry_time - hold_age);
+      using_held_yield_constraint = true;
+      ROS_WARN_THROTTLE(1.0,
+                        "hold last yield constraint after ROLE_NONE, hold_age=%.2f "
+                        "target_entry_time=%.2f",
+                        hold_age,
+                        constraint.target_entry_time);
+    }
+  }
+
   const bool stamp_valid = !constraint.header.stamp.isZero();
   const double age = stamp_valid ? (now - constraint.header.stamp).toSec()
                                  : std::numeric_limits<double>::infinity();
@@ -634,22 +974,23 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
   bool yield_by_time = false;
   double speed_cap = std::numeric_limits<double>::infinity();
   double yield_speed_cap = std::numeric_limits<double>::infinity();
+  double yield_start_s = std::numeric_limits<double>::infinity();
+  double yield_initial_speed = 0.0;
   double yield_entry_s = std::numeric_limits<double>::infinity();
   double stop_s = std::numeric_limits<double>::infinity();
   double target_entry_time_from_now = std::numeric_limits<double>::infinity();
 
-  if (constraint_timeout)
+  if (!constraint_timeout)
   {
-    // 决策消息超时后，不再使用旧的让行关系、冲突入口和目标进入时间。
-    // 但出于安全考虑，需要立刻进入保守降速，只对非拼接段施加低速上限。
-    speed_cap = std::max(0.0, timeout_max_speed_);
-    changed = true;
-    ROS_WARN_THROTTLE(1.0,
-                      "conflict_constraint timeout, applying conservative speed cap %.2f m/s",
-                      speed_cap);
-  }
-  else if (constraint.role == planning_msgs::ConflictConstraint::ROLE_YIELD)
-  {
+    if (constraint.role != planning_msgs::ConflictConstraint::ROLE_YIELD)
+    {
+      // ROLE_NONE 表示冲突预判未作出让行决策；ROLE_PROCEED 表示本车被授权先行。
+      // 两者通常不需要冲突消解速度规划，保持原规划轨迹。
+      // 但 ROLE_NONE 的短时抖动已经在上方通过 using_held_yield_constraint 被转回 YIELD，
+      // 能走到这里说明没有可用保持约束，可以安全释放。
+      return;
+    }
+
     if (!decision_valid)
     {
       // role=YIELD 但没有 decision_source，说明冲突预判没有输出完整决策溯源。
@@ -665,17 +1006,48 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       ROS_WARN_THROTTLE(1.0, "conflict yield constraint has no spatial section, skip constraint");
       return;
     }
+  }
 
-    const std::vector<PathPoint> path_points = makePathPoints(trajectory);
+  // 只有在确实需要执行冲突速度处理时，才识别拼接段并规范内部轨迹。
+  // 注意这里必须早于冲突点投影：拼接轨迹的前缀/后缀 s 可能来自不同坐标系，
+  // 若直接拿原始 s 去投影和做 QP，会把正常拼接边界误判成 s 回退。
+  const planning_msgs::TrajectoryPointArray original_trajectory = trajectory;
+  const size_t stitching_end_index = findStitchingEndIndex(
+      trajectory, planning_start_point, stitching_start_match_max_distance_);
+  planning_msgs::TrajectoryPointArray normalized_trajectory = trajectory;
+  normalizeStitchedPrefixTiming(normalized_trajectory, stitching_end_index, planning_cycle_time_);
+  normalizeNonStitchedSuffixS(normalized_trajectory, stitching_end_index);
+  const size_t mutable_start_index =
+      std::min(stitching_end_index + 1, normalized_trajectory.points.size() - 1);
+
+  if (constraint_timeout)
+  {
+    // 决策消息超时后，不再使用旧的让行关系、冲突入口和目标进入时间。
+    // 但出于安全考虑，需要立刻进入保守降速，只对非拼接段施加低速上限。
+    speed_cap = std::max(0.0, timeout_max_speed_);
+    changed = true;
+    ROS_WARN_THROTTLE(1.0,
+                      "conflict_constraint timeout, applying conservative speed cap %.2f m/s",
+                      speed_cap);
+  }
+  else if (constraint.role == planning_msgs::ConflictConstraint::ROLE_YIELD)
+  {
+    if (using_held_yield_constraint)
+    {
+      ROS_INFO_THROTTLE(1.0,
+                        "apply held yield constraint to avoid release oscillation");
+    }
+
+    const std::vector<PathPoint> path_points = makePathPoints(normalized_trajectory);
 
     double ego_s_in = std::numeric_limits<double>::infinity();
     double ego_s_out = std::numeric_limits<double>::infinity();
     double entry_lateral_error = std::numeric_limits<double>::infinity();
     double exit_lateral_error = std::numeric_limits<double>::infinity();
     const bool entry_projected = projectPointToCurrentTrajectory(
-        trajectory, path_points, constraint.ego_entry_point, ego_s_in, entry_lateral_error);
+        normalized_trajectory, path_points, constraint.ego_entry_point, ego_s_in, entry_lateral_error);
     const bool exit_projected = projectPointToCurrentTrajectory(
-        trajectory, path_points, constraint.ego_exit_point, ego_s_out, exit_lateral_error);
+        normalized_trajectory, path_points, constraint.ego_exit_point, ego_s_out, exit_lateral_error);
 
     // 投影有效性判断：
     // - 入口/出口都能投到当前轨迹；
@@ -707,23 +1079,6 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
     stop_s = std::max(0.0, ego_s_in - std::max(0.0, stop_margin_) - std::max(0.0, stop_buffer_));
     yield_entry_s = std::max(stop_s, ego_s_in);
   }
-  else
-  {
-    // ROLE_NONE 表示冲突预判未作出让行决策；ROLE_PROCEED 表示本车被授权先行。
-    // 两者都不需要冲突消解速度规划，保持原规划轨迹。
-    return;
-  }
-
-  // 只有在确实需要执行冲突速度处理时，才识别拼接段并规范拼接前缀时间。
-  // 这样无约束、直行、空间约束失效等正常场景不会被冲突模块额外改写轨迹。
-  const planning_msgs::TrajectoryPointArray original_trajectory = trajectory;
-  const size_t stitching_end_index = findStitchingEndIndex(
-      trajectory, planning_start_point, stitching_start_match_max_distance_);
-  planning_msgs::TrajectoryPointArray normalized_trajectory = trajectory;
-  normalizeStitchedPrefixTiming(normalized_trajectory, stitching_end_index, planning_cycle_time_);
-  const size_t mutable_start_index =
-      std::min(stitching_end_index + 1, normalized_trajectory.points.size() - 1);
-
   if (std::isfinite(yield_entry_s))
   {
     target_entry_time_from_now =
@@ -740,12 +1095,25 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
           std::max(0.0, yield_entry_s - normalized_trajectory.points[stitching_end_index].s);
       if (remain_s > 1.0e-3 && target_entry_time_from_now > 0.1)
       {
-        // 冲突预判模块不再计算建议速度上限，planner 侧根据当前轨迹剩余距离和
-        // target_entry_time 反推本轮速度上限，避免同一件事在两个模块重复计算。
-        // 轻量平滑让行：用“剩余距离 / 剩余时间”反推进入冲突区前的速度上限。
-        // 这样车辆会提前慢下来等快车通过，而不是靠近 stop_s 后再急刹。
-        const double smooth_speed_cap = remain_s / target_entry_time_from_now;
-        if (smooth_speed_cap > std::max(0.0, min_smooth_yield_speed_))
+        // 冲突预判模块不再计算建议速度上限，planner 侧根据当前轨迹剩余距离、
+        // 初始速度和 target_entry_time 反推本轮规则粗解。
+        //
+        // 旧做法是直接把冲突入口前的所有点夹到 remain_s / time，速度会突然掉到
+        // 一个常数。这里改为更贴近车辆实际的“舒适减速度包络”：
+        //   先按额定舒适减速度从规划起点初速度逐渐降速；
+        //   降到合适巡航让行速度后保持该速度；
+        //   理论上刚好在 target_entry_time 之后进入冲突区域。
+        yield_start_s = normalized_trajectory.points[stitching_end_index].s;
+        yield_initial_speed = std::max(0.0, normalized_trajectory.points[stitching_end_index].v);
+        double smooth_speed_cap = std::numeric_limits<double>::infinity();
+        const bool smooth_speed_valid = computeComfortYieldCruiseSpeed(
+            remain_s,
+            target_entry_time_from_now,
+            yield_initial_speed,
+            smooth_yield_deceleration_,
+            smooth_speed_cap);
+        if (smooth_speed_valid &&
+            smooth_speed_cap > std::max(0.0, min_smooth_yield_speed_))
         {
           yield_speed_cap = smooth_speed_cap;
           yield_by_time = true;
@@ -782,11 +1150,23 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
     if (yield_by_time && point.s < yield_entry_s)
     {
-      target_v = std::min(target_v, yield_speed_cap);
+      const double smooth_yield_cap = comfortDecelSpeedCapAtS(
+          point.s,
+          yield_start_s,
+          yield_initial_speed,
+          yield_speed_cap,
+          smooth_yield_deceleration_);
+      target_v = std::min(target_v, smooth_yield_cap);
     }
 
     if (stop_by_constraint)
     {
+      // 一旦进入停车让行，不能再让原候选轨迹首段速度反向抬升。
+      // 场景 2 中曾出现过这样的现象：前一帧已经降到约 1.2m/s，下一帧因为切换到
+      // 停车轨迹，首段又沿用候选轨迹 1.4~1.5m/s，车辆表现为“先加速再停车”。
+      // 因此停车让行先套一层保守速度上限，再叠加到 stop_s 的制动包络。
+      target_v = std::min(target_v, std::max(0.0, timeout_max_speed_));
+
       const double remain_s = stop_s - point.s;
       if (remain_s <= 0.0)
       {
@@ -812,34 +1192,144 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
     if (stop_by_constraint)
     {
       truncateTrajectoryAtStopS(trajectory, stitching_end_index, stop_s);
+      recomputeTimingFrom(trajectory, stitching_end_index);
+      extendStopPointTimeHorizon(trajectory, stitching_end_index, kMinStopTimeHorizon);
+      enforceStrictlyIncreasingRelativeTime(trajectory, kFinalTimeDtFloor);
+
+      std::string stop_reject_reason;
+      if (validateTrajectoryForController(trajectory, mutable_start_index, &stop_reject_reason))
+      {
+        // 已经明确进入停车让行时，规则轨迹就是安全结果。这里不再送入 QP，
+        // 避免定时间优化把零速等待尾迹压成一串重复 s，再被截断成过短轨迹。
+        return;
+      }
+
+      planning_msgs::TrajectoryPointArray emergency_stop_trajectory = normalized_trajectory;
+      std::string emergency_reject_reason;
+      if (buildEmergencyStopFallback(emergency_stop_trajectory,
+                                     stitching_end_index,
+                                     mutable_start_index,
+                                     stop_s,
+                                     emergency_stop_deceleration_,
+                                     kMinStopTimeHorizon,
+                                     kFinalTimeDtFloor,
+                                     &emergency_reject_reason))
+      {
+        ROS_WARN_THROTTLE(1.0,
+                          "conflict stop trajectory rejected before publish, "
+                          "use emergency stop fallback. reason=%s stop_s=%.2f",
+                          stop_reject_reason.c_str(),
+                          stop_s);
+        trajectory = emergency_stop_trajectory;
+        return;
+      }
+
+      ROS_WARN_THROTTLE(1.0,
+                        "conflict stop trajectory rejected before publish, "
+                        "emergency stop fallback also invalid, restore original planner trajectory. "
+                        "reason=%s emergency_reason=%s stop_s=%.2f",
+                        stop_reject_reason.c_str(),
+                        emergency_reject_reason.c_str(),
+                        stop_s);
+      trajectory = original_trajectory;
+      return;
     }
+
     recomputeTimingFrom(trajectory, stitching_end_index);
     resampleNonStitchedSuffixToFixedTime(trajectory,
                                          stitching_end_index,
                                          fixed_time_coarse_dt_,
                                          fixed_time_max_points_);
-    if (!velocity_optimizer_.optimize(trajectory,
-                                      stitching_end_index,
-                                      speed_cap,
-                                      std::isfinite(yield_entry_s),
-                                      yield_entry_s,
-                                      target_entry_time_from_now))
+    const bool qp_success = velocity_optimizer_.optimize(trajectory,
+                                                         stitching_end_index,
+                                                         speed_cap,
+                                                         std::isfinite(yield_entry_s),
+                                                         yield_entry_s,
+                                                         target_entry_time_from_now);
+    if (!qp_success)
     {
       ROS_WARN_THROTTLE(1.0, "conflict velocity QP fallback to rule-based profile");
     }
 
-    truncateLowSpeedWaitingTail(trajectory,
-                                stitching_end_index,
-                                waiting_truncation_speed_threshold_,
-                                waiting_truncation_s_gap_,
-                                waiting_truncation_xy_gap_);
-    enforceStrictlyIncreasingRelativeTime(
-        trajectory, std::min(std::max(1.0e-3, fixed_time_coarse_dt_), 0.02));
-    if (!validateTrajectoryForController(trajectory))
+    double checked_entry_time = std::numeric_limits<double>::infinity();
+    const bool entry_time_satisfied = velocity_optimizer_.satisfiesEntryTimeConstraint(
+        trajectory, yield_entry_s, target_entry_time_from_now, &checked_entry_time);
+    if (!entry_time_satisfied)
     {
+      // 入口时间验收由 ConflictVelocityOptimizer 统一定义。
+      // 若规则粗解或 QP 结果仍会过早进入冲突区，说明当前速度消解结果不可信，
+      // 直接切换到高减速度停车兜底，不再额外叠加一层低速 fallback。
+      planning_msgs::TrajectoryPointArray emergency_stop_trajectory = normalized_trajectory;
+      std::string emergency_reject_reason;
+      if (buildEmergencyStopFallback(emergency_stop_trajectory,
+                                     stitching_end_index,
+                                     mutable_start_index,
+                                     stop_s,
+                                     emergency_stop_deceleration_,
+                                     kMinStopTimeHorizon,
+                                     kFinalTimeDtFloor,
+                                     &emergency_reject_reason))
+      {
+        ROS_WARN_THROTTLE(1.0,
+                          "conflict velocity profile violates entry time, "
+                          "use emergency stop fallback. qp_success=%d "
+                          "entry_time=%.2f target=%.2f stop_s=%.2f",
+                          qp_success,
+                          checked_entry_time,
+                          target_entry_time_from_now,
+                          stop_s);
+        trajectory = emergency_stop_trajectory;
+        return;
+      }
+
+      ROS_WARN_THROTTLE(1.0,
+                        "conflict emergency stop fallback invalid after entry-time violation. "
+                        "reason=%s entry_time=%.2f target=%.2f",
+                        emergency_reject_reason.c_str(),
+                        checked_entry_time,
+                        target_entry_time_from_now);
+    }
+
+    enforceStrictlyIncreasingRelativeTime(trajectory, kFinalTimeDtFloor);
+    std::string reject_reason;
+    if (!validateTrajectoryForController(trajectory, mutable_start_index, &reject_reason))
+    {
+      planning_msgs::TrajectoryPointArray emergency_stop_trajectory = normalized_trajectory;
+      std::string emergency_reject_reason;
+      if (buildEmergencyStopFallback(emergency_stop_trajectory,
+                                     stitching_end_index,
+                                     mutable_start_index,
+                                     stop_s,
+                                     emergency_stop_deceleration_,
+                                     kMinStopTimeHorizon,
+                                     kFinalTimeDtFloor,
+                                     &emergency_reject_reason))
+      {
+        ROS_WARN_THROTTLE(1.0,
+                          "conflict velocity result rejected before publish, "
+                          "use emergency stop fallback. reason=%s stop_s=%.2f",
+                          reject_reason.c_str(),
+                          stop_s);
+        trajectory = emergency_stop_trajectory;
+        return;
+      }
+
       ROS_WARN_THROTTLE(1.0,
                         "conflict velocity result rejected before publish, "
-                        "restore original planner trajectory");
+                        "emergency stop fallback also invalid, restore original planner trajectory "
+                        "as unavoidable last resort. reason=%s emergency_reason=%s "
+                        "points=%zu stitching_end=%zu stop_by_constraint=%d "
+                        "yield_by_time=%d stop_s=%.2f yield_entry_s=%.2f "
+                        "target_entry_time_from_now=%.2f",
+                        reject_reason.c_str(),
+                        emergency_reject_reason.c_str(),
+                        trajectory.points.size(),
+                        stitching_end_index,
+                        stop_by_constraint,
+                        yield_by_time,
+                        stop_s,
+                        yield_entry_s,
+                        target_entry_time_from_now);
       trajectory = original_trajectory;
     }
   }

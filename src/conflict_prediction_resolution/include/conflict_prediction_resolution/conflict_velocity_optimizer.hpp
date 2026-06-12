@@ -30,6 +30,13 @@ public:
                 double yield_entry_s,
                 double target_entry_time_from_now) const;
 
+  // 检查一条轨迹是否满足“不早于目标时间进入冲突区”。
+  // 该检查服务于 QP/规则粗解的统一验收：如果轨迹没有走到冲突入口，视为仍在入口前等待。
+  bool satisfiesEntryTimeConstraint(const planning_msgs::TrajectoryPointArray& trajectory,
+                                    double yield_entry_s,
+                                    double target_entry_time_from_now,
+                                    double* checked_entry_time = nullptr) const;
+
 private:
   bool enabled_ = true;
 
@@ -49,16 +56,6 @@ private:
 
   // “不早于冲突时间进入”约束的空间余量：t < target_entry_time 时，s 不超过入口前该距离。
   double not_early_s_margin_ = 0.05;
-
-  // QP 输出保护：优化结果如果出现时间不递增、s 回退、整段重复点等异常，
-  // 就丢弃 QP 结果，回退到规则速度粗解，避免异常轨迹进入控制器。
-  bool enable_output_validation_ = true;
-  double min_output_s_gap_ = 0.01;
-  double min_output_xy_gap_ = 0.01;
-  int max_points_ = 180;
-
-  // dt 过小时动力学矩阵病态，低于该值则不执行 QP。
-  double min_dt_ = 0.02;
 
   // OSQP 求解器设置。
   int max_iter_ = 4000;
