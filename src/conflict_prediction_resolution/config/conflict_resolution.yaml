@@ -49,7 +49,7 @@ conflict_fixed_time_coarse_dt: 0.1
 # 固定时间粗轨迹最多保留的非拼接后缀点数。
 # 低速让行会显著拉长到达终点时间，如果不限制点数，0.1s 采样可能生成数千点，
 # 进而导致 QP 矩阵和控制器输入过大。160 点约等于 16s 速度优化视野。
-conflict_fixed_time_max_points: 160
+conflict_fixed_time_max_points: 280
 
 # 单次规划循环时间，单位秒。冲突处理器会把匹配到的 planning_start_point
 # 即拼接段末点的 relative_time 规范为该值，其余拼接前缀点按时间间隔向前递推。

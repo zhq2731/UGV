@@ -34,7 +34,7 @@ using ugv::planning::PathPoint;
 constexpr double kMinStopTimeHorizon = 3.0;                // s，停车点至少保留的时间视野。
 constexpr double kFinalTimeDtFloor = 0.02;                 // s，最终输出轨迹最小时间间隔保护。
 constexpr double kStoppedTailLength = 6.0;                 // m，停车后保留给控制器横向跟踪的零速几何尾迹。
-constexpr double kStoppedTailCreepSpeed = 0.02;            // m/s，零速尾迹的时间展开速度，避免控制器认为应快速前进。
+constexpr double kStoppedTailTimeStep = 0.1;               // s，零速几何尾迹相邻点的固定时间间隔。
 constexpr double kYieldReleaseHoldTime = 3.0;              // s，ROLE_NONE 后继续保持最近让行决策的滞回时间。
 
 std::vector<PathPoint> makePathPoints(const planning_msgs::TrajectoryPointArray& trajectory)
@@ -353,8 +353,13 @@ void recomputeTimingFrom(planning_msgs::TrajectoryPointArray& trajectory, const 
     const double ds = std::max(0.0, cur.s - prev.s);
     const double avg_v = 0.5 * (std::max(0.0, prev.v) + std::max(0.0, cur.v));
     const bool stopped_tail = prev.v < 1.0e-3 && cur.v < 1.0e-3 && ds > 1.0e-3;
+    // 停车点后的几何尾迹只用于给横向 MPC 提供足够长的前向路径，不表示车辆继续运动。
+    // 旧实现按 0.02m/s 的“虚拟爬行速度”展开时间，6m 尾迹会生成约 300s 的时间轴，
+    // 不仅破坏下一轮拼接，还可能使控制器追加的 100s 末点发生时间倒退。
+    // 现在统一使用短固定时间步长：几何仍严格向前、速度保持 0、时间严格递增，
+    // 同时整条停车轨迹保持在正常的秒级时间范围内。
     const double dt = stopped_tail
-                          ? ds / kStoppedTailCreepSpeed
+                          ? kStoppedTailTimeStep
                           : (ds > 1e-3 ? ds / std::max(0.1, avg_v) : 0.1);
     cur.relative_time = prev.relative_time + dt;
     cur.a = (cur.v - prev.v) / std::max(0.1, dt);
@@ -908,8 +913,19 @@ void ConflictConstraintProcessor::updateConstraint(const planning_msgs::Conflict
 void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& trajectory,
                                         const geometry_msgs::Point& planning_start_point)
 {
-  if (!enabled_ || trajectory.points.empty())
+  if (!enabled_)
   {
+    ROS_INFO_THROTTLE(2.0,
+                      "[Conflict Velocity Decision] Conflict constraint processing is disabled; "
+                      "keep the original planned velocity.");
+    return;
+  }
+
+  if (trajectory.points.empty())
+  {
+    ROS_WARN_THROTTLE(1.0,
+                      "[Conflict Velocity Decision] Input trajectory is empty; "
+                      "skip conflict velocity resolution.");
     return;
   }
 
@@ -935,6 +951,9 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
   if (!have_constraint)
   {
+    ROS_INFO_THROTTLE(2.0,
+                      "[Conflict Velocity Decision] No conflict decision has been received; "
+                      "keep the original planned velocity.");
     return;
   }
 
@@ -988,6 +1007,27 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       // 两者通常不需要冲突消解速度规划，保持原规划轨迹。
       // 但 ROLE_NONE 的短时抖动已经在上方通过 using_held_yield_constraint 被转回 YIELD，
       // 能走到这里说明没有可用保持约束，可以安全释放。
+      if (constraint.role == planning_msgs::ConflictConstraint::ROLE_PROCEED)
+      {
+        ROS_INFO_THROTTLE(
+            1.0,
+            "[Conflict Velocity Decision] ego=%s peer=%s decision=PROCEED; "
+            "keep the original planned velocity."
+            " source=%s reason=%s",
+            constraint.ego_id.c_str(),
+            constraint.peer_id.c_str(),
+            constraint.decision_source.c_str(),
+            constraint.decision_reason.c_str());
+      }
+      else
+      {
+        ROS_INFO_THROTTLE(
+            1.0,
+            "[Conflict Velocity Decision] ego=%s peer=%s decision=NONE; "
+            "keep the original planned velocity.",
+            constraint.ego_id.c_str(),
+            constraint.peer_id.c_str());
+      }
       return;
     }
 
@@ -995,7 +1035,12 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
     {
       // role=YIELD 但没有 decision_source，说明冲突预判没有输出完整决策溯源。
       // 此时不执行速度消解，避免 planner 根据半成品消息自行生成让行速度。
-      ROS_WARN_THROTTLE(1.0, "conflict yield constraint has no decision source, skip constraint");
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD but "
+          "decision_source is missing; reject the constraint and keep the original velocity.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str());
       return;
     }
 
@@ -1003,7 +1048,12 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
     {
       // 消息中不再携带旧轨迹 s。若没有 map 坐标冲突入口/出口，planner 无法可靠判断
       // 当前轨迹是否仍经过该冲突路段，因此直接丢弃该约束。
-      ROS_WARN_THROTTLE(1.0, "conflict yield constraint has no spatial section, skip constraint");
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD but the spatial "
+          "conflict section is missing; reject the constraint and keep the original velocity.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str());
       return;
     }
   }
@@ -1026,16 +1076,24 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
     // 但出于安全考虑，需要立刻进入保守降速，只对非拼接段施加低速上限。
     speed_cap = std::max(0.0, timeout_max_speed_);
     changed = true;
-    ROS_WARN_THROTTLE(1.0,
-                      "conflict_constraint timeout, applying conservative speed cap %.2f m/s",
-                      speed_cap);
+    ROS_WARN_THROTTLE(
+        1.0,
+        "[Conflict Velocity Decision] ego=%s conflict decision timed out "
+        "(age=%.2fs, limit=%.2fs); apply conservative speed cap=%.2fm/s.",
+        constraint.ego_id.c_str(),
+        age,
+        constraint_timeout_,
+        speed_cap);
   }
   else if (constraint.role == planning_msgs::ConflictConstraint::ROLE_YIELD)
   {
     if (using_held_yield_constraint)
     {
       ROS_INFO_THROTTLE(1.0,
-                        "apply held yield constraint to avoid release oscillation");
+                        "[Conflict Velocity Decision] ego=%s peer=%s decision briefly changed "
+                        "to NONE; hold the previous YIELD decision to prevent speed oscillation.",
+                        constraint.ego_id.c_str(),
+                        constraint.peer_id.c_str());
     }
 
     const std::vector<PathPoint> path_points = makePathPoints(normalized_trajectory);
@@ -1065,9 +1123,13 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       // 当前轨迹与冲突模块上一轮判断使用的轨迹已不一致。
       // 此时没有旧 s 可退回使用，也不应该在错误位置限速，所以直接跳过该约束。
       ROS_WARN_THROTTLE(1.0,
-                        "conflict spatial constraint does not match current trajectory, "
-                        "skip constraint. entry_projected=%d exit_projected=%d "
-                        "entry_l=%.2f exit_l=%.2f projected_s_in=%.2f projected_s_out=%.2f",
+                        "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD but the "
+                        "conflict section does not match the current trajectory; keep the "
+                        "original velocity. entry_projected=%d "
+                        "exit_projected=%d entry_l=%.2f exit_l=%.2f "
+                        "projected_s_in=%.2f projected_s_out=%.2f",
+                        constraint.ego_id.c_str(),
+                        constraint.peer_id.c_str(),
                         entry_projected, exit_projected,
                         entry_lateral_error, exit_lateral_error,
                         ego_s_in, ego_s_out);
@@ -1119,6 +1181,21 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
           yield_by_time = true;
           stop_by_constraint = false;
           changed = true;
+          ROS_INFO_THROTTLE(
+              1.0,
+              "[Conflict Velocity Decision] ego=%s peer=%s decision=SMOOTH_YIELD."
+              " current_entry_time=%.2fs target_entry_time=%.2fs "
+              "entry_s=%.2fm remain_s=%.2fm initial_v=%.2fm/s "
+              "cruise_v=%.2fm/s comfortable_decel=%.2fm/s^2.",
+              constraint.ego_id.c_str(),
+              constraint.peer_id.c_str(),
+              current_entry_time,
+              target_entry_time_from_now,
+              yield_entry_s,
+              remain_s,
+              yield_initial_speed,
+              yield_speed_cap,
+              smooth_yield_deceleration_);
         }
       }
 
@@ -1127,12 +1204,37 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
         // 若为了满足目标进入时间需要极低速度爬行，则改为在 stop_s 前停车等待。
         stop_by_constraint = std::isfinite(stop_s);
         changed = changed || stop_by_constraint;
+        if (stop_by_constraint)
+        {
+          ROS_WARN_THROTTLE(
+              1.0,
+              "[Conflict Velocity Decision] ego=%s peer=%s decision=STOP_AND_YIELD. "
+              "Comfortable deceleration cannot satisfy the target time or the required "
+              "cruise speed is too low. "
+              "current_entry_time=%.2fs target_entry_time=%.2fs "
+              "entry_s=%.2fm stop_s=%.2fm.",
+              constraint.ego_id.c_str(),
+              constraint.peer_id.c_str(),
+              current_entry_time,
+              target_entry_time_from_now,
+              yield_entry_s,
+              stop_s);
+        }
       }
     }
   }
 
   if (!changed)
   {
+    ROS_INFO_THROTTLE(
+        1.0,
+        "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD, but the current "
+        "candidate trajectory already satisfies the entry-time constraint; no velocity "
+        "change is required. target_entry_time=%.2fs entry_s=%.2fm.",
+        constraint.ego_id.c_str(),
+        constraint.peer_id.c_str(),
+        target_entry_time_from_now,
+        yield_entry_s);
     return;
   }
 
@@ -1201,6 +1303,15 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       {
         // 已经明确进入停车让行时，规则轨迹就是安全结果。这里不再送入 QP，
         // 避免定时间优化把零速等待尾迹压成一串重复 s，再被截断成过短轨迹。
+        ROS_WARN_THROTTLE(
+            1.0,
+            "[Conflict Velocity Decision] ego=%s peer=%s output=RULE_BASED_STOP_TRAJECTORY. "
+            "stop_s=%.2fm points=%zu last_time=%.2fs.",
+            constraint.ego_id.c_str(),
+            constraint.peer_id.c_str(),
+            stop_s,
+            trajectory.points.size(),
+            trajectory.points.back().relative_time);
         return;
       }
 
@@ -1216,8 +1327,11 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                                      &emergency_reject_reason))
       {
         ROS_WARN_THROTTLE(1.0,
-                          "conflict stop trajectory rejected before publish, "
-                          "use emergency stop fallback. reason=%s stop_s=%.2f",
+                          "[Conflict Velocity Decision] ego=%s peer=%s "
+                          "output=EMERGENCY_STOP_TRAJECTORY. Rule-based stop trajectory "
+                          "validation failed. reason=%s stop_s=%.2f",
+                          constraint.ego_id.c_str(),
+                          constraint.peer_id.c_str(),
                           stop_reject_reason.c_str(),
                           stop_s);
         trajectory = emergency_stop_trajectory;
@@ -1225,9 +1339,12 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       }
 
       ROS_WARN_THROTTLE(1.0,
-                        "conflict stop trajectory rejected before publish, "
-                        "emergency stop fallback also invalid, restore original planner trajectory. "
-                        "reason=%s emergency_reason=%s stop_s=%.2f",
+                        "[Conflict Velocity Decision] ego=%s peer=%s "
+                        "output=ORIGINAL_PLANNER_TRAJECTORY. Both rule-based and emergency "
+                        "stop trajectories failed validation. reason=%s "
+                        "emergency_reason=%s stop_s=%.2f",
+                        constraint.ego_id.c_str(),
+                        constraint.peer_id.c_str(),
                         stop_reject_reason.c_str(),
                         emergency_reject_reason.c_str(),
                         stop_s);
@@ -1248,7 +1365,12 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                                                          target_entry_time_from_now);
     if (!qp_success)
     {
-      ROS_WARN_THROTTLE(1.0, "conflict velocity QP fallback to rule-based profile");
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s QP optimization failed; "
+          "retain the rule-based smooth-yield profile and continue safety validation.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str());
     }
 
     double checked_entry_time = std::numeric_limits<double>::infinity();
@@ -1271,9 +1393,12 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                                      &emergency_reject_reason))
       {
         ROS_WARN_THROTTLE(1.0,
-                          "conflict velocity profile violates entry time, "
-                          "use emergency stop fallback. qp_success=%d "
+                          "[Conflict Velocity Decision] ego=%s peer=%s "
+                          "output=EMERGENCY_STOP_TRAJECTORY. Velocity profile violates the "
+                          "entry-time constraint. qp_success=%d "
                           "entry_time=%.2f target=%.2f stop_s=%.2f",
+                          constraint.ego_id.c_str(),
+                          constraint.peer_id.c_str(),
                           qp_success,
                           checked_entry_time,
                           target_entry_time_from_now,
@@ -1306,8 +1431,11 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                                      &emergency_reject_reason))
       {
         ROS_WARN_THROTTLE(1.0,
-                          "conflict velocity result rejected before publish, "
-                          "use emergency stop fallback. reason=%s stop_s=%.2f",
+                          "[Conflict Velocity Decision] ego=%s peer=%s "
+                          "output=EMERGENCY_STOP_TRAJECTORY. QP/rule-based velocity profile "
+                          "failed controller-input validation. reason=%s stop_s=%.2f",
+                          constraint.ego_id.c_str(),
+                          constraint.peer_id.c_str(),
                           reject_reason.c_str(),
                           stop_s);
         trajectory = emergency_stop_trajectory;
@@ -1331,7 +1459,26 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                         yield_entry_s,
                         target_entry_time_from_now);
       trajectory = original_trajectory;
+      return;
     }
+
+    ROS_INFO_THROTTLE(
+        1.0,
+        "[Conflict Velocity Decision] ego=%s peer=%s output=%s. "
+        "entry_time=%.2fs target_entry_time=%.2fs entry_s=%.2fm "
+        "points=%zu last_time=%.2fs.",
+        constraint.ego_id.c_str(),
+        constraint.peer_id.c_str(),
+        constraint_timeout
+            ? (qp_success ? "QP_TIMEOUT_CONSERVATIVE_TRAJECTORY"
+                          : "RULE_BASED_TIMEOUT_CONSERVATIVE_TRAJECTORY")
+            : (qp_success ? "QP_YIELD_TRAJECTORY"
+                          : "RULE_BASED_SMOOTH_YIELD_TRAJECTORY"),
+        checked_entry_time,
+        target_entry_time_from_now,
+        yield_entry_s,
+        trajectory.points.size(),
+        trajectory.points.back().relative_time);
   }
 }
 

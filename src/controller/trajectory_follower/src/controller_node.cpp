@@ -180,7 +180,11 @@ void Controller::onTrajectory(const planning_msgs::TrajectoryPointArray::Ptr msg
 	lastPoint.x += std::cos (lastPoint.theta)*0.5;
 	lastPoint.y += std::sin (lastPoint.theta)*0.5;
 	sim_trajectory.points.push_back(lastPoint);
-	sim_trajectory.points[sim_trajectory.points.size()-1].relative_time = 100.0;
+	// 仿真纵向控制会按 relative_time 使用 lower_bound 查找目标点，因此追加的
+	// 几何延长点必须严格晚于原轨迹末点。这里把 100s 作为“延长量”而不是绝对时刻：
+	// 即使冲突停车轨迹本身带有较长等待时间，人工末点也不会落到原末点之前。
+	sim_trajectory.points[sim_trajectory.points.size()-1].relative_time =
+		lastPoint.relative_time + 100.0;
 	//if (!lat_trajectory.is_forward_shift)
       //  std::reverse(lat_trajectory.points.begin(),lat_trajectory.points.end());  
 
@@ -461,6 +465,20 @@ void Controller::computeLonSim(driver_msgs::DriveCmd &lonCmd)
 	lonCmd.velocity_target = sim_trajectory.points[matchIndex].v;
 	lonCmd.acc_target = sim_trajectory.points[matchIndex].a;
 	if ( matchIndex == sim_trajectory.points.size()-1){
+		// sim_trajectory 的最后一点是 onTrajectory() 人工追加的几何延长点，
+		// 倒数第二点才是 planner 下发的真实末点。若真实末点已经要求停车，
+		// 必须保持零速，不能再被下面“尚未到达虚拟末点则以 1m/s 续走”的旧逻辑覆盖。
+		// 否则冲突停车轨迹一旦走完时间视野，车辆会重新起步，下一帧又被迫急停。
+		const bool planner_requests_stop =
+			sim_trajectory.points.size() >= 2 &&
+			std::fabs(sim_trajectory.points[sim_trajectory.points.size()-2].v) <= 1.0e-3;
+		if (planner_requests_stop)
+		{
+			lonCmd.velocity_target = 0.0;
+			lonCmd.acc_target = 0.0;
+			return;
+		}
+
         int closestPoint = amathutils::closestPoint(sim_trajectory.points,current_pose_.pose.pose.position);
 		if (closestPoint != (sim_trajectory.points.size()-1))
 			lonCmd.velocity_target = sim_trajectory.is_forward_shift?1.0:-1.0;
@@ -547,4 +565,3 @@ int main(int argc, char **argv) {
   ROS_INFO("trajectory_follower_nodes The end of node.");
   return 0;
 }
-

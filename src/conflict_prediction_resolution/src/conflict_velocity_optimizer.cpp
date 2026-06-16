@@ -24,9 +24,15 @@ namespace
 constexpr bool kEnableOutputValidation = true;
 constexpr double kMinOutputSGap = 0.01;   // m，QP 输出相邻点至少需要的 s 间隔。
 constexpr double kMinOutputXYGap = 0.01;  // m，QP 输出相邻点至少需要的平面距离。
-constexpr size_t kMaxQpPoints = 180;      // dense QP 最大节点数，避免矩阵规模过大。
+constexpr size_t kMaxQpPoints = 300;      // dense QP 最大节点数，避免矩阵规模过大。
 constexpr double kMinQpDt = 0.02;         // s，低于该时间步长时动力学约束容易病态。
-constexpr double kEntryTimeTolerance = 0.2;  // s，冲突进入时间的工程容差，避免毫秒级误差触发急停。
+// QP 建模时把“不早于目标时间进入”向后收紧 0.2s：
+//   t_i < target_entry_time + 0.2s 时，s_i 仍不能越过冲突入口。
+// 这样优化结果不会主动贴在验收容差的最早边界上，而是预留离散采样和插值误差。
+constexpr double kEntryConstraintSafetyMargin = 0.2;
+// 最终验收仍允许 0.2s 工程误差，避免浮点计算或轨迹插值的毫秒级误差触发急停。
+// 该容差只用于验收，不再用于放松 QP 内部约束。
+constexpr double kEntryValidationTolerance = 0.2;
 
 size_t sIndex(const size_t i)
 {
@@ -350,7 +356,7 @@ bool ConflictVelocityOptimizer::satisfiesEntryTimeConstraint(
   }
 
   return std::isfinite(entry_time) &&
-         entry_time + kEntryTimeTolerance >= target_entry_time_from_now;
+         entry_time + kEntryValidationTolerance >= target_entry_time_from_now;
 }
 
 bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& trajectory,
@@ -476,13 +482,16 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     if (has_entry_time_constraint &&
         std::isfinite(yield_entry_s) &&
         std::isfinite(target_entry_time_from_now) &&
-        node_time + kEntryTimeTolerance < target_entry_time_from_now)
+        node_time < target_entry_time_from_now + kEntryConstraintSafetyMargin)
     {
       // “不早于目标时间进入冲突区”转成线性空间约束：
-      // 在目标时间之前的所有固定时间节点，都不能越过冲突入口。
+      // 在“目标时间 + 安全裕度”之前的所有固定时间节点，都不能越过冲突入口。
       // 原始约束是时间-空间耦合的：车辆进入冲突区的时刻 >= target_entry_time。
       // 由于这里采用定时间节点，t_i 已知，因此可线性化为：
-      //   若 t_i < target_entry_time，则 s_i <= yield_entry_s - margin。
+      //   若 t_i < target_entry_time + 0.2s，
+      //   则 s_i <= yield_entry_s - margin。
+      // 额外的 0.2s 是建模侧安全裕度；最终验收还有独立的 0.2s 数值容差，
+      // 两者方向相反，避免旧实现中 QP 总把解推到“提前约 0.2s”的危险边界。
       // 这也是“规则粗解 + 定时间 QP”的关键：把复杂的时空关系变成线性 s 边界。
       upper_s = std::min(upper_s, yield_entry_s - std::max(0.0, not_early_s_margin_));
     }
