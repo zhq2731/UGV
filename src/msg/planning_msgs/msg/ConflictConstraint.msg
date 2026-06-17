@@ -17,6 +17,17 @@ string ego_id
 string peer_id
 uint8 role
 
+# 避让策略由冲突判定层给出，速度消解层只负责执行。
+# 这样可以避免速度层根据某一帧 current_entry_time 自行决定“要不要让行”，
+# 导致冲突判定层认为需要避让、速度层却释放车辆的语义不一致。
+uint8 STRATEGY_NONE=0
+uint8 STRATEGY_PROCEED=1
+uint8 STRATEGY_STOP_AND_WAIT=2
+uint8 STRATEGY_SLOW_DOWN=3
+uint8 STRATEGY_FOLLOW=4
+uint8 STRATEGY_EMERGENCY_STOP=5
+uint8 yield_strategy
+
 # 是否携带空间冲突路段。false 时，下面四个 Point 不能作为有效投影依据。
 #
 # 冲突路段在 map 坐标系下的入口/出口点。planner 每一帧把这些点投影到

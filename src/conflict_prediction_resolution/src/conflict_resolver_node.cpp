@@ -201,6 +201,21 @@ double tOutFor(const coordination::PairConflict& conflict, const int vehicle_ind
   return 0.0;
 }
 
+double targetEntryTimeFor(const coordination::PairConflict& conflict, const int vehicle_index)
+{
+  if (vehicle_index == conflict.first_index &&
+      std::isfinite(conflict.first_target_entry_time))
+  {
+    return conflict.first_target_entry_time;
+  }
+  if (vehicle_index == conflict.second_index &&
+      std::isfinite(conflict.second_target_entry_time))
+  {
+    return conflict.second_target_entry_time;
+  }
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
 coordination::Pose2d entryPoseFor(const coordination::PairConflict& conflict, const int vehicle_index)
 {
   if (vehicle_index == conflict.first_index)
@@ -264,17 +279,30 @@ coordination::CoordinatorConfig ConflictResolverNode::loadCoordinatorConfig() co
   readParam("conflict_time_clearance", config.conflict_time_clearance, config.conflict_time_clearance);
   readParam("comfortable_deceleration", config.comfortable_deceleration, config.comfortable_deceleration);
   readParam("stop_margin", config.stop_margin, config.stop_margin);
+  readParam("enable_conflict_type_classification",
+            config.enable_conflict_type_classification,
+            config.enable_conflict_type_classification);
+  readParam("conflict_angle_threshold_deg",
+            config.conflict_angle_threshold_deg,
+            config.conflict_angle_threshold_deg);
+  readParam("following_angle_threshold_deg",
+            config.following_angle_threshold_deg,
+            config.following_angle_threshold_deg);
+  readParam("angle_classification_min_length",
+            config.angle_classification_min_length,
+            config.angle_classification_min_length);
+  readParam("conflict_follow_extension",
+            config.conflict_follow_extension,
+            config.conflict_follow_extension);
+  readParam("divergence_conflict_back_distance",
+            config.divergence_conflict_back_distance,
+            config.divergence_conflict_back_distance);
   readParam("priority_weight", config.priority_weight, config.priority_weight);
   readParam("speed_weight", config.speed_weight, config.speed_weight);
   readParam("progress_weight", config.progress_weight, config.progress_weight);
   readParam("ttc_weight", config.ttc_weight, config.ttc_weight);
   readParam("yield_delay_weight", config.yield_delay_weight, config.yield_delay_weight);
   readParam("score_tie_epsilon", config.score_tie_epsilon, config.score_tie_epsilon);
-  readParam("decision_lock_distance", config.decision_lock_distance, config.decision_lock_distance);
-  readParam("decision_lock_ttc", config.decision_lock_ttc, config.decision_lock_ttc);
-  readParam("decision_unlock_distance", config.decision_unlock_distance, config.decision_unlock_distance);
-  readParam("minimum_lock_hold_time", config.minimum_lock_hold_time, config.minimum_lock_hold_time);
-  readParam("decision_switch_margin", config.decision_switch_margin, config.decision_switch_margin);
   readParam("enable_conflict_resolution", config.enable_conflict_resolution, config.enable_conflict_resolution);
   readParam("enable_decision_lock", config.enable_decision_lock, config.enable_decision_lock);
   return config;
@@ -434,12 +462,13 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
   const auto make_constraint_msg = [&](const size_t vehicle_index) {
     // 将 pair 决策转成单车视角冲突约束：每辆车只收到“我是谁、对方是谁、
     // 我应先行还是让行、冲突路段的 map 坐标入口/出口、让行目标时间和当前速度上限”。
-    // 注意：消息不再携带旧候选轨迹上的 s。planner 会把入口/出口点投影到当前轨迹，
+    // 注意：消息不携带候选轨迹上的 s。planner 会把入口/出口点投影到当前轨迹，
     // 在本轮轨迹坐标系下临时生成 s_in/s_out/stop_s。
     planning_msgs::ConflictConstraint msg;
     msg.header.frame_id = frame_id_;
     msg.header.stamp = stamp;
     msg.role = planning_msgs::ConflictConstraint::ROLE_NONE;
+    msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_NONE;
     msg.ego_id = vehicles_[vehicle_index].agent.id;
     msg.has_spatial_constraint = false;
 
@@ -484,6 +513,19 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
       msg.role = static_cast<int>(vehicle_index) == conflict.yield_index
                      ? planning_msgs::ConflictConstraint::ROLE_YIELD
                      : planning_msgs::ConflictConstraint::ROLE_PROCEED;
+      if (msg.role == planning_msgs::ConflictConstraint::ROLE_PROCEED)
+      {
+        msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_PROCEED;
+      }
+      else
+      {
+        // 冲突判定层已经完成“是否需要避让、谁先走谁后走、冲突段如何切分”的判断。
+        // 当前阶段先把所有真实冲突型 YIELD 统一表达为停车等待：
+        //   - crossing / merging / diverging 都要求避让车停在冲突入口前；
+        //   - 后续若接入跟车模块，再把汇入后的同向段发布为 STRATEGY_FOLLOW。
+        // 速度消解层不再根据某一帧 current_entry_time 自行决定是否释放车辆。
+        msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_STOP_AND_WAIT;
+      }
       // 仅输出 map 坐标下的冲突入口/出口点，避免把低频冲突模块中上一帧轨迹的 s
       // 泄露给高频 planner。后续速度处理完全基于当前轨迹重新投影。
       msg.has_spatial_constraint = true;
@@ -496,9 +538,19 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
       msg.peer_t_in = tInFor(conflict, peer_index);
       msg.peer_t_out = tOutFor(conflict, peer_index);
       msg.earliest_entry_time = msg.ego_t_in;
-      msg.target_entry_time = msg.role == planning_msgs::ConflictConstraint::ROLE_YIELD
-                                  ? tOutFor(conflict, conflict.proceed_index) + config_.conflict_time_clearance
-                                  : msg.ego_t_in;
+      const double direct_target_entry_time =
+          targetEntryTimeFor(conflict, static_cast<int>(vehicle_index));
+      if (std::isfinite(direct_target_entry_time))
+      {
+        msg.target_entry_time = direct_target_entry_time;
+      }
+      else
+      {
+        msg.target_entry_time =
+            msg.role == planning_msgs::ConflictConstraint::ROLE_YIELD
+                ? tOutFor(conflict, conflict.proceed_index) + config_.conflict_time_clearance
+                : msg.ego_t_in;
+      }
       msg.decision_locked = conflict.decision_locked;
       msg.decision_source = conflict.decision_source;
       msg.decision_reason = conflict.decision_reason;
@@ -629,6 +681,7 @@ visualization_msgs::MarkerArray ConflictResolverNode::makeConflictMarkers(
            << (ego_yields ? "YIELD vs " : "GO vs ")
            << other_id
            << " t=" << conflict.conflict_time
+           << " type=" << conflict.conflict_type
            << " s[" << sInFor(conflict, ego_or_first)
            << "," << sOutFor(conflict, ego_or_first) << "]"
            << " tw[" << tInFor(conflict, ego_or_first)

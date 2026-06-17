@@ -1,6 +1,6 @@
 #pragma once
 
-#include <chrono>
+#include <limits>
 #include <map>
 #include <string>
 #include <utility>
@@ -59,6 +59,14 @@ struct CoordinatorConfig
   double conflict_time_clearance = 1.0;
   double comfortable_deceleration = 2.0;
   double stop_margin = 1.0;
+  // 冲突类型切分参数：先用 footprint 找重叠候选，再用两车轨迹相对航向角把重叠段
+  // 分成大角度冲突段、小角度跟车段和分离段。
+  bool enable_conflict_type_classification = true;
+  double conflict_angle_threshold_deg = 30.0;
+  double following_angle_threshold_deg = 20.0;
+  double angle_classification_min_length = 4.0;
+  double conflict_follow_extension = 3.0;
+  double divergence_conflict_back_distance = 3.0;
   // 软评分权重：只有硬规则无法确定顺序时，才综合这些分量决定谁先行。
   double priority_weight = 0.5;
   double speed_weight = 0.25;
@@ -66,12 +74,7 @@ struct CoordinatorConfig
   double ttc_weight = 0.25;
   double yield_delay_weight = 0.25;
   double score_tie_epsilon = 0.02;
-  // 决策锁参数：靠近冲突区时锁定 pair 顺序，离开足够远并满足保持时间后才允许重算。
-  double decision_lock_distance = 6.0;
-  double decision_lock_ttc = 3.0;
-  double decision_unlock_distance = 9.0;
-  double minimum_lock_hold_time = 2.0;
-  double decision_switch_margin = 0.15;
+  // 决策锁参数：一旦产生 pair 顺序就保持，并在锁内动态维护同一冲突事件的空间边界。
   bool enable_conflict_resolution = true;
   bool enable_decision_lock = true;
 };
@@ -102,8 +105,15 @@ struct PairConflict
   Pose2d second_exit_pose;
   double first_score = 0.0;
   double second_score = 0.0;
+  // 判定层直接给每辆车的目标进入时间。默认 NaN 表示使用
+  // “先行车 t_out + conflict_time_clearance”的普通计算方式。
+  // 当冲突段因为避让车停车而暂时不再重叠时，锁定决策会用这里保存倒计时后的释放时间，
+  // 继续向速度层发布稳定的让行约束。
+  double first_target_entry_time = std::numeric_limits<double>::quiet_NaN();
+  double second_target_entry_time = std::numeric_limits<double>::quiet_NaN();
   std::string decision_source;
   std::string decision_reason;
+  std::string conflict_type;
   std::string summary;
 };
 
@@ -129,7 +139,7 @@ private:
   {
     int proceed_index = -1;
     int yield_index = -1;
-    std::chrono::steady_clock::time_point created_at = std::chrono::steady_clock::now();
+    PairConflict conflict;
   };
 
   PairConflict detectPairConflict(const VehicleAgent& first,
@@ -177,11 +187,20 @@ private:
   bool cannotStopBeforeConflictEntry(const VehicleAgent& agent,
                                      const PairConflict& conflict,
                                      int vehicle_index) const;
-  bool isVehicleNearConflictEntry(const VehicleAgent& agent,
-                                  const PairConflict& conflict,
-                                  int vehicle_index) const;
   std::pair<int, int> pairKey(const PairConflict& conflict) const;
-  void clearInactiveDecisionLocks(const std::vector<std::pair<int, int>>& active_pairs);
+  PairConflict reprojectTrackedConflict(const std::vector<VehicleAgent>& agents,
+                                        const PairConflict& tracked_conflict) const;
+  PairConflict mergeTrackedConflictWithCurrent(const std::vector<VehicleAgent>& agents,
+                                               const PairConflict& current_conflict,
+                                               const PairConflict& tracked_conflict) const;
+  bool hasVehiclePassedConflictExit(const VehicleAgent& agent,
+                                    const PairConflict& conflict,
+                                    int vehicle_index) const;
+  void storeDecisionLock(const PairConflict& conflict);
+  void refreshDecisionLock(const PairConflict& conflict);
+  void appendHeldDecisionLocks(const std::vector<VehicleAgent>& agents,
+                               const std::vector<std::pair<int, int>>& active_pairs,
+                               CoordinationResult& result);
 
   CoordinatorConfig config_;
   // 决策锁用于抑制临近冲突区时的实时重评分抖动；key 为车辆索引对。

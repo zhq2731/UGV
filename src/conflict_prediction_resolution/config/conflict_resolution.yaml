@@ -1,35 +1,27 @@
 # 冲突消解算法参数（planner 内部的 ConflictConstraintProcessor 使用）。
 # 该文件只描述“收到冲突决策后，如何在当前规划轨迹上做让行速度处理”。
 
-# 冲突约束消息超时时间，单位秒。超过该时间未收到新约束时，不继续使用旧让行决策。
+# 冲突约束消息超时时间，单位秒。超过该时间未收到新约束时，不继续使用上一帧让行决策。
 conflict_constraint_timeout: 2.1
 
 # 冲突约束超时时的保守速度上限，单位 m/s。
-# 超时后不再使用旧冲突入口/目标时间，但会限制非拼接段速度，避免车辆恢复高速。
+# 超时后不再使用上一帧冲突入口/目标时间，但会限制非拼接段速度，避免车辆恢复高速。
 conflict_timeout_max_speed: 1.0
 
-# 停车兜底减速度，单位 m/s^2。越大表示允许更晚、更急地降速到停车点。
+# 停车等待减速度，单位 m/s^2。
+# STOP_AND_WAIT 会从当前规划起点开始按该减速度刹停，并在停住后等待先行车通过。
+# 数值越大，停车距离越短、制动越强；数值越小，停车更柔和但需要更长距离。
 conflict_deceleration_limit: 1.5
 
 # 安全冗余停车减速度，单位 m/s^2。
-# 当规则速度规划和 QP 优化都无法形成可信结果，或最终轨迹验算仍会过早进入冲突区时，
-# 使用该较高减速度生成一条停车轨迹，避免恢复原始高速轨迹。
+# 当规则停车轨迹无法通过控制器输入校验时，使用该较高减速度生成一条停车兜底轨迹。
 conflict_emergency_stop_deceleration: 2.5
-
-# 平滑让行规则粗解使用的额定舒适减速度，单位 m/s^2。
-# 当车辆按当前速度会过早进入冲突区时，不再直接把速度夹到一个常数，
-# 而是先按该减速度从规划起点初速度逐步降到巡航让行速度，再保持低速让行。
-# 数值越小，减速越柔和，但需要更长距离；若柔和减速无法满足时间约束，会退化为停车让行。
-conflict_smooth_yield_deceleration: 1.2
 
 # 从当前轨迹投影出的冲突入口向后预留的停车安全距离，单位米。
 conflict_stop_margin: 1.0
 
 # 在 conflict_stop_margin 基础上额外提前的停车缓冲距离，单位米。
 conflict_stop_buffer: 0.0
-
-# 根据 target_entry_time 反推的让行速度低于该值时，不再低速爬行，改为停车等待。
-conflict_min_smooth_yield_speed: 0.3
 
 # 冲突入口/出口绝对坐标投影到当前轨迹时允许的最大横向误差，单位米。
 conflict_projection_max_lateral_error: 2.0
@@ -42,58 +34,6 @@ conflict_projection_min_s_gap: 0.2
 # 若最近距离超过该阈值，则认为无法可靠识别拼接段，退化为从轨迹起点后开始处理。
 conflict_stitching_start_match_max_distance: 1.0
 
-# 冲突规则速度修正后，非拼接段粗轨迹的固定时间间隔，单位秒。
-# 该参数用于把规则速度结果转换为定时间域粗解，方便后续接入时间域 QP。
-conflict_fixed_time_coarse_dt: 0.1
-
-# 固定时间粗轨迹最多保留的非拼接后缀点数。
-# 低速让行会显著拉长到达终点时间，如果不限制点数，0.1s 采样可能生成数千点，
-# 进而导致 QP 矩阵和控制器输入过大。160 点约等于 16s 速度优化视野。
-conflict_fixed_time_max_points: 280
-
 # 单次规划循环时间，单位秒。冲突处理器会把匹配到的 planning_start_point
 # 即拼接段末点的 relative_time 规范为该值，其余拼接前缀点按时间间隔向前递推。
 conflict_planning_cycle_time: 0.1
-
-# 是否启用冲突速度定时间 QP。若 QP 失败，会自动保留规则速度粗解。
-enable_conflict_velocity_qp: true
-
-# QP 中 s 贴近规则粗解的权重。越大越不愿改变路径进度。
-conflict_qp_weight_s_ref: 0.1
-
-# QP 中速度贴近规则粗解的权重。越大越接近规则冲突速度规划结果。
-conflict_qp_weight_v_ref: 3.0
-
-# QP 中加速度平方惩罚权重。越大，加速度绝对值越小。
-conflict_qp_weight_acc: 0.5
-
-# QP 中 jerk 平滑权重，对 (a[i+1]-a[i])^2/dt 加惩罚。越大，速度变化越平滑。
-conflict_qp_weight_jerk: 10.0
-
-# QP 纵向最小加速度，单位 m/s^2。
-conflict_qp_min_acc: -1.5
-
-# QP 纵向最大加速度，单位 m/s^2。
-conflict_qp_max_acc: 1.0
-
-# QP 全局速度上限，单位 m/s。最终还会叠加规则速度上限和曲率速度上限。
-conflict_qp_max_speed: 6.0
-
-# QP 曲率限速使用的横向加速度上限，单位 m/s^2。
-conflict_qp_max_lateral_acc: 1.5
-
-# 不早于冲突时间进入约束的 s 安全余量，单位米。
-# 在 target_entry_time 之前，优化后的 s 不能超过 yield_entry_s - 该余量。
-conflict_qp_not_early_s_margin: 0.05
-
-# OSQP 最大迭代次数。
-conflict_qp_max_iter: 4000
-
-# OSQP 绝对收敛阈值。
-conflict_qp_eps_abs: 0.00001
-
-# OSQP 相对收敛阈值。
-conflict_qp_eps_rel: 0.0001
-
-# 是否输出 OSQP 求解日志。
-conflict_qp_verbose: false

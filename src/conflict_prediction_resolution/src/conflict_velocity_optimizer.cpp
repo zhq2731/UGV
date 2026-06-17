@@ -491,7 +491,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
       //   若 t_i < target_entry_time + 0.2s，
       //   则 s_i <= yield_entry_s - margin。
       // 额外的 0.2s 是建模侧安全裕度；最终验收还有独立的 0.2s 数值容差，
-      // 两者方向相反，避免旧实现中 QP 总把解推到“提前约 0.2s”的危险边界。
+      // 两者方向相反，避免 QP 把解推到“刚好提前约 0.2s”的危险边界。
       // 这也是“规则粗解 + 定时间 QP”的关键：把复杂的时空关系变成线性 s 边界。
       upper_s = std::min(upper_s, yield_entry_s - std::max(0.0, not_early_s_margin_));
     }
@@ -517,7 +517,7 @@ bool ConflictVelocityOptimizer::optimize(planning_msgs::TrajectoryPointArray& tr
     double upper_v = std::min(max_speed_, curv_limit);
     if (std::isfinite(speed_cap))
     {
-      // 决策超时等场景会传入 speed_cap。此时不继续使用旧冲突入口/旧时间，
+      // 决策超时等场景会传入 speed_cap。此时不继续使用上一帧冲突入口/目标时间，
       // 但通过全局低速上限保证车辆不会因为决策中断而恢复高速。
       upper_v = std::min(upper_v, std::max(0.0, speed_cap));
     }

@@ -28,6 +28,30 @@ struct ProjectionRange
   double max = 0.0;
 };
 
+struct OverlapAngleSample
+{
+  double first_s = 0.0;
+  double second_s = 0.0;
+  double angle_deg = 0.0;
+};
+
+struct SRange
+{
+  bool valid = false;
+  size_t start = 0;
+  size_t end = 0;
+};
+
+struct ClassifiedConflictSection
+{
+  bool active = false;
+  double first_s_in = 0.0;
+  double first_s_out = 0.0;
+  double second_s_in = 0.0;
+  double second_s_out = 0.0;
+  std::string type;
+};
+
 using Corners = std::array<Pose2d, 4>;
 
 double clamp(const double value, const double lower, const double upper)
@@ -38,6 +62,22 @@ double clamp(const double value, const double lower, const double upper)
 double distance2d(const double ax, const double ay, const double bx, const double by)
 {
   return std::hypot(ax - bx, ay - by);
+}
+
+double normalizeAngle(const double angle)
+{
+  const double pi = std::acos(-1.0);
+  double normalized = std::fmod(angle + pi, 2.0 * pi);
+  if (normalized < 0.0)
+  {
+    normalized += 2.0 * pi;
+  }
+  return normalized - pi;
+}
+
+double angleDiffDeg(const double first_yaw, const double second_yaw)
+{
+  return std::abs(normalizeAngle(first_yaw - second_yaw)) * 180.0 / std::acos(-1.0);
 }
 
 Corners makeCorners(const Pose2d& pose, const double length, const double width)
@@ -123,6 +163,221 @@ double conflictExitSFor(const PairConflict& conflict, const int vehicle_index)
   return 0.0;
 }
 
+Pose2d conflictEntryPoseFor(const PairConflict& conflict, const int vehicle_index)
+{
+  if (vehicle_index == conflict.first_index)
+  {
+    return conflict.first_entry_pose;
+  }
+  if (vehicle_index == conflict.second_index)
+  {
+    return conflict.second_entry_pose;
+  }
+  return {};
+}
+
+Pose2d conflictExitPoseFor(const PairConflict& conflict, const int vehicle_index)
+{
+  if (vehicle_index == conflict.first_index)
+  {
+    return conflict.first_exit_pose;
+  }
+  if (vehicle_index == conflict.second_index)
+  {
+    return conflict.second_exit_pose;
+  }
+  return {};
+}
+
+void setConflictSectionForVehicle(PairConflict& conflict,
+                                  const int vehicle_index,
+                                  const double s_in,
+                                  const double s_out,
+                                  const double t_in,
+                                  const double t_out,
+                                  const Pose2d& entry_pose,
+                                  const Pose2d& exit_pose)
+{
+  if (vehicle_index == conflict.first_index)
+  {
+    conflict.first_s_in = s_in;
+    conflict.first_s_out = s_out;
+    conflict.first_t_in = t_in;
+    conflict.first_t_out = t_out;
+    conflict.first_entry_pose = entry_pose;
+    conflict.first_exit_pose = exit_pose;
+    return;
+  }
+  if (vehicle_index == conflict.second_index)
+  {
+    conflict.second_s_in = s_in;
+    conflict.second_s_out = s_out;
+    conflict.second_t_in = t_in;
+    conflict.second_t_out = t_out;
+    conflict.second_entry_pose = entry_pose;
+    conflict.second_exit_pose = exit_pose;
+  }
+}
+
+SRange findFirstStableAngleRange(const std::vector<OverlapAngleSample>& samples,
+                                 const size_t begin_index,
+                                 const bool want_large_angle,
+                                 const double angle_threshold_deg,
+                                 const double min_length)
+{
+  // 在按 first_s 排序的重叠采样里寻找第一段稳定角度区间。
+  // want_large_angle=true  表示 angle >= threshold 的冲突段；
+  // want_large_angle=false 表示 angle <= threshold 的同向/跟车段。
+  // 要求区间沿 first_s 的长度至少达到 min_length，避免单个抖动点改变冲突类型。
+  if (samples.empty() || begin_index >= samples.size())
+  {
+    return {};
+  }
+
+  const auto match = [&](const double angle_deg) {
+    return want_large_angle ? angle_deg >= angle_threshold_deg
+                            : angle_deg <= angle_threshold_deg;
+  };
+
+  size_t start = 0;
+  bool in_range = false;
+  for (size_t i = begin_index; i < samples.size(); ++i)
+  {
+    if (!match(samples[i].angle_deg))
+    {
+      if (in_range)
+      {
+        const double length = samples[i - 1].first_s - samples[start].first_s;
+        if (length >= min_length)
+        {
+          return SRange{true, start, i - 1};
+        }
+      }
+      in_range = false;
+      continue;
+    }
+
+    if (!in_range)
+    {
+      start = i;
+      in_range = true;
+    }
+  }
+
+  if (in_range)
+  {
+    const double length = samples.back().first_s - samples[start].first_s;
+    if (length >= min_length)
+    {
+      return SRange{true, start, samples.size() - 1};
+    }
+  }
+  return {};
+}
+
+ClassifiedConflictSection classifyOverlapByRelativeAngle(
+    const std::vector<OverlapAngleSample>& samples,
+    const CoordinatorConfig& config)
+{
+  ClassifiedConflictSection section;
+  if (samples.empty())
+  {
+    return section;
+  }
+
+  if (!config.enable_conflict_type_classification)
+  {
+    section.active = true;
+    section.first_s_in = samples.front().first_s;
+    section.first_s_out = samples.back().first_s;
+    section.second_s_in = samples.front().second_s;
+    section.second_s_out = samples.front().second_s;
+    for (const auto& sample : samples)
+    {
+      section.second_s_in = std::min(section.second_s_in, sample.second_s);
+      section.second_s_out = std::max(section.second_s_out, sample.second_s);
+    }
+    section.type = "RAW_FOOTPRINT_OVERLAP";
+    return section;
+  }
+
+  const double min_length = std::max(0.0, config.angle_classification_min_length);
+  const SRange first_following =
+      findFirstStableAngleRange(samples,
+                                0,
+                                false,
+                                config.following_angle_threshold_deg,
+                                min_length);
+  const SRange first_conflict =
+      findFirstStableAngleRange(samples,
+                                0,
+                                true,
+                                config.conflict_angle_threshold_deg,
+                                min_length);
+  if (!first_conflict.valid)
+  {
+    // 只有稳定小角度重叠时，它更像同车道跟车，不再输出“冲突区”。
+    section.type = first_following.valid ? "FOLLOWING_ONLY" : "UNCLASSIFIED_OVERLAP";
+    return section;
+  }
+
+  double first_s_in = samples[first_conflict.start].first_s;
+  double first_s_out = samples[first_conflict.end].first_s;
+  std::string type = "CROSSING_OR_MERGING_CONFLICT";
+
+  if (first_following.valid && first_following.start < first_conflict.start)
+  {
+    // 一开始是同向跟车，后面角度变大并分开：把分离冲突段起点往前回退一小段，
+    // 让速度规划提前进入保护，而不是等到角度已经很大才响应。
+    first_s_in = std::max(samples[first_following.start].first_s,
+                          samples[first_conflict.start].first_s -
+                              std::max(0.0, config.divergence_conflict_back_distance));
+    type = "DIVERGING_CONFLICT";
+  }
+  else
+  {
+    // 先出现大角度冲突，后续若稳定变成小角度同向，说明车辆开始汇入同一路径。
+    // 冲突结束点延长到跟车段内一小段距离，然后由后续跟车逻辑接管。
+    const SRange following_after_conflict =
+        findFirstStableAngleRange(samples,
+                                  first_conflict.end + 1,
+                                  false,
+                                  config.following_angle_threshold_deg,
+                                  min_length);
+    if (following_after_conflict.valid)
+    {
+      first_s_out = std::min(samples[following_after_conflict.end].first_s,
+                             std::max(samples[first_conflict.end].first_s,
+                                      samples[following_after_conflict.start].first_s) +
+                                 std::max(0.0, config.conflict_follow_extension));
+      type = "MERGING_CONFLICT_THEN_FOLLOWING";
+    }
+  }
+
+  section.active = true;
+  section.first_s_in = first_s_in;
+  section.first_s_out = first_s_out;
+  section.second_s_in = std::numeric_limits<double>::infinity();
+  section.second_s_out = -std::numeric_limits<double>::infinity();
+  for (const auto& sample : samples)
+  {
+    if (sample.first_s + kEpsilon < section.first_s_in ||
+        sample.first_s > section.first_s_out + kEpsilon)
+    {
+      continue;
+    }
+    section.second_s_in = std::min(section.second_s_in, sample.second_s);
+    section.second_s_out = std::max(section.second_s_out, sample.second_s);
+  }
+
+  if (!std::isfinite(section.second_s_in) || !std::isfinite(section.second_s_out))
+  {
+    return {};
+  }
+  section.type = type;
+  return section;
+}
+
 }  // namespace
 
 MultiVehicleCoordinator::MultiVehicleCoordinator(CoordinatorConfig config) : config_(config) {}
@@ -199,7 +454,7 @@ CoordinationResult MultiVehicleCoordinator::resolve(const std::vector<VehicleAge
       }
     }
   }
-  clearInactiveDecisionLocks(active_pairs);
+  appendHeldDecisionLocks(agents, active_pairs, result);
 
   if (!result.conflict_active)
   {
@@ -220,6 +475,7 @@ CoordinationResult MultiVehicleCoordinator::resolve(const std::vector<VehicleAge
            << agents[static_cast<size_t>(conflict.proceed_index)].id << " yield="
            << agents[static_cast<size_t>(conflict.yield_index)].id << " decision="
            << conflict.decision_source << " reason=" << conflict.decision_reason
+           << " type=" << conflict.conflict_type
            << " score=[" << conflict.first_score << "," << conflict.second_score << "]";
     if (conflict.decision_locked)
     {
@@ -251,16 +507,13 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
   const std::vector<double> first_samples = sampledSRange(first.trajectory, first_progress, first_horizon_s);
   const std::vector<double> second_samples = sampledSRange(second.trajectory, second_progress, second_horizon_s);
 
-  bool found_spatial_overlap = false;
-  double first_s_min = std::numeric_limits<double>::infinity();
-  double first_s_max = -std::numeric_limits<double>::infinity();
-  double second_s_min = std::numeric_limits<double>::infinity();
-  double second_s_max = -std::numeric_limits<double>::infinity();
-  Pose2d first_collision_pose;
-  Pose2d second_collision_pose;
   double unused_speed = 0.0;
+  std::vector<OverlapAngleSample> overlap_samples;
 
-  // 先在预测时域内可达的 s 区间上扫描空间 footprint 重叠区，再做时间窗判定。
+  // 先在预测时域内可达的 s 区间上扫描空间 footprint 重叠候选。
+  // 不能把所有重叠采样直接合并成一个 s_min/s_max 大区间，否则在“汇入同车道”
+  // 场景中会把后续跟车段也误认为冲突区。这里每个 first_s 只保留最近的一组
+  // overlap，并记录两车轨迹相对航向角，后续用角度序列进行冲突/跟车/分离切分。
   for (const double first_s : first_samples)
   {
     Pose2d first_pose;
@@ -268,6 +521,10 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
     {
       continue;
     }
+    bool found_overlap_for_first_s = false;
+    double best_second_s = 0.0;
+    double best_angle_deg = 0.0;
+    double best_distance = std::numeric_limits<double>::infinity();
     for (const double second_s : second_samples)
     {
       Pose2d second_pose;
@@ -281,28 +538,42 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
         continue;
       }
 
-      if (!found_spatial_overlap)
+      const double distance = distance2d(first_pose.x, first_pose.y, second_pose.x, second_pose.y);
+      if (!found_overlap_for_first_s || distance < best_distance)
       {
-        first_collision_pose = first_pose;
-        second_collision_pose = second_pose;
+        found_overlap_for_first_s = true;
+        best_distance = distance;
+        best_second_s = second_s;
+        best_angle_deg = angleDiffDeg(first_pose.yaw, second_pose.yaw);
       }
-      found_spatial_overlap = true;
-      first_s_min = std::min(first_s_min, first_s);
-      first_s_max = std::max(first_s_max, first_s);
-      second_s_min = std::min(second_s_min, second_s);
-      second_s_max = std::max(second_s_max, second_s);
+    }
+
+    if (found_overlap_for_first_s)
+    {
+      overlap_samples.push_back(OverlapAngleSample{first_s, best_second_s, best_angle_deg});
     }
   }
 
-  if (!found_spatial_overlap)
+  if (overlap_samples.empty())
   {
     return conflict;
   }
 
-  const double first_t_in = elapsedTimeBetweenS(first.trajectory, first_progress, first_s_min, first_speed);
-  const double first_t_out = elapsedTimeBetweenS(first.trajectory, first_progress, first_s_max, first_speed);
-  const double second_t_in = elapsedTimeBetweenS(second.trajectory, second_progress, second_s_min, second_speed);
-  const double second_t_out = elapsedTimeBetweenS(second.trajectory, second_progress, second_s_max, second_speed);
+  const ClassifiedConflictSection classified_section =
+      classifyOverlapByRelativeAngle(overlap_samples, config_);
+  if (!classified_section.active)
+  {
+    return conflict;
+  }
+
+  const double first_t_in =
+      elapsedTimeBetweenS(first.trajectory, first_progress, classified_section.first_s_in, first_speed);
+  const double first_t_out =
+      elapsedTimeBetweenS(first.trajectory, first_progress, classified_section.first_s_out, first_speed);
+  const double second_t_in =
+      elapsedTimeBetweenS(second.trajectory, second_progress, classified_section.second_s_in, second_speed);
+  const double second_t_out =
+      elapsedTimeBetweenS(second.trajectory, second_progress, classified_section.second_s_out, second_speed);
   const bool time_windows_conflict =
       first_t_in <= second_t_out + config_.conflict_time_clearance &&
       second_t_in <= first_t_out + config_.conflict_time_clearance;
@@ -314,13 +585,10 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
   conflict.active = true;
   conflict.conflict_time = std::max(first_t_in, second_t_in);
   conflict.conflict_clear_time = std::min(first_t_out, second_t_out);
-  conflict.collision_point.x = 0.5 * (first_collision_pose.x + second_collision_pose.x);
-  conflict.collision_point.y = 0.5 * (first_collision_pose.y + second_collision_pose.y);
-  conflict.collision_point.yaw = first_collision_pose.yaw;
-  conflict.first_s_in = first_s_min;
-  conflict.first_s_out = first_s_max;
-  conflict.second_s_in = second_s_min;
-  conflict.second_s_out = second_s_max;
+  conflict.first_s_in = classified_section.first_s_in;
+  conflict.first_s_out = classified_section.first_s_out;
+  conflict.second_s_in = classified_section.second_s_in;
+  conflict.second_s_out = classified_section.second_s_out;
   conflict.first_t_in = first_t_in;
   conflict.first_t_out = first_t_out;
   conflict.second_t_in = second_t_in;
@@ -329,6 +597,11 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
   sampleByS(first.trajectory, conflict.first_s_out, conflict.first_exit_pose, unused_speed);
   sampleByS(second.trajectory, conflict.second_s_in, conflict.second_entry_pose, unused_speed);
   sampleByS(second.trajectory, conflict.second_s_out, conflict.second_exit_pose, unused_speed);
+  conflict.collision_point.x = 0.5 * (conflict.first_entry_pose.x + conflict.second_entry_pose.x);
+  conflict.collision_point.y = 0.5 * (conflict.first_entry_pose.y + conflict.second_entry_pose.y);
+  conflict.collision_point.yaw = conflict.first_entry_pose.yaw;
+  conflict.conflict_type = classified_section.type;
+  conflict.summary = classified_section.type;
   return conflict;
 }
 
@@ -338,34 +611,20 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
 {
   const auto key = pairKey(conflict);
   const auto locked = decision_locks_.find(key);
-  bool released_lock_for_recompute = false;
   if (locked != decision_locks_.end())
   {
-    const auto now = std::chrono::steady_clock::now();
-    const double lock_age =
-        std::chrono::duration<double>(now - locked->second.created_at).count();
-    const auto far_from_entry = [&](const VehicleAgent& agent, const int vehicle_index) {
-      const double current_s = estimateProgress(agent.trajectory, agent.pose);
-      const double distance_to_entry = std::max(0.0, conflictEntrySFor(conflict, vehicle_index) - current_s);
-      return distance_to_entry >= config_.decision_unlock_distance;
-    };
-    const bool hold_time_elapsed = lock_age >= config_.minimum_lock_hold_time;
-    const bool both_far_from_entry =
-        far_from_entry(agents[static_cast<size_t>(conflict.first_index)], conflict.first_index) &&
-        far_from_entry(agents[static_cast<size_t>(conflict.second_index)], conflict.second_index);
-    if (!hold_time_elapsed || !both_far_from_entry)
-    {
-      // 锁定后至少保持 minimum_lock_hold_time，并且需要离冲突入口足够远才允许重算。
-      conflict.proceed_index = locked->second.proceed_index;
-      conflict.yield_index = locked->second.yield_index;
-      conflict.decision_locked = true;
-      conflict.decision_source = "LOCK";
-      conflict.decision_reason = "keep_locked_order";
-      return;
-    }
-
-    decision_locks_.erase(locked);
-    released_lock_for_recompute = true;
+    // 同一 pair 已有决策锁时，不再用当前帧重新评分切换角色。
+    // 但候选轨迹每帧都会变化，冲突区也可能逐步向后扩展；因此这里把当前检测到的
+    // 冲突段和锁内保存的冲突事件做“只扩不缩”的合并，再用合并后的绝对入口/出口
+    // 继续向速度层发布约束。
+    conflict = mergeTrackedConflictWithCurrent(agents, conflict, locked->second.conflict);
+    conflict.proceed_index = locked->second.proceed_index;
+    conflict.yield_index = locked->second.yield_index;
+    conflict.decision_locked = true;
+    conflict.decision_source = "LOCK";
+    conflict.decision_reason = "update_locked_conflict_domain";
+    refreshDecisionLock(conflict);
+    return;
   }
 
   // 冲突区已很近时，在本轮普通决策后写入锁，避免后续实时重评分反复切换。
@@ -393,7 +652,7 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
     conflict.decision_reason = "inside_conflict_interval";
     if (should_lock)
     {
-      decision_locks_[key] = LockedDecision{conflict.proceed_index, conflict.yield_index};
+      storeDecisionLock(conflict);
       conflict.decision_locked = true;
     }
     return;
@@ -411,7 +670,7 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
     conflict.decision_reason = "cannot_stop_before_s_in";
     if (should_lock)
     {
-      decision_locks_[key] = LockedDecision{conflict.proceed_index, conflict.yield_index};
+      storeDecisionLock(conflict);
       conflict.decision_locked = true;
     }
     return;
@@ -427,7 +686,7 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
     conflict.decision_reason = "already_yielding_in_central_order";
     if (should_lock)
     {
-      decision_locks_[key] = LockedDecision{conflict.proceed_index, conflict.yield_index};
+      storeDecisionLock(conflict);
       conflict.decision_locked = true;
     }
     return;
@@ -456,17 +715,12 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
   conflict.first_score = first_score;
   conflict.second_score = second_score;
 
-  const double effective_switch_margin =
-      released_lock_for_recompute ? std::max(config_.score_tie_epsilon, config_.decision_switch_margin)
-                                  : config_.score_tie_epsilon;
-  bool first_goes = first_score > second_score + effective_switch_margin;
-  if (std::abs(first_score - second_score) <= effective_switch_margin)
+  bool first_goes = first_score > second_score + config_.score_tie_epsilon;
+  if (std::abs(first_score - second_score) <= config_.score_tie_epsilon)
   {
     first_goes = first.priority <= second.priority;
     conflict.decision_source = "PRIORITY";
-    conflict.decision_reason = released_lock_for_recompute
-                                   ? "released_lock_score_margin_tie"
-                                   : "score_tie_priority_fallback";
+    conflict.decision_reason = "score_tie_priority_fallback";
   }
   else
   {
@@ -478,7 +732,7 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
   conflict.yield_index = first_goes ? conflict.second_index : conflict.first_index;
   if (should_lock)
   {
-    decision_locks_[key] = LockedDecision{conflict.proceed_index, conflict.yield_index};
+    storeDecisionLock(conflict);
     conflict.decision_locked = true;
   }
 }
@@ -809,6 +1063,11 @@ bool MultiVehicleCoordinator::cannotStopBeforeConflictEntry(const VehicleAgent& 
 bool MultiVehicleCoordinator::shouldLockDecision(const std::vector<VehicleAgent>& agents,
                                                  const PairConflict& conflict) const
 {
+  // 当前系统的冲突消解策略是 STOP_AND_WAIT：一旦判定出先行/让行关系，
+  // 避让车会立即刹停等待。如果下一帧因为避让车减速导致预测 footprint 暂时不重叠，
+  // 却没有锁住顺序，就会出现 YIELD/NONE 抖动，车辆反复起停。
+  // 因此这里采用首次有效决策即锁定，
+  // 释放条件统一放在 appendHeldDecisionLocks() 中判断。
   if (!config_.enable_decision_lock ||
       conflict.first_index < 0 ||
       conflict.second_index < 0 ||
@@ -818,35 +1077,7 @@ bool MultiVehicleCoordinator::shouldLockDecision(const std::vector<VehicleAgent>
     return false;
   }
 
-  return isVehicleNearConflictEntry(agents[static_cast<size_t>(conflict.first_index)],
-                                    conflict,
-                                    conflict.first_index) ||
-         isVehicleNearConflictEntry(agents[static_cast<size_t>(conflict.second_index)],
-                                    conflict,
-                                    conflict.second_index);
-}
-
-bool MultiVehicleCoordinator::isVehicleNearConflictEntry(const VehicleAgent& agent,
-                                                         const PairConflict& conflict,
-                                                         const int vehicle_index) const
-{
-  const double current_s = estimateProgress(agent.trajectory, agent.pose);
-  const double entry_s = conflictEntrySFor(conflict, vehicle_index);
-  const double distance_to_entry = std::max(0.0, entry_s - current_s);
-  if (distance_to_entry <= config_.decision_lock_distance)
-  {
-    return true;
-  }
-
-  const double fallback_speed = plannedSpeedAtProgress(agent.trajectory, current_s, agent.nominal_speed);
-  const double speed = agent.have_speed ? agent.speed : fallback_speed;
-  if (speed < 0.1)
-  {
-    return false;
-  }
-
-  const double ttc = distance_to_entry / speed;
-  return ttc <= config_.decision_lock_ttc;
+  return true;
 }
 
 std::pair<int, int> MultiVehicleCoordinator::pairKey(const PairConflict& conflict) const
@@ -855,16 +1086,237 @@ std::pair<int, int> MultiVehicleCoordinator::pairKey(const PairConflict& conflic
                         std::max(conflict.first_index, conflict.second_index));
 }
 
-void MultiVehicleCoordinator::clearInactiveDecisionLocks(const std::vector<std::pair<int, int>>& active_pairs)
+PairConflict MultiVehicleCoordinator::reprojectTrackedConflict(
+    const std::vector<VehicleAgent>& agents,
+    const PairConflict& tracked_conflict) const
 {
-  std::set<std::pair<int, int>> active_set(active_pairs.begin(), active_pairs.end());
+  PairConflict projected = tracked_conflict;
+  if (tracked_conflict.first_index < 0 || tracked_conflict.second_index < 0 ||
+      static_cast<size_t>(tracked_conflict.first_index) >= agents.size() ||
+      static_cast<size_t>(tracked_conflict.second_index) >= agents.size())
+  {
+    return projected;
+  }
+
+  const auto project_vehicle_section = [&](const int vehicle_index) {
+    const VehicleAgent& agent = agents[static_cast<size_t>(vehicle_index)];
+    Pose2d stored_entry_pose = conflictEntryPoseFor(tracked_conflict, vehicle_index);
+    Pose2d stored_exit_pose = conflictExitPoseFor(tracked_conflict, vehicle_index);
+
+    // 锁内跨周期保存的是 map 绝对坐标；本轮需要先投影到当前候选轨迹，
+    // 再得到当前帧可用于时间估算和 RViz 区间绘制的 s。
+    double entry_s = estimateProgress(agent.trajectory, stored_entry_pose);
+    double exit_s = estimateProgress(agent.trajectory, stored_exit_pose);
+
+    const double current_s = estimateProgress(agent.trajectory, agent.pose);
+    const double fallback_speed =
+        plannedSpeedAtProgress(agent.trajectory, current_s, agent.nominal_speed);
+    const double t_in = elapsedTimeBetweenS(agent.trajectory, current_s, entry_s, fallback_speed);
+    const double t_out = elapsedTimeBetweenS(agent.trajectory, current_s, exit_s, fallback_speed);
+
+    // 入口/出口位姿继续使用锁内保存的绝对坐标。这样下游 planner 每轮都会把同一
+    // 冲突空间边界重新投影到自己的当前轨迹，避免把旧轨迹 s 当成长期真值。
+    setConflictSectionForVehicle(projected,
+                                 vehicle_index,
+                                 entry_s,
+                                 exit_s,
+                                 t_in,
+                                 t_out,
+                                 stored_entry_pose,
+                                 stored_exit_pose);
+  };
+
+  project_vehicle_section(projected.first_index);
+  project_vehicle_section(projected.second_index);
+  projected.conflict_time = std::max(projected.first_t_in, projected.second_t_in);
+  projected.conflict_clear_time = std::min(projected.first_t_out, projected.second_t_out);
+  projected.collision_point.x = 0.5 * (projected.first_entry_pose.x + projected.second_entry_pose.x);
+  projected.collision_point.y = 0.5 * (projected.first_entry_pose.y + projected.second_entry_pose.y);
+  projected.collision_point.yaw = projected.first_entry_pose.yaw;
+  return projected;
+}
+
+PairConflict MultiVehicleCoordinator::mergeTrackedConflictWithCurrent(
+    const std::vector<VehicleAgent>& agents,
+    const PairConflict& current_conflict,
+    const PairConflict& tracked_conflict) const
+{
+  PairConflict merged = current_conflict;
+  if (current_conflict.first_index < 0 || current_conflict.second_index < 0 ||
+      static_cast<size_t>(current_conflict.first_index) >= agents.size() ||
+      static_cast<size_t>(current_conflict.second_index) >= agents.size())
+  {
+    return merged;
+  }
+
+  const auto merge_vehicle_section = [&](const int vehicle_index) {
+    const VehicleAgent& agent = agents[static_cast<size_t>(vehicle_index)];
+    const double current_entry_s = conflictEntrySFor(current_conflict, vehicle_index);
+    const double current_exit_s = conflictExitSFor(current_conflict, vehicle_index);
+
+    const Pose2d tracked_entry_pose = conflictEntryPoseFor(tracked_conflict, vehicle_index);
+    const Pose2d tracked_exit_pose = conflictExitPoseFor(tracked_conflict, vehicle_index);
+    double tracked_entry_s = estimateProgress(agent.trajectory, tracked_entry_pose);
+    double tracked_exit_s = estimateProgress(agent.trajectory, tracked_exit_pose);
+    if (tracked_exit_s < tracked_entry_s)
+    {
+      std::swap(tracked_entry_s, tracked_exit_s);
+    }
+
+    // 冲突事件一旦建立，空间域允许随新检测结果向前/向后扩展，但不因某一帧预测
+    // 变短而收缩。这样可以覆盖“冲突区域逐渐扩展到稳态”的场景。
+    const double merged_s_in = std::min(std::min(current_entry_s, current_exit_s), tracked_entry_s);
+    const double merged_s_out = std::max(std::max(current_entry_s, current_exit_s), tracked_exit_s);
+
+    double unused_speed = 0.0;
+    Pose2d merged_entry_pose;
+    Pose2d merged_exit_pose;
+    sampleByS(agent.trajectory, merged_s_in, merged_entry_pose, unused_speed);
+    sampleByS(agent.trajectory, merged_s_out, merged_exit_pose, unused_speed);
+
+    const double current_s = estimateProgress(agent.trajectory, agent.pose);
+    const double fallback_speed =
+        plannedSpeedAtProgress(agent.trajectory, current_s, agent.nominal_speed);
+    const double t_in = elapsedTimeBetweenS(agent.trajectory, current_s, merged_s_in, fallback_speed);
+    const double t_out = elapsedTimeBetweenS(agent.trajectory, current_s, merged_s_out, fallback_speed);
+
+    setConflictSectionForVehicle(merged,
+                                 vehicle_index,
+                                 merged_s_in,
+                                 merged_s_out,
+                                 t_in,
+                                 t_out,
+                                 merged_entry_pose,
+                                 merged_exit_pose);
+  };
+
+  merge_vehicle_section(merged.first_index);
+  merge_vehicle_section(merged.second_index);
+  merged.active = true;
+  merged.conflict_time = std::max(merged.first_t_in, merged.second_t_in);
+  merged.conflict_clear_time = std::min(merged.first_t_out, merged.second_t_out);
+  merged.collision_point.x = 0.5 * (merged.first_entry_pose.x + merged.second_entry_pose.x);
+  merged.collision_point.y = 0.5 * (merged.first_entry_pose.y + merged.second_entry_pose.y);
+  merged.collision_point.yaw = merged.first_entry_pose.yaw;
+  if (merged.conflict_type.empty())
+  {
+    merged.conflict_type = tracked_conflict.conflict_type;
+  }
+  merged.summary = merged.conflict_type;
+  merged.first_target_entry_time = std::numeric_limits<double>::quiet_NaN();
+  merged.second_target_entry_time = std::numeric_limits<double>::quiet_NaN();
+  return merged;
+}
+
+bool MultiVehicleCoordinator::hasVehiclePassedConflictExit(const VehicleAgent& agent,
+                                                           const PairConflict& conflict,
+                                                           const int vehicle_index) const
+{
+  if (vehicle_index < 0 || !agent.have_pose)
+  {
+    return false;
+  }
+
+  const double margin = std::max(0.0, config_.stop_margin);
+  // 当前工程的 trajectory.s 是每轮候选轨迹上的局部弧长，不是全局道路里程。
+  // 轨迹持续重规划后，车辆当前位置和历史冲突出口重新投影出来的 s 都可能很小，
+  // 因此释放锁时不再使用 current_s / exit_s 比较，而是直接用 map 坐标判断
+  // 先行车是否已经沿冲突出口方向越过出口点。
+  const Pose2d exit_pose = conflictExitPoseFor(conflict, vehicle_index);
+  const double dx = agent.pose.x - exit_pose.x;
+  const double dy = agent.pose.y - exit_pose.y;
+  const double passed_distance = dx * std::cos(exit_pose.yaw) + dy * std::sin(exit_pose.yaw);
+  return passed_distance >= margin;
+}
+
+void MultiVehicleCoordinator::storeDecisionLock(const PairConflict& conflict)
+{
+  if (!config_.enable_decision_lock ||
+      conflict.proceed_index < 0 ||
+      conflict.yield_index < 0)
+  {
+    return;
+  }
+
+  LockedDecision lock;
+  lock.proceed_index = conflict.proceed_index;
+  lock.yield_index = conflict.yield_index;
+  lock.conflict = conflict;
+  decision_locks_[pairKey(conflict)] = lock;
+}
+
+void MultiVehicleCoordinator::refreshDecisionLock(const PairConflict& conflict)
+{
+  if (!config_.enable_decision_lock ||
+      conflict.proceed_index < 0 ||
+      conflict.yield_index < 0)
+  {
+    return;
+  }
+
+  const auto key = pairKey(conflict);
+  auto it = decision_locks_.find(key);
+  if (it == decision_locks_.end())
+  {
+    storeDecisionLock(conflict);
+    return;
+  }
+
+  // 锁的角色不变，只刷新动态维护后的冲突空间域。
+  // 释放不再依赖预测时间，统一用先行车是否已经越过冲突出口判断。
+  it->second.conflict = conflict;
+  it->second.proceed_index = conflict.proceed_index;
+  it->second.yield_index = conflict.yield_index;
+}
+
+void MultiVehicleCoordinator::appendHeldDecisionLocks(
+    const std::vector<VehicleAgent>& agents,
+    const std::vector<std::pair<int, int>>& active_pairs,
+    CoordinationResult& result)
+{
   for (auto it = decision_locks_.begin(); it != decision_locks_.end();)
   {
-    if (active_set.find(it->first) == active_set.end())
+    if (std::find(active_pairs.begin(), active_pairs.end(), it->first) != active_pairs.end())
+    {
+      ++it;
+      continue;
+    }
+
+    const LockedDecision& lock = it->second;
+    if (lock.proceed_index < 0 || lock.yield_index < 0 ||
+        static_cast<size_t>(lock.proceed_index) >= agents.size() ||
+        static_cast<size_t>(lock.yield_index) >= agents.size())
     {
       it = decision_locks_.erase(it);
       continue;
     }
+
+    const auto& proceed_agent = agents[static_cast<size_t>(lock.proceed_index)];
+    const PairConflict projected_lock = reprojectTrackedConflict(agents, lock.conflict);
+    if (hasVehiclePassedConflictExit(proceed_agent, projected_lock, lock.proceed_index))
+    {
+      it = decision_locks_.erase(it);
+      continue;
+    }
+
+    PairConflict held_conflict = projected_lock;
+
+    // 当前帧没有检测到 footprint overlap 时，不能只按时间释放锁：
+    // 避让车可能只是因为已经开始减速，预测时窗内暂时不再与先行车重叠。
+    // 现在的释放条件简化为：只要先行车确实通过动态维护的冲突出口，就解除锁。
+    // 在此之前继续发布锁定的冲突事件。空间边界使用锁内保存的 map 坐标，
+    // 并已在本轮重新投影到当前候选轨迹，因此这里的 t 已经是当前帧相对时间。
+    held_conflict.active = true;
+    held_conflict.decision_locked = true;
+    held_conflict.proceed_index = lock.proceed_index;
+    held_conflict.yield_index = lock.yield_index;
+    held_conflict.decision_source = "LOCK";
+    held_conflict.decision_reason = "hold_locked_order_until_proceed_exit";
+    held_conflict.first_target_entry_time = held_conflict.first_t_in;
+    held_conflict.second_target_entry_time = held_conflict.second_t_in;
+
+    result.conflicts.push_back(held_conflict);
+    result.conflict_active = true;
     ++it;
   }
 }
