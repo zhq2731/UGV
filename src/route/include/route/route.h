@@ -18,6 +18,7 @@
 #include "math.h"
 #include "float.h"
 #include <std_msgs/UInt8.h>
+#include <std_msgs/Empty.h>
 #include <limits>
 #include <geometry_msgs/Quaternion.h>
 
@@ -67,6 +68,7 @@ class Route {
 	ros::Subscriber replan_sub_;
 	ros::Subscriber cloud_map_sub_;
 	ros::Subscriber init_point_sub_;
+	ros::Subscriber next_route_segment_sub_;
 	void callBackinitialPose(const geometry_msgs::PoseStamped::ConstPtr msg);
 	void callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg);
 	void callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr msg);
@@ -75,6 +77,7 @@ class Route {
 	void callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg);
 	void callbackReplan(const route_msgs::Replan::ConstPtr &msg);
 	void callbackCloudmap(const std_msgs::UInt8::ConstPtr &msg);
+	void callbackNextRouteSegment(const std_msgs::Empty::ConstPtr &msg);
     void displayLoop();
 	void displayOsm();
 	void calculateMapBoundary();
@@ -92,6 +95,11 @@ class Route {
 	void printResultsNodeId();
 	void publishRouteSegmentMarkers();
  private:
+	bool hasActiveRouteSegment() const;
+	bool isRouteAdvanceAutoReady() const;
+	double distanceToCurrentRouteEnd() const;
+	void publishCurrentRouteSegment();
+	void tryAdvanceRouteSegment();
     ros::NodeHandle nh_;	
     ros::NodeHandle private_nh_;
 	MapLoader mapLoader;
@@ -114,6 +122,8 @@ class Route {
 	int lastPointsNum = 0;
 	int lastRoutesNum = 0;
 	int lastRouteStatusIndex = -100;
+	bool manualRouteAdvanceConfirmed = false;
+	double routeAdvanceDistanceThreshold = 6.0;
 	double threshold = 500.0;
 	MapBoundary map_boundary;
 	InitPoint init_point;

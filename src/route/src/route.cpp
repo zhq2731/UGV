@@ -145,6 +145,71 @@ void Route::publishRouteSegmentMarkers()
 	display_pub_.publish(markers);
 }
 
+bool Route::hasActiveRouteSegment() const
+{
+	return pubIndex >= 0 && pubIndex < static_cast<int>(pubUtmResults.size());
+}
+
+double Route::distanceToCurrentRouteEnd() const
+{
+	if (!hasActiveRouteSegment() || pubUtmResults[pubIndex].empty()) {
+		return std::numeric_limits<double>::infinity();
+	}
+	return amathutils::distance2D(vehicleInfo.utmPoint, pubUtmResults[pubIndex].back());
+}
+
+bool Route::isRouteAdvanceAutoReady() const
+{
+	return distanceToCurrentRouteEnd() <= routeAdvanceDistanceThreshold;
+}
+
+void Route::publishCurrentRouteSegment()
+{
+	if (!hasActiveRouteSegment()) {
+		return;
+	}
+
+	planning_msgs::TrajectoryPointArray trajectory;
+	for (const auto &p : pubUtmResults[pubIndex]) {
+		planning_msgs::TrajectoryPoint point;
+		point.x = p.x;
+		point.y = p.y;
+		trajectory.points.push_back(point);
+	}
+	route_pub_.publish(trajectory);
+	publishRouteSegmentMarkers();
+	lastRouteStatusIndex = pubIndex;
+}
+
+void Route::tryAdvanceRouteSegment()
+{
+	if (!hasActiveRouteSegment()) {
+		manualRouteAdvanceConfirmed = false;
+		return;
+	}
+
+	const double distance_to_end = distanceToCurrentRouteEnd();
+	if (distance_to_end > routeAdvanceDistanceThreshold || !manualRouteAdvanceConfirmed) {
+		return;
+	}
+
+	ROS_INFO_STREAM("[RouteAdvance] double confirmation accepted. current_segment="
+	                << pubIndex + 1 << ", distance_to_end=" << distance_to_end << " m");
+	manualRouteAdvanceConfirmed = false;
+	pubIndex++;
+
+	if (pubIndex >= static_cast<int>(pubUtmResults.size())) {
+		publishRouteSegmentMarkers();
+		pubIndex = -1;
+		std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
+		lastRouteStatusIndex = -100;
+		ROS_INFO("[RouteAdvance] all route segments completed.");
+		return;
+	}
+
+	publishCurrentRouteSegment();
+}
+
 
 ErrCode Route::FindPath(TopoGraph &topoGraph,std::vector<UtmPoint> &singleUtmResult)
 {
@@ -209,16 +274,8 @@ void Route::callBackCurrentPose(const localization_msgs::Localization::ConstPtr 
 	
 	if (pubIndex < 0 && pubUtmResults.size()) {
 	    pubIndex++;
-		planning_msgs::TrajectoryPointArray trajectory;
-		for (const auto &p:pubUtmResults[pubIndex]){
-			planning_msgs::TrajectoryPoint point;
-			point.x = p.x;
-		    point.y = p.y;
-			trajectory.points.push_back(point);
-		}
-		route_pub_.publish(trajectory);
-		publishRouteSegmentMarkers();
-		lastRouteStatusIndex = pubIndex;
+		manualRouteAdvanceConfirmed = false;
+		publishCurrentRouteSegment();
 	    return;
 	}
 	
@@ -236,32 +293,7 @@ void Route::callBackCurrentPose(const localization_msgs::Localization::ConstPtr 
 		route_pub_.publish(trajectory);
 	}
 	**/
-	if (amathutils::distance2D(vehicleInfo.utmPoint,pubUtmResults[pubIndex].back())< 2.0){ 
-		std::cout << "[callBackCurrentPose] ====== 达到发送下一路径条件 ======" << std::endl;
-	    pubIndex++;
-		if (pubIndex >= static_cast<int>(pubUtmResults.size())) {
-			publishRouteSegmentMarkers();
-			pubIndex = -1;
-			std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
-			lastRouteStatusIndex = -100;
-			return;
-		}
-		planning_msgs::TrajectoryPointArray trajectory;
-		for (const auto &p:pubUtmResults[pubIndex]){
-			planning_msgs::TrajectoryPoint point;
-			point.x = p.x;
-		    point.y = p.y;
-			trajectory.points.push_back(point);
-		}
-		route_pub_.publish(trajectory);
-		publishRouteSegmentMarkers();
-		lastRouteStatusIndex = pubIndex;
-	}
-	
-	if (pubIndex == pubUtmResults.size()-1 ) {
-		pubIndex = -1;
-		std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
-	}   
+	tryAdvanceRouteSegment();
 	
 }
 
@@ -271,6 +303,30 @@ void Route::callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg)
 
 	//vehicleInfo.speed = msg->current_velocity;
 	
+}
+
+void Route::callbackNextRouteSegment(const std_msgs::Empty::ConstPtr &msg)
+{
+	(void)msg;
+	if (!hasActiveRouteSegment()) {
+		manualRouteAdvanceConfirmed = false;
+		ROS_WARN("[RouteAdvance] manual confirmation ignored: no active route segment.");
+		return;
+	}
+
+	const double distance_to_end = distanceToCurrentRouteEnd();
+	if (distance_to_end > routeAdvanceDistanceThreshold) {
+		manualRouteAdvanceConfirmed = false;
+		ROS_WARN_STREAM("[RouteAdvance] manual confirmation ignored: distance_to_end="
+		                << distance_to_end << " m, threshold="
+		                << routeAdvanceDistanceThreshold << " m");
+		return;
+	}
+
+	manualRouteAdvanceConfirmed = true;
+	ROS_INFO_STREAM("[RouteAdvance] manual confirmation accepted. distance_to_end="
+	                << distance_to_end << " m");
+	tryAdvanceRouteSegment();
 }
 
 void Route::callBackinitialPose(const geometry_msgs::PoseStamped::ConstPtr msg)
@@ -324,6 +380,7 @@ void Route::callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg)
 	s_flag = true;
     
 	pubIndex = -1;
+	manualRouteAdvanceConfirmed = false;
 	std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
 	std::vector<ResultPoint>().swap(reservePlannedResults);
 	
@@ -415,6 +472,7 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
 {
 	std::cout << "[MultiPointPlanning] ====== 进入cloud多目标点规划回调函数 ======" << std::endl;
 	pubIndex = -1;
+	manualRouteAdvanceConfirmed = false;
 	std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
 	std::vector<UtmPoint>().swap(multiPoints);
 	std::vector<UtmPoint>().swap(lastMultiPoints);
@@ -428,11 +486,6 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
         markerArrayDel.markers.push_back(DisPlay::deleteMarker("/clicked_point", i));
 	for (int i = 1; i<=  lastRoutesNum; i++)
 		    markerArrayDel.markers.push_back(DisPlay::deleteMarker("/GlobalPlanner",i));
-	for (int i = 1; i <= lastRoutesNum; i++) {
-        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/current", i));
-        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/pending", i));
-        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/completed", i));
-    }
 	for (int i = 1; i <= lastPointsNum; i++)
         markerArrayDel.markers.push_back(DisPlay::deleteMarker("/routePoints", i));
     display_pub_.publish(markerArrayDel);
@@ -910,6 +963,7 @@ void Route::callbackReplan(const route_msgs::Replan::ConstPtr &msg)
 
 	if(!inThresholdLengths.empty()){
 		pubIndex = -1;
+		manualRouteAdvanceConfirmed = false;
 		std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
 		for(auto const &it : inThresholdLengths){
 			if(it.second.second == 0){
@@ -1077,6 +1131,7 @@ void Route::callbackReplan(const route_msgs::Replan::ConstPtr &msg)
 		
 			if(!outThresholdLengths.empty()){
 				pubIndex = -1;
+				manualRouteAdvanceConfirmed = false;
 				std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
 				for(const auto  &it : outThresholdLengths){
 					if(it.second.second == 0){
@@ -1144,6 +1199,7 @@ void Route::callbackReplan(const route_msgs::Replan::ConstPtr &msg)
 			std::vector<UtmPoint>().swap(reMultiPoints);
 			std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
 			pubIndex = -1;
+			manualRouteAdvanceConfirmed = false;
 		}
 	}
 
@@ -1186,6 +1242,7 @@ void Route::callbackCloudmap(const std_msgs::UInt8::ConstPtr &msg){
 	std::string config_file_map = pkg_dir + std::string("/param/route/route.yaml");
 	YAML::Node docRoute = YAML::LoadFile(config_file_map);
 	mapInfo.map_file = pkg_dir + std::string("/data/") + docRoute ["cloud_map_filename"].as<std::string>();
+	private_nh_.param<double>("route_advance_distance_threshold", routeAdvanceDistanceThreshold, 6.0);
 	file = mapLoader.loadOsmMap(mapInfo);
 	topoGraph_.ClearGraph();
 	topoGraph_.BulidTopoGraph(file);
@@ -1742,6 +1799,7 @@ Route::Route(ros::NodeHandle &nh):nh_(nh),private_nh_("~")
 	replan_sub_ = nh_.subscribe("/replan", 1, &Route::callbackReplan, this); 
 	multi_point_sub_ = nh_.subscribe("/multi_point_planning", 1, &Route::callBackMultiPointPlanning, this);
 	init_point_sub_ = nh_.subscribe("/init_point", 1, &Route::callBackInitPoint, this);
+	next_route_segment_sub_ = nh_.subscribe("next_route_segment", 1, &Route::callbackNextRouteSegment, this);
 	cloud_map_sub_ = nh_.subscribe("/mapSign", 1, &Route::callbackCloudmap, this);
 	cloud_display_pub_ = nh_.advertise<planning_msgs::TrajectoryPointArray>("/cloud_route_display", 1);
 	map_request_pub_ = nh_.advertise<std_msgs::UInt8>("/request_new_map", 1);

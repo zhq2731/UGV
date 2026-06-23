@@ -1,2 +1,3 @@
 map_filename: "map.gpx.osm"
 cloud_map_filename: "cloudmap.osm"
+route_advance_distance_threshold: 6.0

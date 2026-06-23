@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   rviz
+  std_msgs
 )
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
@@ -20,6 +21,7 @@ catkin_package(
     roscpp
     rospy
     rviz
+    std_msgs
 )
 
 include_directories(

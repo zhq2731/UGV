@@ -36,6 +36,10 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
       nh_.advertise<driver_msgs::MotionStartCmd>("/vehicle_1/chassis_motion_start_cmd", 1);
   vehicle_2_motion_pub_ =
       nh_.advertise<driver_msgs::MotionStartCmd>("/vehicle_2/chassis_motion_start_cmd", 1);
+  vehicle_1_next_segment_pub_ =
+      nh_.advertise<std_msgs::Empty>("/vehicle_1/next_route_segment", 1);
+  vehicle_2_next_segment_pub_ =
+      nh_.advertise<std_msgs::Empty>("/vehicle_2/next_route_segment", 1);
 
   setMinimumWidth(0);
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -44,21 +48,27 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
   auto* vehicle_1_layout = new QGridLayout(vehicle_1_group);
   auto* vehicle_1_start = new QPushButton("Go", vehicle_1_group);
   auto* vehicle_1_stop = new QPushButton("Stop", vehicle_1_group);
+  auto* vehicle_1_next = new QPushButton("Next", vehicle_1_group);
   compactButton(vehicle_1_start);
   compactButton(vehicle_1_stop);
+  compactButton(vehicle_1_next);
   compactGroup(vehicle_1_group, vehicle_1_layout);
   vehicle_1_layout->addWidget(vehicle_1_start, 0, 0);
   vehicle_1_layout->addWidget(vehicle_1_stop, 1, 0);
+  vehicle_1_layout->addWidget(vehicle_1_next, 2, 0);
 
   auto* vehicle_2_group = new QGroupBox("V2", this);
   auto* vehicle_2_layout = new QGridLayout(vehicle_2_group);
   auto* vehicle_2_start = new QPushButton("Go", vehicle_2_group);
   auto* vehicle_2_stop = new QPushButton("Stop", vehicle_2_group);
+  auto* vehicle_2_next = new QPushButton("Next", vehicle_2_group);
   compactButton(vehicle_2_start);
   compactButton(vehicle_2_stop);
+  compactButton(vehicle_2_next);
   compactGroup(vehicle_2_group, vehicle_2_layout);
   vehicle_2_layout->addWidget(vehicle_2_start, 0, 0);
   vehicle_2_layout->addWidget(vehicle_2_stop, 1, 0);
+  vehicle_2_layout->addWidget(vehicle_2_next, 2, 0);
 
   auto* both_group = new QGroupBox("All", this);
   auto* both_layout = new QGridLayout(both_group);
@@ -81,8 +91,10 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
 
   connect(vehicle_1_start, SIGNAL(clicked()), this, SLOT(startVehicle1()));
   connect(vehicle_1_stop, SIGNAL(clicked()), this, SLOT(stopVehicle1()));
+  connect(vehicle_1_next, SIGNAL(clicked()), this, SLOT(confirmNextSegmentVehicle1()));
   connect(vehicle_2_start, SIGNAL(clicked()), this, SLOT(startVehicle2()));
   connect(vehicle_2_stop, SIGNAL(clicked()), this, SLOT(stopVehicle2()));
+  connect(vehicle_2_next, SIGNAL(clicked()), this, SLOT(confirmNextSegmentVehicle2()));
   connect(both_start, SIGNAL(clicked()), this, SLOT(startBoth()));
   connect(both_stop, SIGNAL(clicked()), this, SLOT(stopBoth()));
 }
@@ -92,6 +104,12 @@ void TwoVehicleMotionPanel::publishMotion(const ros::Publisher& publisher, unsig
   driver_msgs::MotionStartCmd msg;
   msg.header.stamp = ros::Time::now();
   msg.motion_start = motion_start;
+  publisher.publish(msg);
+}
+
+void TwoVehicleMotionPanel::publishNextSegmentConfirm(const ros::Publisher& publisher)
+{
+  std_msgs::Empty msg;
   publisher.publish(msg);
 }
 
@@ -105,6 +123,11 @@ void TwoVehicleMotionPanel::stopVehicle1()
   publishMotion(vehicle_1_motion_pub_, 0);
 }
 
+void TwoVehicleMotionPanel::confirmNextSegmentVehicle1()
+{
+  publishNextSegmentConfirm(vehicle_1_next_segment_pub_);
+}
+
 void TwoVehicleMotionPanel::startVehicle2()
 {
   publishMotion(vehicle_2_motion_pub_, 1);
@@ -113,6 +136,11 @@ void TwoVehicleMotionPanel::startVehicle2()
 void TwoVehicleMotionPanel::stopVehicle2()
 {
   publishMotion(vehicle_2_motion_pub_, 0);
+}
+
+void TwoVehicleMotionPanel::confirmNextSegmentVehicle2()
+{
+  publishNextSegmentConfirm(vehicle_2_next_segment_pub_);
 }
 
 void TwoVehicleMotionPanel::startBoth()
