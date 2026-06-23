@@ -1,0 +1,47 @@
+<launch>
+  <arg name="map_file" default="$(find launch_node)/data/cloudmap.osm"/>
+  <arg name="global_config" default="$(find launch_node)/param/global/global_config.yaml"/>
+  <arg name="offline_points_file" default="$(find task_scheduler)/config/offline_points_50.csv"/>
+  <arg name="vehicles_file" default="$(find task_scheduler)/config/vehicles.csv"/>
+  <arg name="tasks_file" default="$(find task_scheduler)/config/tasks.csv"/>
+  <arg name="output_file" default="/tmp/ugv_schedule_solution.csv"/>
+  <arg name="distance_table_file" default="$(find task_scheduler)/config/offline_distance_table_50.csv"/>
+  <arg name="offline_point_count" default="50"/>
+  <arg name="offline_point_seed" default="20260622"/>
+  <arg name="population" default="120"/>
+  <arg name="generations" default="400"/>
+  <arg name="seed" default="7"/>
+  <arg name="regenerate_offline_points" default="false"/>
+  <arg name="regenerate_distance_table" default="false"/>
+  <arg name="publish_result" default="true"/>
+  <arg name="keep_alive_after_publish" default="true"/>
+  <arg name="publish_wait_for_subscribers_sec" default="5.0"/>
+  <arg name="publish_initial_delay_sec" default="5.0"/>
+  <arg name="publish_repeat_count" default="5"/>
+  <arg name="publish_repeat_interval_sec" default="3.0"/>
+  <arg name="use_osm_direction" default="true"/>
+
+  <node pkg="task_scheduler" type="task_scheduler_node" name="task_scheduler" output="screen">
+    <param name="map_file" value="$(arg map_file)"/>
+    <param name="global_config" value="$(arg global_config)"/>
+    <param name="offline_points_file" value="$(arg offline_points_file)"/>
+    <param name="vehicles_file" value="$(arg vehicles_file)"/>
+    <param name="tasks_file" value="$(arg tasks_file)"/>
+    <param name="output_file" value="$(arg output_file)"/>
+    <param name="distance_table_file" value="$(arg distance_table_file)"/>
+    <param name="offline_point_count" value="$(arg offline_point_count)"/>
+    <param name="offline_point_seed" value="$(arg offline_point_seed)"/>
+    <param name="population" value="$(arg population)"/>
+    <param name="generations" value="$(arg generations)"/>
+    <param name="seed" value="$(arg seed)"/>
+    <param name="regenerate_offline_points" value="$(arg regenerate_offline_points)"/>
+    <param name="regenerate_distance_table" value="$(arg regenerate_distance_table)"/>
+    <param name="publish_result" value="$(arg publish_result)"/>
+    <param name="keep_alive_after_publish" value="$(arg keep_alive_after_publish)"/>
+    <param name="publish_wait_for_subscribers_sec" value="$(arg publish_wait_for_subscribers_sec)"/>
+    <param name="publish_initial_delay_sec" value="$(arg publish_initial_delay_sec)"/>
+    <param name="publish_repeat_count" value="$(arg publish_repeat_count)"/>
+    <param name="publish_repeat_interval_sec" value="$(arg publish_repeat_interval_sec)"/>
+    <param name="use_osm_direction" value="$(arg use_osm_direction)"/>
+  </node>
+</launch>

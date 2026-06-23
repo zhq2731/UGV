@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Task Assignments1
         - /Vehicle 1 Route1
         - /Vehicle 1 Reference1
         - /Vehicle 1 Planning1
@@ -55,13 +56,30 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /task_scheduler/task_markers
+      Name: Task Assignments
+      Namespaces:
+        /task_scheduler/vehicle_1/labels: true
+        /task_scheduler/vehicle_1/tasks: true
+        /task_scheduler/vehicle_2/labels: true
+        /task_scheduler/vehicle_2/tasks: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
       Marker Topic: /vehicle_1/route_display
       Name: Vehicle 1 Route
       Namespaces:
+        /GlobalPlanner: true
         /Osm/points: true
         /Osm/pointsNormal: true
         /Osm/points_cross: true
         /Osm/way: true
+        /clicked_point: true
+        /routePoints: true
+        /task_route/completed: true
+        /task_route/current: true
+        /task_route/pending: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -69,7 +87,9 @@ Visualization Manager:
       Marker Topic: /vehicle_1/rviz/reference_marker
       Name: Vehicle 1 Reference
       Namespaces:
-        {}
+        /reference/global_route: true
+        /reference/real_state: true
+        /reference/referenceLine: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -133,10 +153,16 @@ Visualization Manager:
       Marker Topic: /vehicle_2/route_display
       Name: Vehicle 2 Route
       Namespaces:
+        /GlobalPlanner: true
         /Osm/points: true
         /Osm/pointsNormal: true
         /Osm/points_cross: true
         /Osm/way: true
+        /clicked_point: true
+        /routePoints: true
+        /task_route/completed: true
+        /task_route/current: true
+        /task_route/pending: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -144,7 +170,9 @@ Visualization Manager:
       Marker Topic: /vehicle_2/rviz/reference_marker
       Name: Vehicle 2 Reference
       Namespaces:
-        {}
+        /reference/global_route: true
+        /reference/real_state: true
+        /reference/referenceLine: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray

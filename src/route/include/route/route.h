@@ -90,6 +90,7 @@ class Route {
 	void eThetasRmv(std::map<double,int> &thetas,TopoGraph &tmpGraph,std::vector<std::shared_ptr<ANode>> &nodesRmv);
 	void eThetasAdd(TopoGraph &tmpGraph,std::vector<std::shared_ptr<ANode>> &nodesRmv);
 	void printResultsNodeId();
+	void publishRouteSegmentMarkers();
  private:
     ros::NodeHandle nh_;	
     ros::NodeHandle private_nh_;
@@ -112,8 +113,8 @@ class Route {
 	bool e_flag = true;
 	int lastPointsNum = 0;
 	int lastRoutesNum = 0;
+	int lastRouteStatusIndex = -100;
 	double threshold = 500.0;
 	MapBoundary map_boundary;
 	InitPoint init_point;
 };
-

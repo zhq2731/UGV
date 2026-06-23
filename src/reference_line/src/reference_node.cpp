@@ -410,7 +410,15 @@ void ReferenceNode::currentPoseCallback(const localization_msgs::Localization::C
 		markerArray.markers.push_back(DisPlay::lineMarker(real_route,cfg));
     }
      
-	if ((moveDistance > 0.1 ) || !pose_inited){
+	static ros::Time last_vehicle_marker_pub;
+	const ros::Time now = ros::Time::now();
+	const bool publish_vehicle_marker = !pose_inited ||
+		(moveDistance > 0.1) ||
+		last_vehicle_marker_pub.isZero() ||
+		((now - last_vehicle_marker_pub).toSec() > 0.2);
+
+	if (publish_vehicle_marker){
+		last_vehicle_marker_pub = now;
 
 		DisplayConfig config;
 		config.id = 2;
@@ -913,6 +921,5 @@ int main(int argc ,char *argv[])
 	
 	return 0;
 }
-
 
 

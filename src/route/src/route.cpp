@@ -1,6 +1,37 @@
 #include "route/route.h"
 #include <chrono>
 
+namespace {
+
+struct RgbColor {
+	double r;
+	double g;
+	double b;
+};
+
+bool isVehicleTwoNamespace(const ros::NodeHandle& nh)
+{
+	const std::string ns = nh.getNamespace();
+	return ns.find("vehicle_2") != std::string::npos;
+}
+
+RgbColor currentRouteColor(const ros::NodeHandle& nh)
+{
+	return isVehicleTwoNamespace(nh) ? RgbColor{1.0, 0.18, 0.12} : RgbColor{0.05, 0.35, 1.0};
+}
+
+RgbColor pendingRouteColor(const ros::NodeHandle& nh)
+{
+	return isVehicleTwoNamespace(nh) ? RgbColor{1.0, 0.62, 0.45} : RgbColor{0.42, 0.72, 1.0};
+}
+
+RgbColor completedRouteColor()
+{
+	return RgbColor{0.55, 0.55, 0.55};
+}
+
+}  // namespace
+
 
 void Route::displayOsm()
 {
@@ -60,6 +91,58 @@ void Route::displayOsm()
 	markerArray.markers.push_back(DisPlay::cubesListMarker(points_cross,cfg));
     
 	display_pub_.publish(markerArray);
+}
+
+void Route::publishRouteSegmentMarkers()
+{
+	visualization_msgs::MarkerArray markers;
+
+	for (int i = 1; i <= lastRoutesNum; ++i) {
+		markers.markers.push_back(DisPlay::deleteMarker("/task_route/current", i));
+		markers.markers.push_back(DisPlay::deleteMarker("/task_route/pending", i));
+		markers.markers.push_back(DisPlay::deleteMarker("/task_route/completed", i));
+	}
+
+	const int route_count = static_cast<int>(pubUtmResults.size());
+	if (route_count == 0) {
+		display_pub_.publish(markers);
+		return;
+	}
+
+	int current_index = pubIndex;
+	if (current_index < 0) {
+		current_index = 0;
+	}
+	if (current_index > route_count) {
+		current_index = route_count;
+	}
+
+	for (int i = 0; i < route_count; ++i) {
+		DisplayConfig cfg;
+		cfg.id = i + 1;
+		cfg.scale_x = (i == current_index) ? 7.0 : 4.0;
+		cfg.scale_y = 0.0;
+		cfg.scale_z = 0.0;
+		cfg.a = (i == current_index) ? 1.0 : 0.45;
+
+		RgbColor color = pendingRouteColor(nh_);
+		cfg.ns = std::string("/task_route/pending");
+		if (i < current_index) {
+			color = completedRouteColor();
+			cfg.ns = std::string("/task_route/completed");
+			cfg.a = 0.35;
+		} else if (i == current_index) {
+			color = currentRouteColor(nh_);
+			cfg.ns = std::string("/task_route/current");
+		}
+
+		cfg.r = color.r;
+		cfg.g = color.g;
+		cfg.b = color.b;
+		markers.markers.push_back(DisPlay::lineMarker(pubUtmResults[i], cfg));
+	}
+
+	display_pub_.publish(markers);
 }
 
 
@@ -134,6 +217,8 @@ void Route::callBackCurrentPose(const localization_msgs::Localization::ConstPtr 
 			trajectory.points.push_back(point);
 		}
 		route_pub_.publish(trajectory);
+		publishRouteSegmentMarkers();
+		lastRouteStatusIndex = pubIndex;
 	    return;
 	}
 	
@@ -154,6 +239,13 @@ void Route::callBackCurrentPose(const localization_msgs::Localization::ConstPtr 
 	if (amathutils::distance2D(vehicleInfo.utmPoint,pubUtmResults[pubIndex].back())< 2.0){ 
 		std::cout << "[callBackCurrentPose] ====== 达到发送下一路径条件 ======" << std::endl;
 	    pubIndex++;
+		if (pubIndex >= static_cast<int>(pubUtmResults.size())) {
+			publishRouteSegmentMarkers();
+			pubIndex = -1;
+			std::vector<std::vector<UtmPoint>>().swap(pubUtmResults);
+			lastRouteStatusIndex = -100;
+			return;
+		}
 		planning_msgs::TrajectoryPointArray trajectory;
 		for (const auto &p:pubUtmResults[pubIndex]){
 			planning_msgs::TrajectoryPoint point;
@@ -162,6 +254,8 @@ void Route::callBackCurrentPose(const localization_msgs::Localization::ConstPtr 
 			trajectory.points.push_back(point);
 		}
 		route_pub_.publish(trajectory);
+		publishRouteSegmentMarkers();
+		lastRouteStatusIndex = pubIndex;
 	}
 	
 	if (pubIndex == pubUtmResults.size()-1 ) {
@@ -334,6 +428,11 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
         markerArrayDel.markers.push_back(DisPlay::deleteMarker("/clicked_point", i));
 	for (int i = 1; i<=  lastRoutesNum; i++)
 		    markerArrayDel.markers.push_back(DisPlay::deleteMarker("/GlobalPlanner",i));
+	for (int i = 1; i <= lastRoutesNum; i++) {
+        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/current", i));
+        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/pending", i));
+        markerArrayDel.markers.push_back(DisPlay::deleteMarker("/task_route/completed", i));
+    }
 	for (int i = 1; i <= lastPointsNum; i++)
         markerArrayDel.markers.push_back(DisPlay::deleteMarker("/routePoints", i));
     display_pub_.publish(markerArrayDel);
@@ -371,7 +470,7 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
     auto result = multiPointsPlan(multiPoints, multiUtmResults, plannedLength, MULTI_PLAN, turnCount);
 	if(!result)
 		std::cout << "[MultiPointPlanning] ====== 警告：cloud多目标规划失败 ======" << std::endl;
-    pubUtmResults = multiUtmResults;
+	pubUtmResults = multiUtmResults;
 	pubUtmResults_ = pubUtmResults;
 	std::cout << "[MultiPointPlanning] ====== cloud多目标规划结果 ======" << std::endl;
 	printResultsNodeId();
@@ -432,6 +531,8 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
         c_index++;
     }
     display_pub_.publish(markerArrayRoutes);
+	publishRouteSegmentMarkers();
+	lastRouteStatusIndex = pubIndex;
 	std::vector<UtmPoint>().swap(multiPoints);
 }
 
@@ -1593,6 +1694,7 @@ void Route::displayLoop()
     {
         sleep(5);
 	    displayOsm();
+	    publishRouteSegmentMarkers();
     }
 }
 
