@@ -15,8 +15,11 @@
   <arg name="regenerate_distance_table" default="false"/>
   <arg name="publish_result" default="true"/>
   <arg name="keep_alive_after_publish" default="true"/>
+  <arg name="wait_for_start" default="true"/>
+  <arg name="start_topic" default="/task_scheduler/start"/>
   <arg name="publish_wait_for_subscribers_sec" default="5.0"/>
   <arg name="publish_initial_delay_sec" default="5.0"/>
+  <arg name="pending_marker_republish_interval_sec" default="1.0"/>
   <arg name="publish_repeat_count" default="5"/>
   <arg name="publish_repeat_interval_sec" default="3.0"/>
   <arg name="use_osm_direction" default="true"/>
@@ -38,8 +41,11 @@
     <param name="regenerate_distance_table" value="$(arg regenerate_distance_table)"/>
     <param name="publish_result" value="$(arg publish_result)"/>
     <param name="keep_alive_after_publish" value="$(arg keep_alive_after_publish)"/>
+    <param name="wait_for_start" value="$(arg wait_for_start)"/>
+    <param name="start_topic" value="$(arg start_topic)"/>
     <param name="publish_wait_for_subscribers_sec" value="$(arg publish_wait_for_subscribers_sec)"/>
     <param name="publish_initial_delay_sec" value="$(arg publish_initial_delay_sec)"/>
+    <param name="pending_marker_republish_interval_sec" value="$(arg pending_marker_republish_interval_sec)"/>
     <param name="publish_repeat_count" value="$(arg publish_repeat_count)"/>
     <param name="publish_repeat_interval_sec" value="$(arg publish_repeat_interval_sec)"/>
     <param name="use_osm_direction" value="$(arg use_osm_direction)"/>

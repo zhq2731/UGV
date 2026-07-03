@@ -1,0 +1,41 @@
+<launch>
+  <arg name="vehicle_type" default="tank500"/>
+  <arg name="vehicle_1_ns" default="vehicle_1"/>
+  <arg name="vehicle_2_ns" default="vehicle_2"/>
+  <arg name="vehicle_1_platform_file" default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
+  <arg name="vehicle_2_platform_file" default="UGV/platform_files/vehicle_platform-tank-2.yaml"/>
+  <arg name="conflict_observer" default="false"/>
+
+  <arg name="offline_points_file" default="$(find task_scheduler)/config/offline_points_50.csv"/>
+  <arg name="distance_table_file" default="$(find task_scheduler)/config/offline_distance_table_50.csv"/>
+  <arg name="vehicles_file" default="$(find task_scheduler)/config/vehicles.csv"/>
+  <arg name="tasks_file" default="$(find task_scheduler)/config/tasks.csv"/>
+
+  <include file="$(find launch_node)/launch/two-vehicle-distributed-simulate.launch">
+    <arg name="vehicle_type" value="$(arg vehicle_type)"/>
+    <arg name="vehicle_1_ns" value="$(arg vehicle_1_ns)"/>
+    <arg name="vehicle_2_ns" value="$(arg vehicle_2_ns)"/>
+    <arg name="vehicle_1_platform_file" value="$(arg vehicle_1_platform_file)"/>
+    <arg name="vehicle_2_platform_file" value="$(arg vehicle_2_platform_file)"/>
+    <arg name="conflict_observer" value="$(arg conflict_observer)"/>
+    <arg name="rviz" value="false"/>
+  </include>
+
+  <node pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find launch_node)/param/rviz/task_scheduler_display.rviz"
+        required="true"/>
+
+  <include file="$(find task_scheduler)/launch/task_scheduler.launch">
+    <arg name="map_file" value="$(find launch_node)/data/cloudmap.osm"/>
+    <arg name="offline_points_file" value="$(arg offline_points_file)"/>
+    <arg name="vehicles_file" value="$(arg vehicles_file)"/>
+    <arg name="tasks_file" value="$(arg tasks_file)"/>
+    <arg name="output_file" value="/tmp/ugv_schedule_solution.csv"/>
+    <arg name="distance_table_file" value="$(arg distance_table_file)"/>
+    <arg name="publish_result" value="true"/>
+    <arg name="keep_alive_after_publish" value="true"/>
+    <arg name="publish_initial_delay_sec" value="0.0"/>
+    <arg name="publish_repeat_count" value="6"/>
+    <arg name="publish_repeat_interval_sec" value="3.0"/>
+  </include>
+</launch>

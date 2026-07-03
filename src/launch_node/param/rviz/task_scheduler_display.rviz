@@ -70,22 +70,22 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /vehicle_1/route_display
-      Name: Vehicle 1 Route
+      Name: Road Network
       Namespaces:
-        /GlobalPlanner: true
+        /GlobalPlanner: false
         /Osm/points: true
         /Osm/pointsNormal: true
         /Osm/points_cross: true
         /Osm/way: true
-        /clicked_point: true
-        /routePoints: true
-        /task_route/completed: true
-        /task_route/current: true
-        /task_route/pending: true
+        /clicked_point: false
+        /routePoints: false
+        /task_route/completed: false
+        /task_route/current: false
+        /task_route/pending: false
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/rviz/reference_marker
       Name: Vehicle 1 Reference
       Namespaces:
@@ -93,55 +93,55 @@ Visualization Manager:
         /reference/real_state: true
         /reference/referenceLine: true
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/rviz/planning_marker
       Name: Vehicle 1 Planning
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/velocity_curve_marker
       Name: Vehicle 1 Velocity Curve
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/actual_velocity_curve_marker
       Name: Vehicle 1 Actual Velocity
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /trajectory_conflict/markers
       Name: Conflict Prediction
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/control/desired_velocity
       Name: Vehicle 1 Desired Velocity
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_1/perception_obs
       Name: Vehicle 1 Obstacles
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /vehicle_1/cooperationMarkers
@@ -151,24 +151,24 @@ Visualization Manager:
       Queue Size: 100
       Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/route_display
       Name: Vehicle 2 Route
       Namespaces:
-        /GlobalPlanner: true
+        /GlobalPlanner: false
         /Osm/points: true
         /Osm/pointsNormal: true
         /Osm/points_cross: true
         /Osm/way: true
-        /clicked_point: true
-        /routePoints: true
-        /task_route/completed: true
-        /task_route/current: true
-        /task_route/pending: true
+        /clicked_point: false
+        /routePoints: false
+        /task_route/completed: false
+        /task_route/current: false
+        /task_route/pending: false
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/rviz/reference_marker
       Name: Vehicle 2 Reference
       Namespaces:
@@ -176,47 +176,47 @@ Visualization Manager:
         /reference/real_state: true
         /reference/referenceLine: true
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/rviz/planning_marker
       Name: Vehicle 2 Planning
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/velocity_curve_marker
       Name: Vehicle 2 Velocity Curve
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/actual_velocity_curve_marker
       Name: Vehicle 2 Actual Velocity
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/control/desired_velocity
       Name: Vehicle 2 Desired Velocity
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /vehicle_2/perception_obs
       Name: Vehicle 2 Obstacles
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /vehicle_2/cooperationMarkers

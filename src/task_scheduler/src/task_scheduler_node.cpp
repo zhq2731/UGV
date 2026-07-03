@@ -23,6 +23,7 @@
 #include <route_msgs/InitPoint.h>
 #include <route_msgs/MultiPoint.h>
 #include <std_msgs/ColorRGBA.h>
+#include <std_msgs/Empty.h>
 #include <tf/transform_datatypes.h>
 #include <utm/UTM.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -825,6 +826,25 @@ struct SolutionPublishers {
     ros::Publisher task_marker_publisher;
 };
 
+class StartGate {
+public:
+    explicit StartGate(ros::NodeHandle& nh, const std::string& topic)
+        : subscriber_(nh.subscribe(topic, 1, &StartGate::callback, this)) {}
+
+    bool started() const {
+        return started_;
+    }
+
+private:
+    void callback(const std_msgs::Empty::ConstPtr&) {
+        started_ = true;
+        ROS_INFO("task scheduler start command received");
+    }
+
+    bool started_ = false;
+    ros::Subscriber subscriber_;
+};
+
 std_msgs::ColorRGBA vehicle_color(int vehicle_id, double alpha) {
     std_msgs::ColorRGBA color;
     color.a = alpha;
@@ -884,9 +904,7 @@ visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution
             label.pose.position.y = item.task.y;
             label.pose.position.z = 8.0;
             label.scale.z = 5.0;
-            label.color.r = 1.0;
-            label.color.g = 1.0;
-            label.color.b = 1.0;
+            label.color = color;
             label.color.a = 1.0;
             std::ostringstream text;
             text << "V" << vehicle_id << "-#" << (sequence + 1)
@@ -896,6 +914,67 @@ visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution
         }
     }
     return markers;
+}
+
+visualization_msgs::MarkerArray build_pending_task_marker_array(const std::vector<Task>& tasks) {
+    visualization_msgs::MarkerArray markers;
+
+    visualization_msgs::Marker clear;
+    clear.action = visualization_msgs::Marker::DELETEALL;
+    markers.markers.push_back(clear);
+
+    std_msgs::ColorRGBA yellow;
+    yellow.r = 1.0;
+    yellow.g = 0.82;
+    yellow.b = 0.05;
+    yellow.a = 0.95;
+
+    int marker_id = 1;
+    for (const auto& task : tasks) {
+        auto point = make_marker_base("/task_scheduler/pending/tasks", marker_id++, visualization_msgs::Marker::CYLINDER);
+        point.pose.position.x = task.x;
+        point.pose.position.y = task.y;
+        point.pose.position.z = 1.2;
+        point.scale.x = 7.0;
+        point.scale.y = 7.0;
+        point.scale.z = 2.4;
+        point.color = yellow;
+        markers.markers.push_back(point);
+
+        auto label = make_marker_base("/task_scheduler/pending/labels", marker_id++, visualization_msgs::Marker::TEXT_VIEW_FACING);
+        label.pose.position.x = task.x;
+        label.pose.position.y = task.y;
+        label.pose.position.z = 8.0;
+        label.scale.z = 5.0;
+        label.color = yellow;
+        label.color.a = 1.0;
+        std::ostringstream text;
+        text << "T" << task.id << "(" << task.point_id << ")";
+        label.text = text.str();
+        markers.markers.push_back(label);
+    }
+    return markers;
+}
+
+bool wait_for_start_command(ros::NodeHandle& nh,
+                            const std::string& start_topic,
+                            const ros::Publisher& task_marker_publisher,
+                            const std::vector<Task>& tasks,
+                            double republish_interval_sec) {
+    StartGate gate(nh, start_topic);
+    ros::Rate wait_rate(20.0);
+    ros::Time last_publish(0.0);
+    ROS_INFO_STREAM("task scheduler waiting for start command on " << start_topic);
+    while (ros::ok() && !gate.started()) {
+        const ros::Time now = ros::Time::now();
+        if (last_publish.isZero() || (now - last_publish).toSec() >= republish_interval_sec) {
+            task_marker_publisher.publish(build_pending_task_marker_array(tasks));
+            last_publish = now;
+        }
+        ros::spinOnce();
+        wait_rate.sleep();
+    }
+    return ros::ok();
 }
 
 SolutionPublishers publish_solution(ros::NodeHandle& nh,
@@ -990,8 +1069,11 @@ int main(int argc, char** argv) {
         bool publish_result = true;
         bool keep_alive_after_publish = true;
         bool use_osm_direction = true;
+        bool wait_for_start = true;
+        std::string start_topic = "/task_scheduler/start";
         double publish_wait_for_subscribers_sec = 5.0;
         double publish_initial_delay_sec = 5.0;
+        double pending_marker_republish_interval_sec = 1.0;
         int publish_repeat_count = 5;
         double publish_repeat_interval_sec = 3.0;
 
@@ -1012,8 +1094,11 @@ int main(int argc, char** argv) {
         private_nh.param("publish_result", publish_result, publish_result);
         private_nh.param("keep_alive_after_publish", keep_alive_after_publish, keep_alive_after_publish);
         private_nh.param("use_osm_direction", use_osm_direction, use_osm_direction);
+        private_nh.param("wait_for_start", wait_for_start, wait_for_start);
+        private_nh.param<std::string>("start_topic", start_topic, start_topic);
         private_nh.param("publish_wait_for_subscribers_sec", publish_wait_for_subscribers_sec, publish_wait_for_subscribers_sec);
         private_nh.param("publish_initial_delay_sec", publish_initial_delay_sec, publish_initial_delay_sec);
+        private_nh.param("pending_marker_republish_interval_sec", pending_marker_republish_interval_sec, pending_marker_republish_interval_sec);
         private_nh.param("publish_repeat_count", publish_repeat_count, publish_repeat_count);
         private_nh.param("publish_repeat_interval_sec", publish_repeat_interval_sec, publish_repeat_interval_sec);
 
@@ -1034,6 +1119,21 @@ int main(int argc, char** argv) {
 
         const auto vehicles = read_vehicles(vehicles_file, network, offline_points);
         const auto tasks = read_tasks(tasks_file, network, offline_points);
+        ros::Publisher task_marker_publisher =
+            nh.advertise<visualization_msgs::MarkerArray>("/task_scheduler/task_markers", 1, true);
+
+        if (wait_for_start) {
+            if (!wait_for_start_command(nh,
+                                        start_topic,
+                                        task_marker_publisher,
+                                        tasks,
+                                        pending_marker_republish_interval_sec)) {
+                return 0;
+            }
+        } else {
+            task_marker_publisher.publish(build_pending_task_marker_array(tasks));
+        }
+
         GeneticScheduler scheduler(vehicles, tasks, distance_table, population, generations, static_cast<unsigned int>(seed));
         const Solution solution = scheduler.solve();
         save_solution(output_file, solution, vehicles);

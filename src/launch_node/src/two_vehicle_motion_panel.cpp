@@ -40,6 +40,8 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
       nh_.advertise<std_msgs::Empty>("/vehicle_1/next_route_segment", 1);
   vehicle_2_next_segment_pub_ =
       nh_.advertise<std_msgs::Empty>("/vehicle_2/next_route_segment", 1);
+  task_scheduler_start_pub_ =
+      nh_.advertise<std_msgs::Empty>("/task_scheduler/start", 1);
 
   setMinimumWidth(0);
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -80,9 +82,17 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
   both_layout->addWidget(both_start, 0, 0);
   both_layout->addWidget(both_stop, 1, 0);
 
+  auto* task_group = new QGroupBox("Task", this);
+  auto* task_layout = new QGridLayout(task_group);
+  auto* task_start = new QPushButton("Start", task_group);
+  compactButton(task_start);
+  compactGroup(task_group, task_layout);
+  task_layout->addWidget(task_start, 0, 0);
+
   auto* root_layout = new QVBoxLayout(this);
   root_layout->setContentsMargins(2, 2, 2, 2);
   root_layout->setSpacing(4);
+  root_layout->addWidget(task_group);
   root_layout->addWidget(vehicle_1_group);
   root_layout->addWidget(vehicle_2_group);
   root_layout->addWidget(both_group);
@@ -97,6 +107,7 @@ TwoVehicleMotionPanel::TwoVehicleMotionPanel(QWidget* parent)
   connect(vehicle_2_next, SIGNAL(clicked()), this, SLOT(confirmNextSegmentVehicle2()));
   connect(both_start, SIGNAL(clicked()), this, SLOT(startBoth()));
   connect(both_stop, SIGNAL(clicked()), this, SLOT(stopBoth()));
+  connect(task_start, SIGNAL(clicked()), this, SLOT(startTaskScheduler()));
 }
 
 void TwoVehicleMotionPanel::publishMotion(const ros::Publisher& publisher, unsigned char motion_start)
@@ -111,6 +122,12 @@ void TwoVehicleMotionPanel::publishNextSegmentConfirm(const ros::Publisher& publ
 {
   std_msgs::Empty msg;
   publisher.publish(msg);
+}
+
+void TwoVehicleMotionPanel::publishTaskSchedulerStart()
+{
+  std_msgs::Empty msg;
+  task_scheduler_start_pub_.publish(msg);
 }
 
 void TwoVehicleMotionPanel::startVehicle1()
@@ -153,6 +170,11 @@ void TwoVehicleMotionPanel::stopBoth()
 {
   stopVehicle1();
   stopVehicle2();
+}
+
+void TwoVehicleMotionPanel::startTaskScheduler()
+{
+  publishTaskSchedulerStart();
 }
 
 }  // namespace launch_node
