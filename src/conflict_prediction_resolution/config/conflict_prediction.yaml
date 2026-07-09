@@ -51,11 +51,21 @@ conflict_resolver_node:
   # 这样车辆在分离角度明显变大之前就能提前进入保护区。
   divergence_conflict_back_distance: 3.0
 
+  # FOLLOWING 状态释放滞回次数。本轮无 active FOLLOW 时不输出旧跟车约束，
+  # 但连续丢失达到该次数后才清除 FOLLOWING 状态。
+  following_release_count: 2
+
+  # 跟车场景最大触发间距，单位米。超过该距离时不输出 FOLLOW 约束。
+  following_detect_max_gap: 30.0
+
+  # 跟车前后车双向投影判断的接近阈值，单位米。两侧投影都接近时不新建 FOLLOW。
+  following_lead_tie_epsilon: 0.5
+
   # 静态优先级评分权重。priority 数字越小优先级越高；当前为 0 表示不参与软评分。
   priority_weight: 0.0
 
   # 当前车速评分权重。速度越高，临时停车代价越大，越倾向让其先行。
-  speed_weight: 0.25
+  speed_weight: 0.1
 
   # 路径进度评分权重。越接近通过冲突区域，越倾向继续先行。
   progress_weight: 0.25

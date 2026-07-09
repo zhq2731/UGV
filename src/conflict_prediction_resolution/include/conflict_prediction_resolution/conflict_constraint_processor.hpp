@@ -1,11 +1,15 @@
 #pragma once
 
 #include <mutex>
+#include <string>
 
+#include <driver_msgs/ChassisReport.h>
 #include <geometry_msgs/Point.h>
+#include <localization_msgs/Localization.h>
 #include <planning_msgs/ConflictConstraint.h>
 #include <planning_msgs/TrajectoryPointArray.h>
 #include <ros/node_handle.h>
+#include <ros/subscriber.h>
 
 namespace conflict_prediction_resolution
 {
@@ -27,6 +31,17 @@ public:
              const geometry_msgs::Point& planning_start_point);
 
 private:
+  struct FollowPeerState
+  {
+    std::string peer_id;
+    geometry_msgs::Point position;
+    double speed = 0.0;
+    ros::Time pose_stamp;
+    ros::Time speed_stamp;
+    bool have_pose = false;
+    bool have_speed = false;
+  };
+
   bool enabled_ = false;
   bool have_constraint_ = false;
 
@@ -51,9 +66,36 @@ private:
   double stitching_start_match_max_distance_ = 1.0;
   // 单次规划循环时间，拼接段末点 planning_start_point 的 relative_time 会被规范为该值。
   double planning_cycle_time_ = 0.1;
+  // FOLLOW 策略：目标间距=max(最小安全距离, 当前速度*最小安全时距)。
+  double follow_min_distance_ = 5.0;
+  double follow_time_headway_ = 2.0;
+  double follow_gap_gain_ = 0.5;
+  double follow_relative_speed_gain_ = 0.8;
+  double follow_closing_time_ = 3.0;
+  double follow_brake_deceleration_ = 1.0;
+  double follow_emergency_distance_ = 2.0;
+  double follow_state_timeout_ = 0.5;
+  double follow_activation_grace_time_ = 0.5;
+  double follow_bumper_gap_offset_ = 3.7;
+  double follow_projection_max_lateral_error_ = 2.0;
 
   planning_msgs::ConflictConstraint latest_constraint_;
+  FollowPeerState follow_peer_state_;
+  ros::Subscriber follow_peer_pose_sub_;
+  ros::Subscriber follow_peer_chassis_sub_;
+  std::string subscribed_follow_peer_id_;
+  bool have_active_follow_ = false;
+  std::string active_follow_peer_id_;
+  std::string active_follow_conflict_id_;
+  ros::Time follow_activation_start_;
   std::mutex mutex_;
+
+  void ensureFollowPeerSubscriptions(const std::string& peer_id);
+  void onFollowPeerLocalization(const std::string& peer_id,
+                                const localization_msgs::Localization::ConstPtr& msg);
+  void onFollowPeerChassis(const std::string& peer_id,
+                           const driver_msgs::ChassisReport::ConstPtr& msg);
+  FollowPeerState copyFollowPeerState(const std::string& peer_id);
 };
 
 }  // namespace conflict_prediction_resolution

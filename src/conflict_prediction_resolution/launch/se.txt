@@ -34,3 +34,25 @@ rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{hea
 rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
 
 rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -108.43, y: -72.42, z: 0.0}}"
+
+
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -46.77, y: -31.63, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956681, w: 0.291138}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -34.30, y: -23.29, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956681, w: 0.291138}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -53.76, y: -70.63, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -40.49, y: -89.96, z: 0.0}}"
+
+
+rostopic pub -1 /vehicle_1/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -46.77, y: -31.63, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956681, w: 0.291138}}}"
+
+rostopic pub -1 /vehicle_2/move_base_simple/goal geometry_msgs/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -14.20, y: -9.83, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.956804, w: 0.290732}}}"
+
+rostopic pub -1 /vehicle_1/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -40.49, y: -89.96, z: 0.0}}"
+
+rostopic pub -1 /vehicle_2/clicked_point geometry_msgs/PointStamped "{header: {frame_id: 'map'}, point: {x: -40.49, y: -89.96, z: 0.0}}"
+
+rostopic pub -1 /vehicle_1/desireSpeed std_msgs/Float64 "{data: 1.0}"
+
+rostopic pub -1 /vehicle_2/desireSpeed std_msgs/Float64 "{data: 3.0}"

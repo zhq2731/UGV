@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/bind.hpp>
 #include <geometry_msgs/Point.h>
 #include <ros/ros.h>
 
@@ -35,6 +36,19 @@ constexpr double kMinStopTimeHorizon = 3.0;                // s，停车点至�
 constexpr double kFinalTimeDtFloor = 0.02;                 // s，最终输出轨迹最小时间间隔保护。
 constexpr double kStoppedTailLength = 6.0;                 // m，停车后保留给控制器横向跟踪的零速几何尾迹。
 constexpr double kStoppedTailTimeStep = 0.1;               // s，零速几何尾迹相邻点的固定时间间隔。
+
+std::string vehicleTopic(const std::string& vehicle_id, const std::string& suffix)
+{
+  if (vehicle_id.empty())
+  {
+    return {};
+  }
+  if (!vehicle_id.empty() && vehicle_id.front() == '/')
+  {
+    return vehicle_id + "/" + suffix;
+  }
+  return "/" + vehicle_id + "/" + suffix;
+}
 
 std::vector<PathPoint> makePathPoints(const planning_msgs::TrajectoryPointArray& trajectory)
 {
@@ -848,13 +862,138 @@ void ConflictConstraintProcessor::loadParam(ros::NodeHandle& private_nh)
   private_nh.param<double>("conflict_stitching_start_match_max_distance",
                            stitching_start_match_max_distance_, 1.0);
   private_nh.param<double>("conflict_planning_cycle_time", planning_cycle_time_, 0.1);
+  private_nh.param<double>("conflict_follow_min_distance", follow_min_distance_, 5.0);
+  private_nh.param<double>("conflict_follow_time_headway", follow_time_headway_, 2.0);
+  private_nh.param<double>("conflict_follow_gap_gain", follow_gap_gain_, 0.5);
+  private_nh.param<double>("conflict_follow_relative_speed_gain",
+                           follow_relative_speed_gain_,
+                           0.8);
+  private_nh.param<double>("conflict_follow_closing_time", follow_closing_time_, 3.0);
+  private_nh.param<double>("conflict_follow_brake_deceleration",
+                           follow_brake_deceleration_,
+                           1.0);
+  private_nh.param<double>("conflict_follow_emergency_distance", follow_emergency_distance_, 2.0);
+  private_nh.param<double>("conflict_follow_state_timeout", follow_state_timeout_, 0.5);
+  private_nh.param<double>("conflict_follow_activation_grace_time",
+                           follow_activation_grace_time_,
+                           0.5);
+  private_nh.param<double>("conflict_follow_bumper_gap_offset", follow_bumper_gap_offset_, 3.7);
+  private_nh.param<double>("conflict_follow_projection_max_lateral_error",
+                           follow_projection_max_lateral_error_,
+                           projection_max_lateral_error_);
 }
 
 void ConflictConstraintProcessor::updateConstraint(const planning_msgs::ConflictConstraint& constraint)
 {
+  const bool follow_constraint =
+      constraint.yield_strategy == planning_msgs::ConflictConstraint::STRATEGY_FOLLOW &&
+      constraint.has_follow_constraint &&
+      !constraint.peer_id.empty();
+  if (follow_constraint)
+  {
+    ensureFollowPeerSubscriptions(constraint.peer_id);
+  }
+
   std::lock_guard<std::mutex> lock(mutex_);
+  if (follow_constraint)
+  {
+    const bool new_follow =
+        !have_active_follow_ ||
+        active_follow_peer_id_ != constraint.peer_id;
+    if (new_follow)
+    {
+      have_active_follow_ = true;
+      active_follow_peer_id_ = constraint.peer_id;
+      active_follow_conflict_id_ = constraint.conflict_id;
+      follow_activation_start_ = ros::Time::now();
+    }
+  }
+  else
+  {
+    have_active_follow_ = false;
+    active_follow_peer_id_.clear();
+    active_follow_conflict_id_.clear();
+    follow_activation_start_ = ros::Time();
+  }
   latest_constraint_ = constraint;
   have_constraint_ = true;
+}
+
+void ConflictConstraintProcessor::ensureFollowPeerSubscriptions(const std::string& peer_id)
+{
+  if (peer_id.empty() || peer_id == subscribed_follow_peer_id_)
+  {
+    return;
+  }
+
+  ros::NodeHandle nh;
+  follow_peer_pose_sub_ = nh.subscribe<localization_msgs::Localization>(
+      vehicleTopic(peer_id, "odomData"),
+      1,
+      boost::bind(&ConflictConstraintProcessor::onFollowPeerLocalization, this, peer_id, _1));
+  follow_peer_chassis_sub_ = nh.subscribe<driver_msgs::ChassisReport>(
+      vehicleTopic(peer_id, "chassis"),
+      1,
+      boost::bind(&ConflictConstraintProcessor::onFollowPeerChassis, this, peer_id, _1));
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    subscribed_follow_peer_id_ = peer_id;
+    follow_peer_state_ = FollowPeerState();
+    follow_peer_state_.peer_id = peer_id;
+  }
+
+  ROS_INFO_STREAM("[Conflict Velocity Decision] Subscribe high-rate follow peer state: peer="
+                  << peer_id << " pose_topic=" << vehicleTopic(peer_id, "odomData")
+                  << " chassis_topic=" << vehicleTopic(peer_id, "chassis"));
+}
+
+void ConflictConstraintProcessor::onFollowPeerLocalization(
+    const std::string& peer_id,
+    const localization_msgs::Localization::ConstPtr& msg)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (peer_id != subscribed_follow_peer_id_)
+  {
+    return;
+  }
+
+  follow_peer_state_.peer_id = peer_id;
+  follow_peer_state_.position = msg->location.pose.pose.position;
+  follow_peer_state_.pose_stamp = ros::Time::now();
+  follow_peer_state_.have_pose = true;
+}
+
+void ConflictConstraintProcessor::onFollowPeerChassis(
+    const std::string& peer_id,
+    const driver_msgs::ChassisReport::ConstPtr& msg)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (peer_id != subscribed_follow_peer_id_)
+  {
+    return;
+  }
+
+  double speed = msg->current_velocity;
+  if (msg->gear_location == 7)
+  {
+    speed = -speed;
+  }
+  follow_peer_state_.peer_id = peer_id;
+  follow_peer_state_.speed = std::fabs(speed);
+  follow_peer_state_.speed_stamp = ros::Time::now();
+  follow_peer_state_.have_speed = true;
+}
+
+ConflictConstraintProcessor::FollowPeerState
+ConflictConstraintProcessor::copyFollowPeerState(const std::string& peer_id)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (peer_id != follow_peer_state_.peer_id)
+  {
+    return {};
+  }
+  return follow_peer_state_;
 }
 
 void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& trajectory,
@@ -878,12 +1017,16 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
 
   planning_msgs::ConflictConstraint constraint;
   bool have_constraint = false;
+  bool have_active_follow = false;
+  ros::Time follow_activation_start;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (have_constraint_)
     {
       constraint = latest_constraint_;
       have_constraint = true;
+      have_active_follow = have_active_follow_;
+      follow_activation_start = follow_activation_start_;
     }
   }
 
@@ -905,6 +1048,8 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
   const bool stop_strategy =
       active_strategy == planning_msgs::ConflictConstraint::STRATEGY_STOP_AND_WAIT ||
       active_strategy == planning_msgs::ConflictConstraint::STRATEGY_EMERGENCY_STOP;
+  const bool follow_strategy =
+      active_strategy == planning_msgs::ConflictConstraint::STRATEGY_FOLLOW;
 
   if (!constraint_timeout)
   {
@@ -951,21 +1096,21 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
       return;
     }
 
-    if (!stop_strategy)
+    if (!stop_strategy && !follow_strategy)
     {
-      // 当前速度执行器只实现停车等待。SLOW_DOWN/FOLLOW 等策略应由后续专门模块实现，
+      // 当前速度执行器只实现停车等待和跟车限速。SLOW_DOWN 等策略应由后续专门模块实现，
       // 不能在这里临时拼规则，否则会重新形成“速度层自行决策”的问题。
       ROS_WARN_THROTTLE(
           1.0,
-          "[Conflict Velocity Decision] ego=%s peer=%s strategy=%s is not supported "
-          "by the current STOP executor; keep the original planned velocity.",
+          "[Conflict Velocity Decision] ego=%s peer=%s strategy=%s is not supported; "
+          "keep the original planned velocity.",
           constraint.ego_id.c_str(),
           constraint.peer_id.c_str(),
           strategyName(active_strategy));
       return;
     }
 
-    if (!constraint.has_spatial_constraint)
+    if (stop_strategy && !constraint.has_spatial_constraint)
     {
       // 消息中不携带候选轨迹 s。若没有 map 坐标冲突入口/出口，planner 无法可靠判断
       // 当前轨迹是否仍经过该冲突路段，因此直接丢弃该约束。
@@ -973,6 +1118,17 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
           1.0,
           "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD but the spatial "
           "conflict section is missing; reject the constraint and keep the original velocity.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str());
+      return;
+    }
+
+    if (follow_strategy && !constraint.has_follow_constraint)
+    {
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s decision=YIELD/FOLLOW but "
+          "the follow constraint is missing; reject the constraint and keep the original velocity.",
           constraint.ego_id.c_str(),
           constraint.peer_id.c_str());
       return;
@@ -1065,6 +1221,218 @@ void ConflictConstraintProcessor::apply(planning_msgs::TrajectoryPointArray& tra
                       constraint.ego_id.c_str(),
                       reject_reason.c_str(),
                       emergency_reject_reason.c_str());
+    trajectory = original_trajectory;
+    return;
+  }
+
+  if (active_strategy == planning_msgs::ConflictConstraint::STRATEGY_FOLLOW)
+  {
+    trajectory = normalized_trajectory;
+    const double current_speed = std::max(0.0, trajectory.points[stitching_end_index].v);
+    const double target_gap =
+        std::max(std::max(0.0, follow_min_distance_),
+                 current_speed * std::max(0.0, follow_time_headway_));
+    const FollowPeerState follow_state = copyFollowPeerState(constraint.peer_id);
+    const bool pose_fresh =
+        follow_state.have_pose &&
+        (now - follow_state.pose_stamp).toSec() >= 0.0 &&
+        (now - follow_state.pose_stamp).toSec() <= follow_state_timeout_;
+    const bool speed_fresh =
+        follow_state.have_speed &&
+        (now - follow_state.speed_stamp).toSec() >= 0.0 &&
+        (now - follow_state.speed_stamp).toSec() <= follow_state_timeout_;
+    const bool follow_activation_grace =
+        have_active_follow &&
+        !follow_activation_start.isZero() &&
+        (now - follow_activation_start).toSec() >= 0.0 &&
+        (now - follow_activation_start).toSec() <=
+            std::max(0.0, follow_activation_grace_time_);
+    const bool use_snapshot_pose =
+        !pose_fresh &&
+        follow_activation_grace &&
+        constraint.has_follow_peer_snapshot;
+    const bool use_snapshot_speed =
+        !speed_fresh &&
+        follow_activation_grace &&
+        constraint.has_follow_peer_snapshot;
+
+    double actual_gap = 0.0;
+    double lead_speed = 0.0;
+    bool lead_projected_ahead = false;
+    double lead_s = std::numeric_limits<double>::quiet_NaN();
+    double lead_lateral_error = std::numeric_limits<double>::infinity();
+    const bool have_lead_position = pose_fresh || use_snapshot_pose;
+    const geometry_msgs::Point lead_position =
+        pose_fresh ? follow_state.position : constraint.follow_peer_position;
+
+    if (have_lead_position)
+    {
+      const std::vector<PathPoint> follow_path_points = makePathPoints(trajectory);
+      lead_projected_ahead =
+          projectPointToCurrentTrajectory(trajectory,
+                                          follow_path_points,
+                                          lead_position,
+                                          lead_s,
+                                          lead_lateral_error) &&
+          lead_lateral_error <= follow_projection_max_lateral_error_ &&
+          lead_s >= trajectory.points[stitching_end_index].s;
+      if (lead_projected_ahead)
+      {
+        actual_gap = std::max(0.0,
+                              lead_s -
+                                  trajectory.points[stitching_end_index].s -
+                                  std::max(0.0, follow_bumper_gap_offset_));
+      }
+      else if (std::isfinite(lead_s) && lead_s < trajectory.points[stitching_end_index].s)
+      {
+        actual_gap = 0.0;
+      }
+      else
+      {
+        const auto& ego_point = trajectory.points[stitching_end_index];
+        actual_gap = std::max(0.0,
+                              std::hypot(lead_position.x - ego_point.x,
+                                         lead_position.y - ego_point.y) -
+                                  std::max(0.0, follow_bumper_gap_offset_));
+      }
+    }
+
+    if (speed_fresh)
+    {
+      lead_speed = std::max(0.0, follow_state.speed);
+    }
+    else if (use_snapshot_speed)
+    {
+      lead_speed = std::max(0.0, constraint.follow_peer_speed);
+    }
+    else if (have_lead_position)
+    {
+      lead_speed = 0.0;
+    }
+
+    const double gap_error = actual_gap - target_gap;
+    const double relative_speed = lead_speed - current_speed;
+    const double gap_control_cap =
+        lead_speed +
+        std::max(0.0, follow_gap_gain_) * gap_error +
+        std::max(0.0, follow_relative_speed_gain_) * relative_speed;
+    const double closing_time = std::max(1.0e-3, follow_closing_time_);
+    const double closing_speed_cap =
+        lead_speed + std::max(0.0, gap_error) / closing_time;
+    const double brake_distance =
+        std::max(0.0, actual_gap - std::max(0.0, follow_emergency_distance_));
+    const double brake_speed_cap =
+        std::sqrt(std::max(0.0,
+                           lead_speed * lead_speed +
+                               2.0 * std::max(0.0, follow_brake_deceleration_) *
+                                   brake_distance));
+    double speed_cap = std::min(gap_control_cap, std::min(closing_speed_cap, brake_speed_cap));
+    if (gap_error < 0.0)
+    {
+      speed_cap = std::min(speed_cap, lead_speed);
+    }
+    if (!have_lead_position || actual_gap <= std::max(0.0, follow_emergency_distance_))
+    {
+      speed_cap = 0.0;
+    }
+    speed_cap = std::max(0.0, speed_cap);
+
+    VelocityConstraintAction follow_action;
+    follow_action.speed_cap = speed_cap;
+    changed = applyVelocityConstraintAction(trajectory,
+                                            mutable_start_index,
+                                            follow_action,
+                                            deceleration_limit_);
+    if (!changed)
+    {
+      ROS_INFO_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s strategy=FOLLOW. "
+          "Current planned velocity already satisfies speed_cap=%.2fm/s. "
+          "gap=%.2fm target_gap=%.2fm lead_speed=%.2fm/s current_speed=%.2fm/s "
+          "gap_cap=%.2fm/s closing_cap=%.2fm/s brake_cap=%.2fm/s "
+          "pose_fresh=%d speed_fresh=%d snapshot_pose=%d snapshot_speed=%d grace=%d.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str(),
+          speed_cap,
+          actual_gap,
+          target_gap,
+          lead_speed,
+          current_speed,
+          gap_control_cap,
+          closing_speed_cap,
+          brake_speed_cap,
+          pose_fresh,
+          speed_fresh,
+          use_snapshot_pose,
+          use_snapshot_speed,
+          follow_activation_grace);
+      return;
+    }
+
+    recomputeTimingFrom(trajectory, stitching_end_index);
+    enforceStrictlyIncreasingRelativeTime(trajectory, kFinalTimeDtFloor);
+    std::string follow_reject_reason;
+    if (validateTrajectoryForController(trajectory, mutable_start_index, &follow_reject_reason))
+    {
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s output=FOLLOW_SPEED_TRAJECTORY. "
+          "gap=%.2fm target_gap=%.2fm lead_speed=%.2fm/s current_speed=%.2fm/s "
+          "speed_cap=%.2fm/s gap_cap=%.2fm/s closing_cap=%.2fm/s brake_cap=%.2fm/s "
+          "lead_projected=%d lead_s=%.2fm lead_l=%.2fm "
+          "snapshot_pose=%d snapshot_speed=%d grace=%d points=%zu.",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str(),
+          actual_gap,
+          target_gap,
+          lead_speed,
+          current_speed,
+          speed_cap,
+          gap_control_cap,
+          closing_speed_cap,
+          brake_speed_cap,
+          lead_projected_ahead,
+          lead_s,
+          lead_lateral_error,
+          use_snapshot_pose,
+          use_snapshot_speed,
+          follow_activation_grace,
+          trajectory.points.size());
+      return;
+    }
+
+    planning_msgs::TrajectoryPointArray emergency_stop_trajectory = normalized_trajectory;
+    std::string emergency_reject_reason;
+    if (buildEmergencyStopFallback(emergency_stop_trajectory,
+                                   stitching_end_index,
+                                   mutable_start_index,
+                                   std::numeric_limits<double>::infinity(),
+                                   emergency_stop_deceleration_,
+                                   kMinStopTimeHorizon,
+                                   kFinalTimeDtFloor,
+                                   &emergency_reject_reason))
+    {
+      ROS_WARN_THROTTLE(
+          1.0,
+          "[Conflict Velocity Decision] ego=%s peer=%s output=EMERGENCY_STOP_TRAJECTORY. "
+          "FOLLOW trajectory failed validation. reason=%s",
+          constraint.ego_id.c_str(),
+          constraint.peer_id.c_str(),
+          follow_reject_reason.c_str());
+      trajectory = emergency_stop_trajectory;
+      return;
+    }
+
+    ROS_WARN_THROTTLE(
+        1.0,
+        "[Conflict Velocity Decision] ego=%s peer=%s output=ORIGINAL_PLANNER_TRAJECTORY. "
+        "FOLLOW speed-cap and emergency stop fallback both failed validation. "
+        "reason=%s emergency_reason=%s",
+        constraint.ego_id.c_str(),
+        constraint.peer_id.c_str(),
+        follow_reject_reason.c_str(),
+        emergency_reject_reason.c_str());
     trajectory = original_trajectory;
     return;
   }

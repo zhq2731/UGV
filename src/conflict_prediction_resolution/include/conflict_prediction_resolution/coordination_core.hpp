@@ -67,6 +67,9 @@ struct CoordinatorConfig
   double angle_classification_min_length = 4.0;
   double conflict_follow_extension = 3.0;
   double divergence_conflict_back_distance = 3.0;
+  int following_release_count = 2;
+  double following_detect_max_gap = 30.0;
+  double following_lead_tie_epsilon = 0.5;
   // 软评分权重：只有硬规则无法确定顺序时，才综合这些分量决定谁先行。
   double priority_weight = 0.5;
   double speed_weight = 0.25;
@@ -105,6 +108,8 @@ struct PairConflict
   Pose2d second_exit_pose;
   double first_score = 0.0;
   double second_score = 0.0;
+  int follow_lead_index = -1;
+  int follow_rear_index = -1;
   // 判定层直接给每辆车的目标进入时间。默认 NaN 表示使用
   // “先行车 t_out + conflict_time_clearance”的普通计算方式。
   // 当冲突段因为避让车停车而暂时不再重叠时，锁定决策会用这里保存倒计时后的释放时间，
@@ -135,10 +140,18 @@ public:
   CoordinationResult resolve(const std::vector<VehicleAgent>& agents, int ego_index = -1);
 
 private:
+  enum class PairScenarioState
+  {
+    STOP_LOCKED,
+    FOLLOWING
+  };
+
   struct LockedDecision
   {
+    PairScenarioState state = PairScenarioState::STOP_LOCKED;
     int proceed_index = -1;
     int yield_index = -1;
+    int follow_miss_count = 0;
     PairConflict conflict;
   };
 
@@ -197,6 +210,7 @@ private:
                                     const PairConflict& conflict,
                                     int vehicle_index) const;
   void storeDecisionLock(const PairConflict& conflict);
+  void storeFollowDecision(const PairConflict& conflict);
   void refreshDecisionLock(const PairConflict& conflict);
   void appendHeldDecisionLocks(const std::vector<VehicleAgent>& agents,
                                const std::vector<std::pair<int, int>>& active_pairs,

@@ -55,6 +55,15 @@ float64 peer_t_out
 float64 earliest_entry_time
 float64 target_entry_time
 
+# 跟车策略附加标记。FOLLOW 时 peer_id 表示前车，速度层自行订阅前车状态高频计算间距和速度。
+bool has_follow_constraint
+
+# FOLLOW 初始化兜底快照。刚进入 FOLLOW、速度层还未收到前车高频定位/底盘时，
+# 可短时间使用该低频快照计算安全速度上限，避免订阅建立瞬间误触发急停。
+bool has_follow_peer_snapshot
+geometry_msgs/Point follow_peer_position
+float64 follow_peer_speed
+
 # 决策溯源：RULE/SCORE/PRIORITY/LOCK 以及更细的原因码。
 bool decision_locked
 string decision_source

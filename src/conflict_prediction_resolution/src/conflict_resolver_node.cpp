@@ -297,6 +297,15 @@ coordination::CoordinatorConfig ConflictResolverNode::loadCoordinatorConfig() co
   readParam("divergence_conflict_back_distance",
             config.divergence_conflict_back_distance,
             config.divergence_conflict_back_distance);
+  readParam("following_release_count",
+            config.following_release_count,
+            config.following_release_count);
+  readParam("following_detect_max_gap",
+            config.following_detect_max_gap,
+            config.following_detect_max_gap);
+  readParam("following_lead_tie_epsilon",
+            config.following_lead_tie_epsilon,
+            config.following_lead_tie_epsilon);
   readParam("priority_weight", config.priority_weight, config.priority_weight);
   readParam("speed_weight", config.speed_weight, config.speed_weight);
   readParam("progress_weight", config.progress_weight, config.progress_weight);
@@ -471,6 +480,8 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
     msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_NONE;
     msg.ego_id = vehicles_[vehicle_index].agent.id;
     msg.has_spatial_constraint = false;
+    msg.has_follow_constraint = false;
+    msg.has_follow_peer_snapshot = false;
 
     if (!result.ready || !result.conflict_active)
     {
@@ -517,6 +528,10 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
       {
         msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_PROCEED;
       }
+      else if (conflict.conflict_type == "FOLLOWING_ONLY")
+      {
+        msg.yield_strategy = planning_msgs::ConflictConstraint::STRATEGY_FOLLOW;
+      }
       else
       {
         // 冲突判定层已经完成“是否需要避让、谁先走谁后走、冲突段如何切分”的判断。
@@ -533,6 +548,26 @@ void ConflictResolverNode::publishResult(const coordination::CoordinationResult&
       msg.ego_exit_point = makeMarkerPoint(exitPoseFor(conflict, static_cast<int>(vehicle_index)), 0.0);
       msg.peer_entry_point = makeMarkerPoint(entryPoseFor(conflict, peer_index), 0.0);
       msg.peer_exit_point = makeMarkerPoint(exitPoseFor(conflict, peer_index), 0.0);
+      if (conflict.conflict_type == "FOLLOWING_ONLY" &&
+          conflict.follow_lead_index >= 0 &&
+          conflict.follow_rear_index >= 0)
+      {
+        msg.has_follow_constraint = true;
+        if (msg.role == planning_msgs::ConflictConstraint::ROLE_YIELD &&
+            conflict.follow_lead_index >= 0 &&
+            static_cast<size_t>(conflict.follow_lead_index) < vehicles_.size())
+        {
+          const auto& lead_agent = vehicles_[static_cast<size_t>(conflict.follow_lead_index)].agent;
+          if (lead_agent.have_pose)
+          {
+            msg.has_follow_peer_snapshot = true;
+            msg.follow_peer_position = makeMarkerPoint(lead_agent.pose, 0.0);
+            msg.follow_peer_speed =
+                lead_agent.have_speed ? std::max(0.0, lead_agent.speed)
+                                      : std::max(0.0, lead_agent.nominal_speed);
+          }
+        }
+      }
       msg.ego_t_in = tInFor(conflict, static_cast<int>(vehicle_index));
       msg.ego_t_out = tOutFor(conflict, static_cast<int>(vehicle_index));
       msg.peer_t_in = tInFor(conflict, peer_index);

@@ -316,8 +316,24 @@ ClassifiedConflictSection classifyOverlapByRelativeAngle(
                                 min_length);
   if (!first_conflict.valid)
   {
-    // 只有稳定小角度重叠时，它更像同车道跟车，不再输出“冲突区”。
-    section.type = first_following.valid ? "FOLLOWING_ONLY" : "UNCLASSIFIED_OVERLAP";
+    // 只有稳定小角度重叠时，它不再走停车让行，而是输出跟车场景，
+    // 由同一套 pair 状态机发布 FOLLOW 策略给后车。
+    if (!first_following.valid)
+    {
+      section.type = "UNCLASSIFIED_OVERLAP";
+      return section;
+    }
+    section.active = true;
+    section.first_s_in = samples[first_following.start].first_s;
+    section.first_s_out = samples[first_following.end].first_s;
+    section.second_s_in = std::numeric_limits<double>::infinity();
+    section.second_s_out = -std::numeric_limits<double>::infinity();
+    for (size_t i = first_following.start; i <= first_following.end; ++i)
+    {
+      section.second_s_in = std::min(section.second_s_in, samples[i].second_s);
+      section.second_s_out = std::max(section.second_s_out, samples[i].second_s);
+    }
+    section.type = "FOLLOWING_ONLY";
     return section;
   }
 
@@ -602,6 +618,50 @@ PairConflict MultiVehicleCoordinator::detectPairConflict(const VehicleAgent& fir
   conflict.collision_point.yaw = conflict.first_entry_pose.yaw;
   conflict.conflict_type = classified_section.type;
   conflict.summary = classified_section.type;
+  if (conflict.conflict_type == "FOLLOWING_ONLY")
+  {
+    const double second_on_first_s = estimateProgress(first.trajectory, second.pose);
+    const double first_on_second_s = estimateProgress(second.trajectory, first.pose);
+    const double second_lead_gap_on_first_path = second_on_first_s - first_progress;
+    const double second_lead_gap_on_second_path = second_progress - first_on_second_s;
+    const double lead_tie_epsilon = std::max(0.0, config_.following_lead_tie_epsilon);
+    const bool second_ahead_on_first = second_lead_gap_on_first_path > lead_tie_epsilon;
+    const bool first_ahead_on_first = second_lead_gap_on_first_path < -lead_tie_epsilon;
+    const bool tied_on_first = std::fabs(second_lead_gap_on_first_path) <= lead_tie_epsilon;
+    const bool second_ahead_on_second = second_lead_gap_on_second_path > lead_tie_epsilon;
+    const bool first_ahead_on_second = second_lead_gap_on_second_path < -lead_tie_epsilon;
+    const bool tied_on_second = std::fabs(second_lead_gap_on_second_path) <= lead_tie_epsilon;
+    const bool second_leads =
+        (second_ahead_on_first && (second_ahead_on_second || tied_on_second)) ||
+        (second_ahead_on_second && tied_on_first);
+    const bool first_leads =
+        (first_ahead_on_first && (first_ahead_on_second || tied_on_second)) ||
+        (first_ahead_on_second && tied_on_first);
+    if (second_leads == first_leads)
+    {
+      conflict.active = false;
+      return conflict;
+    }
+    const VehicleAgent& lead_agent = second_leads ? second : first;
+    const VehicleAgent& rear_agent = second_leads ? first : second;
+    const int lead_index = second_leads ? second_index : first_index;
+    const int rear_index = second_leads ? first_index : second_index;
+    const double lead_center_gap =
+        second_leads
+            ? std::max(second_lead_gap_on_first_path, second_lead_gap_on_second_path)
+            : std::max(-second_lead_gap_on_first_path, -second_lead_gap_on_second_path);
+    const double bumper_gap =
+        std::max(0.0, lead_center_gap - 0.5 * lead_agent.length - 0.5 * rear_agent.length);
+    if (config_.following_detect_max_gap > 0.0 &&
+        bumper_gap > config_.following_detect_max_gap)
+    {
+      conflict.active = false;
+      return conflict;
+    }
+
+    conflict.follow_lead_index = lead_index;
+    conflict.follow_rear_index = rear_index;
+  }
   return conflict;
 }
 
@@ -613,17 +673,71 @@ void MultiVehicleCoordinator::chooseOrder(const std::vector<VehicleAgent>& agent
   const auto locked = decision_locks_.find(key);
   if (locked != decision_locks_.end())
   {
-    // 同一 pair 已有决策锁时，不再用当前帧重新评分切换角色。
-    // 但候选轨迹每帧都会变化，冲突区也可能逐步向后扩展；因此这里把当前检测到的
-    // 冲突段和锁内保存的冲突事件做“只扩不缩”的合并，再用合并后的绝对入口/出口
-    // 继续向速度层发布约束。
-    conflict = mergeTrackedConflictWithCurrent(agents, conflict, locked->second.conflict);
-    conflict.proceed_index = locked->second.proceed_index;
-    conflict.yield_index = locked->second.yield_index;
-    conflict.decision_locked = true;
-    conflict.decision_source = "LOCK";
-    conflict.decision_reason = "update_locked_conflict_domain";
-    refreshDecisionLock(conflict);
+    if (locked->second.state == PairScenarioState::STOP_LOCKED)
+    {
+      const PairConflict projected_lock =
+          reprojectTrackedConflict(agents, locked->second.conflict);
+      const int locked_proceed = locked->second.proceed_index;
+      const bool stop_lock_released =
+          locked_proceed >= 0 &&
+          static_cast<size_t>(locked_proceed) < agents.size() &&
+          hasVehiclePassedConflictExit(agents[static_cast<size_t>(locked_proceed)],
+                                       projected_lock,
+                                       locked_proceed);
+      if (!stop_lock_released)
+      {
+        // STOP 锁仍在生效时，不把当前 FOLLOW 分类直接下发，避免同一 pair 同时输出
+        // 停车让行和跟车两套决策。
+        if (conflict.conflict_type == "FOLLOWING_ONLY")
+        {
+          conflict = projected_lock;
+        }
+        else
+        {
+          conflict = mergeTrackedConflictWithCurrent(agents, conflict, locked->second.conflict);
+        }
+        conflict.proceed_index = locked->second.proceed_index;
+        conflict.yield_index = locked->second.yield_index;
+        conflict.decision_locked = true;
+        conflict.decision_source = "LOCK";
+        conflict.decision_reason = "hold_stop_before_follow";
+        refreshDecisionLock(conflict);
+        return;
+      }
+
+      decision_locks_.erase(key);
+    }
+    else if (locked->second.state == PairScenarioState::FOLLOWING &&
+             conflict.conflict_type == "FOLLOWING_ONLY")
+    {
+      // FOLLOWING 锁定的是进入跟车时的前后车关系。当前帧的投影分类只用于确认
+      // 仍是同向跟车场景，不能因为后车追近或越过就反向改写 lead/rear。
+      conflict.follow_lead_index = locked->second.proceed_index;
+      conflict.follow_rear_index = locked->second.yield_index;
+      conflict.proceed_index = locked->second.proceed_index;
+      conflict.yield_index = locked->second.yield_index;
+      conflict.decision_locked = true;
+      conflict.decision_source = "LOCK";
+      conflict.decision_reason = "following_gap_control";
+      storeFollowDecision(conflict);
+      return;
+    }
+    else if (locked->second.state == PairScenarioState::FOLLOWING)
+    {
+      // FOLLOWING 只用于同向跟车；如果当前帧重新检测到普通冲突，立即退出跟车，
+      // 让下面的普通冲突规则重新生成 STOP/PROCEED 决策。
+      decision_locks_.erase(key);
+    }
+  }
+
+  if (conflict.conflict_type == "FOLLOWING_ONLY")
+  {
+    conflict.proceed_index = conflict.follow_lead_index;
+    conflict.yield_index = conflict.follow_rear_index;
+    conflict.decision_locked = config_.enable_decision_lock;
+    conflict.decision_source = "RULE";
+    conflict.decision_reason = "following_gap_control";
+    storeFollowDecision(conflict);
     return;
   }
 
@@ -1239,10 +1353,30 @@ void MultiVehicleCoordinator::storeDecisionLock(const PairConflict& conflict)
   }
 
   LockedDecision lock;
+  lock.state = PairScenarioState::STOP_LOCKED;
   lock.proceed_index = conflict.proceed_index;
   lock.yield_index = conflict.yield_index;
   lock.conflict = conflict;
   decision_locks_[pairKey(conflict)] = lock;
+}
+
+void MultiVehicleCoordinator::storeFollowDecision(const PairConflict& conflict)
+{
+  if (!config_.enable_decision_lock ||
+      conflict.follow_lead_index < 0 ||
+      conflict.follow_rear_index < 0)
+  {
+    return;
+  }
+
+  const auto key = pairKey(conflict);
+  LockedDecision lock;
+  lock.state = PairScenarioState::FOLLOWING;
+  lock.proceed_index = conflict.follow_lead_index;
+  lock.yield_index = conflict.follow_rear_index;
+  lock.follow_miss_count = 0;
+  lock.conflict = conflict;
+  decision_locks_[key] = lock;
 }
 
 void MultiVehicleCoordinator::refreshDecisionLock(const PairConflict& conflict)
@@ -1264,6 +1398,7 @@ void MultiVehicleCoordinator::refreshDecisionLock(const PairConflict& conflict)
 
   // 锁的角色不变，只刷新动态维护后的冲突空间域。
   // 释放不再依赖预测时间，统一用先行车是否已经越过冲突出口判断。
+  it->second.state = PairScenarioState::STOP_LOCKED;
   it->second.conflict = conflict;
   it->second.proceed_index = conflict.proceed_index;
   it->second.yield_index = conflict.yield_index;
@@ -1282,7 +1417,21 @@ void MultiVehicleCoordinator::appendHeldDecisionLocks(
       continue;
     }
 
-    const LockedDecision& lock = it->second;
+    LockedDecision& lock = it->second;
+    if (lock.state == PairScenarioState::FOLLOWING)
+    {
+      // 跟车状态必须依赖当前帧的同向重叠和实时车距刷新；无 active FOLLOW 时，
+      // 只保留状态用于短时检测丢失滞回，不向 result 追加旧跟车约束。
+      ++lock.follow_miss_count;
+      if (lock.follow_miss_count >= std::max(1, config_.following_release_count))
+      {
+        it = decision_locks_.erase(it);
+        continue;
+      }
+      ++it;
+      continue;
+    }
+
     if (lock.proceed_index < 0 || lock.yield_index < 0 ||
         static_cast<size_t>(lock.proceed_index) >= agents.size() ||
         static_cast<size_t>(lock.yield_index) >= agents.size())
