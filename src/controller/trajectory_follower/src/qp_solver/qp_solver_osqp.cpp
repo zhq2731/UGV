@@ -14,6 +14,8 @@
 
 #include "trajectory_follower/qp_solver/qp_solver_osqp.hpp"
 
+#include <ros/ros.h>
+
 #include <string>
 #include <vector>
 
@@ -64,9 +66,9 @@ bool QPSolverOSQP::solve(
 
   const int status_val = std::get<3>(result);
   if (status_val != 1) {
-    // TODO(Horibe): Should return false and the failure must be handled in an appropriate way.
-    //RCLCPP_WARN(logger_, "optimization failed : %s", osqpsolver_.getStatusMessage().c_str());
-    std::cout <<osqpsolver_.getStatusMessage()<<std::endl;
+    // OSQP 连续失败时只限频输出，避免控制周期刷屏。
+    ROS_WARN_THROTTLE(2.0, "[mpc] OSQP status: %s",
+      osqpsolver_.getStatusMessage().c_str());
   }
 
   // polish status: successful (1), unperformed (0), (-1) unsuccessful

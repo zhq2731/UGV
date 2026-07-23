@@ -136,7 +136,11 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 private_nh.param<bool>("open_simulate",  open_simulate, false);
 
 	 common::getPlatformParam(vehicle_platform_file,platformParam);
-	 velocityPlanner = std::make_shared<VelocityPlannerFlow>(private_nh);
+	 PlanningConfig *planning_config = PlanningConfig::get_instance();
+	 // 开放空间模式不创建道路速度规划和冲突处理对象。
+	 if (!planning_config->enable_open_space_planner) {
+		 velocityPlanner = std::make_shared<VelocityPlannerFlow>(private_nh);
+	 }
 
 	 referenceLineSub = nh_.subscribe("referenceLine",1, &PlanningNode::callbackReferenceLine, this);
 
@@ -146,17 +150,29 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 
 	 trajectoryPub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory", 1);
 
-	 // 冲突消解决策的具体解释和速度修正由独立处理器负责，PlanningNode 只保留流程连接。
-	 conflict_constraint_processor_.loadParam(private_nh);
-	 if (conflict_constraint_processor_.enabled()){
-	     // 只有开启冲突消解时才发布候选轨迹和订阅冲突约束；关闭时保持原规划链路运行。
-	     trajectoryCandidatePub  = nh_.advertise<planning_msgs::TrajectoryPointArray>("trajectory_candidate", 1);
-	     conflictConstraintSub = nh_.subscribe("conflict_constraint", 1, &PlanningNode::callbackConflictConstraint, this);
+	 // 开放空间规划独立完成避障和速度赋值，不接入道路冲突约束链路。
+	 if (!planning_config->enable_open_space_planner) {
+		 conflict_constraint_processor_.loadParam(private_nh);
+		 if (conflict_constraint_processor_.enabled()){
+			 trajectoryCandidatePub = nh_.advertise<planning_msgs::TrajectoryPointArray>(
+				 "trajectory_candidate", 1);
+			 conflictConstraintSub = nh_.subscribe(
+				 "conflict_constraint", 1,
+				 &PlanningNode::callbackConflictConstraint, this);
+		 }
 	 }
 
 	 //replan_sub_ = nh_.subscribe("/replan", 1, &PlanningNode::callbackReplan, this); 
 
-	 obstaclesSub = nh_.subscribe("/MultiObjectTracker", 1, &PlanningNode::callbackObstacles, this); 
+	 if (planning_config->enable_open_space_planner) {
+		 freeSpaceMapSub = nh_.subscribe(
+			 "/free_space_map", 1, &PlanningNode::callbackFreeSpaceMap, this);
+		 openSpaceTaskResetPub = nh_.advertise<std_msgs::Empty>(
+			 "/open_space_task_reset", 1, false);
+	 } else {
+		 obstaclesSub = nh_.subscribe(
+			 "/MultiObjectTracker", 1, &PlanningNode::callbackObstacles, this);
+	 }
 
 	 pub_trajectory = nh_.advertise<visualization_msgs::MarkerArray>(
 		"planning_marker", 1);
@@ -170,14 +186,22 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 pub_obs = nh_.advertise<visualization_msgs::MarkerArray>(
 		"perception_obs", 1);
 
-	 pubFreeSpaceMap = nh_.advertise<nav_msgs::OccupancyGrid>(
-		   "free_space_map", 1);
-	 
-	 speedSub = nh_.subscribe("desireSpeed", 1, &PlanningNode::callbackDesireSpeed, this); 
+	 if (!planning_config->enable_open_space_planner) {
+		 speedSub = nh_.subscribe(
+			 "desireSpeed", 1, &PlanningNode::callbackDesireSpeed, this);
+	 }
 
 	 if (open_simulate){
-	     clickPoint_sub_  = nh_.subscribe("/move_base_simple/goal", 1, &PlanningNode::callBackGoal, this);
-	     initialPose_sub_ = nh_.subscribe("/initialpose", 1, &PlanningNode::callBackinitialPose, this);
+	     clickPoint_sub_ = nh_.subscribe(
+			 "/move_base_simple/goal", 1, &PlanningNode::callBackGoal, this);
+	     if (planning_config->enable_open_space_planner) {
+			 initialPose_sub_ = nh_.subscribe(
+				 "/initialpose", 1,
+				 &PlanningNode::callBackOpenSpaceInitialPose, this);
+	     } else {
+			 initialPose_sub_ = nh_.subscribe(
+				 "/initialpose", 1, &PlanningNode::callBackinitialPose, this);
+	     }
 	 }
 	 display_thread_ = std::thread (&PlanningNode::displayLoop,this);
 	 display_thread_.detach();
@@ -196,16 +220,23 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 pub_platoon_log = nh_.advertise<platoon_msgs::PlatoonLog>("platoon_log", 1);
 	 
 	 
-	 pub_replan = nh_.advertise<route_msgs::Replan>("/replan", 1);
-     pub_pc = nh_.advertise<sensor_msgs::PointCloud2>("/known_points_cloud", 1);
-	 
+	 if (!planning_config->enable_open_space_planner) {
+		 pub_replan = nh_.advertise<route_msgs::Replan>("/replan", 1);
+	 }
 	 global_path_wgs84_sub = nh_.subscribe("topology_global_path_wgs84", 10, &PlanningNode::callbackGlobalPath84InPlanning, this); 
 
 
-	 planners[COMPLETE_REF_LINE] = std::make_shared<CompleteRefLinePlanner>(this->collectDisplayInfo);
-	 planners[REF_LINE] = std::make_shared<RefLinePlanner>(this->collectDisplayInfo);
-	 planners[REVERSE] = std::make_shared<ReversePlanner>(this->collectDisplayInfo);
-	// planners[OPEN_SPACE] = std::make_shared<OpenSpacePlanner>(this->collectDisplayInfo);
+	 if (planning_config->enable_open_space_planner) {
+		 planners[OPEN_SPACE] =
+			 std::make_shared<OpenSpacePlanner>(this->collectDisplayInfo);
+	 } else {
+		 planners[COMPLETE_REF_LINE] =
+			 std::make_shared<CompleteRefLinePlanner>(this->collectDisplayInfo);
+		 planners[REF_LINE] =
+			 std::make_shared<RefLinePlanner>(this->collectDisplayInfo);
+		 planners[REVERSE] =
+			 std::make_shared<ReversePlanner>(this->collectDisplayInfo);
+	 }
      shape = PlatoonType::COLUMN;
 
 	 platoonMember_sub_ = nh.subscribe("/PlatoonMember", 10, &PlanningNode::callbackPlatoonMember, this); 
@@ -333,6 +364,9 @@ void  PlanningNode::mass(const platoon_msgs::PlatoonMission::ConstPtr &msg){
 void  PlanningNode::distrubute(const platoon_msgs::PlatoonMission::ConstPtr &msg){
     
 	auto selfIndex = platoonGetNumIndex(vehicle_num_list,platformParam.num);
+	if (PlanningConfig::get_instance()->enable_open_space_planner) {
+		resetOpenSpaceTask(false, "formation goal updated");
+	}
 	inputData.goalState.x = msg->distributePoints[selfIndex].position.x;
 	inputData.goalState.y = msg->distributePoints[selfIndex].position.y;
 	inputData.goalState.heading = amathutils::normalizeRadian(amathutils::getPoseYawAngle(msg->distributePoints[selfIndex]));
@@ -473,6 +507,7 @@ void PlanningNode::loadPlanningParam(ros::NodeHandle &private_nh_)
 	private_nh_.param<bool>("open_velocity_planner", planning_config->open_velocity_planner, true);
 	private_nh_.param<bool>("open_path_planner", planning_config->open_path_planner, true);
 	private_nh_.param<bool>("stop_obs_strategy", planning_config->stop_obs_strategy, false);
+	private_nh_.param<bool>("enable_open_space_planner", planning_config->enable_open_space_planner, false);
 
 	private_nh_.param<bool>("enable_trajectory_stitcher", planning_config->enable_trajectory_stitcher, true);
 	private_nh_.param<double>("replan_lateral_distance_threshold", planning_config->replan_lateral_distance_threshold, 0.5);
@@ -504,12 +539,6 @@ void PlanningNode::loadPlanningParam(ros::NodeHandle &private_nh_)
 		planning_config->pathingConfigs.insert(std::make_pair(area, area_config));
 	}
 
-	private_nh_.param<int>("mapParams_pointNum", planning_config->mapParams_pointNum, 360);
-	private_nh_.param<double>("mapParams_resolution", planning_config->mapParams_resolution, 0.2);
-	private_nh_.param<int>("mapParams_length", planning_config->mapParams_length, 40);
-	private_nh_.param<int>("mapParams_width", planning_config->mapParams_width, 40);
-
-	
 }
 
 
@@ -527,9 +556,8 @@ void PlanningNode::callbackPlanningTimer(const ros::TimerEvent &event)
     }
     planning_config->open_velocity_planner = true;
 	if (planner_type == OPEN_SPACE ){
-		if (!openSpaceGoalSet)
+		if (!openSpaceGoalSet || !openSpaceMapReceived)
 			return;
- 		obsToGrid(obsList);
 		planning_config->open_velocity_planner = false;
 	}
 	//sendHeart(1);
@@ -544,349 +572,70 @@ void PlanningNode::callbackPlanningTimer(const ros::TimerEvent &event)
 }
 
 
-void PlanningNode::obsToGrid(const std::vector< const Obstacle*> &obsList)
-{	
-	Point2D cur_veh_center(inputData.vehicleState.x,inputData.vehicleState.y);
-	double veh_theta = inputData.vehicleState.heading;
-	PlanningConfig *planning_config = PlanningConfig::get_instance();
-    nav_msgs::OccupancyGrid occGrid;
-	//障碍物转换为栅格
-	//将障碍物增密并转换为点云格式，以便后续处理
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-	vector<pcl::PointXYZI> obs_pcl;
-    for (auto obs : obsList) {
-        for (auto polygon_point : obs->Perception().polygon_point) {
-            pcl::PointXYZI point;
-			Point2D  local_polygon_point;
-		    local_polygon_point = geometry_point::globalToLocal(cur_veh_center,veh_theta,Point2D(polygon_point.x,polygon_point.y)); 
-            point.x = local_polygon_point.x;
-            point.y = local_polygon_point.y;
-            point.z = 2.5;
-            point.intensity = 1;
-			
-            obs_pcl.push_back(point);
-        }
-        double min_x, max_x, min_y, max_y;
-        computeBoundingBox(obs_pcl, min_x, max_x, min_y, max_y);
-        float resolution = 0.1f;
-        int num_points = static_cast<int>((max_x - min_x) / resolution) * static_cast<int>((max_y - min_y) / resolution);
-        cloud->points.reserve(cloud->points.size() + num_points);
-        for (float x = min_x; x <= max_x; x += resolution) {
-            for (float y = min_y; y <= max_y; y += resolution) {
-				pcl::PointXYZI point;
-				point.x = x;
-				point.y = y;
-				point.z = 2.5;
-				point.intensity = 1;
-                cloud->points.push_back(point);
-            }
-        }
-        obs_pcl.clear();
-    }
-	// for(auto obs : obsList){
-	// 	for(auto polygon_point : obs->Perception().polygon_point)
-	// 	{
-	// 		vector<pcl::PointXYZI> obs_pcl;
-	// 	    pcl::PointXYZI point;
-	// 		point.x = polygon_point.x;
-	// 		point.y = polygon_point.y;
-	// 		point.z = 0;
-	// 		point.intensity = 1;
-	// 		obs_pcl.push_back(point);
-	// 		double min_x, max_x, min_y, max_y;
-	// 		computeBoundingBox(obs_pcl, min_x, max_x, min_y, max_y);
-	// 		float resolution = 0.1f; // 点云密度：1米一个点
-	// 		for (float x = min_x; x <= max_x; x += resolution) {
-    //     		for (float y = min_y; y <= max_y; y += resolution) {
-	// 				// 假设所有点的z坐标相同（或者你可以根据某种规则设置z坐标）
-	// 				float z = 2.5; // 平均值，或者其他值
-	// 				float intensity = 1.0; // 平均值，或者其他值
-	// 				cloud->points.push_back(pcl::PointXYZI(x, y, z, intensity));
-    //     		}
-    // 		}		
-	// 	}
-	// }
-	// 设置点云的宽度和高度（对于无序点云，宽度是点的数量，高度是1）
-	cloud->width = cloud->points.size();
-	cloud->height = 1;
-	cloud->is_dense = true;
-	// 转换为ROS点云消息
-	 sensor_msgs::PointCloud2 output;
-	 pcl::toROSMsg(*cloud, output);
-
-	 // 设置输出点云的header（例如，设置frame_id和timestamp）
-    output.header.frame_id = "map"; // 根据你的实际情况设置
-    output.header.stamp = ros::Time::now(); // 或者使用特定的时间戳
-
-    // 发布点云话题
-    pub_pc.publish(output);
-	 
-	//将点云信息转换为栅格地图
-	float *freeSpacePoints = (float*) calloc(planning_config->mapParams_pointNum,sizeof(float));
-
-	if(freeSpacePoints != nullptr)
-	{
-		
-		float max_dis = std::pow(planning_config->mapParams_length,2);
-
-		for(int i = 0; i < planning_config->mapParams_pointNum; i++)
-		{
-			freeSpacePoints[i] = max_dis;
-		}
-	}
-	else{
-		std::cerr<<"WARNING : memory allocation error!"<<std::endl;
-		return;
-	}
-
-	Eigen::MatrixXi freeGridMap;
-
-	computeFreeSpacePoints(cloud,freeSpacePoints,planning_config->mapParams_pointNum);
-	
-	freeGridMapFilter(freeSpacePoints,freeGridMap);//可同行区域栅格地图待修改
-	
-	publishFreeSpaceGridMap(freeGridMap,occGrid);
-
-	free(freeSpacePoints);
-
-    inputData.occGrid = occGrid ;
-	
-}
-
-void PlanningNode::publishFreeSpaceGridMap(Eigen::MatrixXi &freeSpaceGridMap, nav_msgs::OccupancyGrid& rosMap)
-{
-	// nav_msgs::OccupancyGrid rosMap;
-	PlanningConfig *planning_config = PlanningConfig::get_instance();
-
-	rosMap.info.resolution = planning_config->mapParams_resolution;
-	rosMap.info.origin.position.x = - planning_config->mapParams_length;
-	rosMap.info.origin.position.y = - planning_config->mapParams_length;
-	rosMap.info.origin.position.z = 0.0;
-	//注意占据栅格地图的坐标系与ros右手坐标系相差180度的旋转
-	tf::Quaternion q;
-	q.setRPY(0, 0, 0);// Y X Z
-	rosMap.info.origin.orientation.x = q.x();
-	rosMap.info.origin.orientation.y = q.y();
-	rosMap.info.origin.orientation.z = q.z();//-1.0;
-	rosMap.info.origin.orientation.w = q.w();
-	// rosMap.info.origin.orientation = tf::createQuaternionMsgFromYaw(-3.14/2);
-
-	rosMap.info.width = planning_config->mapParams_length * 2 / planning_config->mapParams_resolution;
-	rosMap.info.height = planning_config->mapParams_length * 2 / planning_config->mapParams_resolution;
-	int data_size = rosMap.info.width * rosMap.info.height;
-	rosMap.data.resize(data_size);
-
-	size_t k = 0;
-	for(size_t c = 0; c < freeSpaceGridMap.cols(); c++)//列
-	{
-		for(size_t r = 0; r < freeSpaceGridMap.rows(); r++)//行
-		{
-			// rosMap.data[k] = k % 256;
-			if (freeSpaceGridMap(r,c) == 0)
-			{
-				rosMap.data[k] = 0;
-			}
-			else if (freeSpaceGridMap(r,c) == 1)
-			{
-				rosMap.data[k] = 1;
-			}
-			else if (freeSpaceGridMap(r,c) == 2)
-			{
-				rosMap.data[k] = 25;
-			}
-			else if (freeSpaceGridMap(r,c) == 3)
-			{
-				rosMap.data[k] = 100;
-			}
-			else if (freeSpaceGridMap(r,c) == 5)
-			{
-				rosMap.data[k] = 150;
-			}
-			else if (freeSpaceGridMap(r,c) == 10)
-			{
-				rosMap.data[k] = 200;
-			}
-			else if (freeSpaceGridMap(r,c) == 11)
-			{
-				rosMap.data[k] = 200;
-			}
-			else if (freeSpaceGridMap(r,c) == 12)
-			{
-				rosMap.data[k] = 200;
-			}
-			else if (freeSpaceGridMap(r,c) == 13)
-			{
-				rosMap.data[k] = 200;
-			}
-			k++;
-		}
-	}
-
-	// rosMap.header.stamp = cloudHeader.stamp;
-	// rosMap.header.frame_id = pointCloud_frame_id;
-
-	rosMap.header.stamp = ros::Time::now(); // 使用当前时间
-    rosMap.header.frame_id = "vehcile"; // 使用默认帧ID
-
-	pubFreeSpaceMap.publish(rosMap);
-	// ROS_INFO("pubFreeSpaceMap!");s
-}
-
-
-
-void PlanningNode::freeGridMapFilter(float* freeSpacePoints, Eigen::MatrixXi &dst)
-{
-	PlanningConfig *planning_config = PlanningConfig::get_instance();
-	float pixel_size = planning_config->mapParams_resolution;
-	float delta_r = pixel_size * 0.75;
-	float delta_d_in_r = pixel_size * 0.65;
-	int maxlength = planning_config->mapParams_length * 2 / pixel_size, maxwidth = planning_config->mapParams_width/pixel_size;
-	
-	Eigen::MatrixXi src = Eigen::MatrixXi::Zero(maxlength, maxlength);
-	dst = Eigen::MatrixXi::Zero(maxlength, maxlength);
-    // std::cout <<"b  ------------"<<std::endl;
-
-	int pointNum = planning_config->mapParams_pointNum;
-	float max_dis = planning_config->mapParams_length;//(mapParams.length > mapParams.width ? mapParams.length : mapParams.width) / 2;
-	float alpha = planning_config->mapParams_pointNum / 360.0;
-	float theta_border = M_PI / planning_config->mapParams_pointNum * 1.2;
-	std::vector<float> delta_t;
-	for (float j = 0.0001; j < max_dis; j += delta_r) // Prepare the delta theta of different radius
-	{
-		delta_t.push_back(delta_d_in_r/j);//不同半径下，弧长分辨率对应的角度分辨率
-	}
-
-	
-	for (int i = 0; i < pointNum; i++)//遍历每一个需要采集的非地面激光点
-	{
-
-		
-		float r = min(freeSpacePoints[i], freeSpacePoints[(i + 1) % pointNum]);
-		r = min(r, freeSpacePoints[(i - 1 + pointNum) % pointNum]);
-		r = sqrt(r);                   
-		int k = 0;
-		for (float j = 0; j < r - 0.5; j += delta_r)
-		{
-			float dt = delta_t[k++];
-			float theta = (i / alpha - 180)*M_PI/180.0;                   
-	
-			for (float t = theta - theta_border; t < theta + theta_border; t+=dt)
-			{
-				float x = j*cos(t);
-				float y = j*sin(t);
-				int m = int((planning_config->mapParams_length + x) / pixel_size);//int((mapParams.offset_x - x) / pixel_size);               
-				int n = int((planning_config->mapParams_length + y) / pixel_size);//int((mapParams.offset_y - y) / pixel_size);
-				// if (m >= 0 && m < maxlength && n >= 0 && n < maxwidth) 
-					src(m, n) = 1;
-#ifndef EDGE_PROCESS
-					dst(m, n) = 2;
-#endif
-			}
-		}
-	}
-// #ifdef EDGE_PROCESS
-// 	for(int i = 0; i < mapParams.pointNum; i++)
-// 	{
-		
-// 		float angle = (i / alpha - 180);
-// 		if(angle < mapParams.scan_angle_r || angle > mapParams.scan_angle_l)
-// 			continue;
-
-
-// 		for(float j = 0; j < max_dis -1; j += delta_r)
-// 		{
-// 			float x = j * cos((i / alpha - 180) * M_PI /180.0);
-// 			float y = j * sin((i / alpha - 180) * M_PI /180.0);
-// 			int m = int((mapParams.length + x) / pixel_size);//int((mapParams.offset_x - x) / pixel_size);
-// 			int n = int((mapParams.length + y) / pixel_size);//int((mapParams.offset_y - y) / pixel_size);
-// 			int theta = int(atan2f(y, x) * 180.0 / M_PI + 180.0 + 0.5);
-// 			theta = theta % pointNum;
-// 			float r = std::min(freeSpacePoints[theta],freeSpacePoints[(theta+1) % pointNum]);
-// 			r = std::min(r,freeSpacePoints[(theta-1+pointNum) % pointNum]);
-
-// 			if(r > j*j +1)   
-// 			{
-// 				int result = 0;
-// 				for(int k = 0; k < 16; k++)
-// 				{
-// 					// if ((m  + filter_x[k]) >= 0 && (m  + filter_x[k]) < maxlength && 
-// 					//     (n + filter_y[k]) >= 0 && (n + filter_y[k]) < maxwidth) 
-// 					result += src(m + smaller_filter_x[k], n + smaller_filter_y[k]);
-// 				}
-// 				if(result < 16)
-// 					break;
-// 				for (int k = 0; k < 37; k++)               
-// 				{
-// 					// if ((m + all_x[k]) >= 0 && (m + all_x[k]) < maxlength &&
-// 					//     (n + all_y[k]) >= 0 && (n + all_y[k]) < maxwidth)
-// 					dst(m+smaller_all_x[k], n+smaller_all_y[k]) = max(1, dst(m+smaller_all_x[k], n+smaller_all_y[k]));
-// 				}
-// 				dst(m,n) = 2;
-// 			}
-// 		}
-// 	} 
-// #endif
-}
-
-void PlanningNode::computeFreeSpacePoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pointCloudIn, float* free_space, int free_space_n)
-{
-	int thetaId;
-	float distance_cur;
-	size_t pointsNum = pointCloudIn->points.size();
-
-	float alpha = free_space_n / 360;
-	for(size_t pid = 0; pid < pointsNum; pid++) //遍历每一个非地面激光点
-	{
-
-		if(pointCloudIn->points[pid].z < 2.6)
-		{
-			distance_cur = std::pow(pointCloudIn->points[pid].x,2) + std::pow(pointCloudIn->points[pid].y,2);
-
-		
-			//atan2(y,x) x前方为0度，逆时针0～180，顺时针0～-180
-			thetaId = int((atan2f(pointCloudIn->points[pid].y,pointCloudIn->points[pid].x) + M_PI) * 180.0 * alpha /M_PI  + 0.5); //当前激光点对应方向角度 × alpha = 当前激光点对应需要采集的非地面激光点id 
-			thetaId = thetaId % free_space_n;
-			if(free_space[thetaId] > distance_cur && distance_cur > 1)
-			{
-				free_space[thetaId] = distance_cur; //得到最小距离
-			}
-		}
-	}
-
-}	
-
-void PlanningNode::computeBoundingBox(const vector<pcl::PointXYZI> obs_pcl,double& min_x, double& max_x, double& min_y, double& max_y)
-{
-	if (obs_pcl.empty()) {
-        // 如果vector为空，则设置默认值为未定义状态（这里简单地设置为0，但实际应用中可能需要更明确的处理方式）
-        min_x = max_x = min_y = max_y = 0;
-        std::cerr << "Warning: The input vector is empty!" << std::endl;
-        return;
-    }
-
-    max_x = min_x = obs_pcl[0].x;
-    max_y = min_y = obs_pcl[0].y;
-
-    for (const auto& pcl_point : obs_pcl) {
-        if (pcl_point.x > max_x) max_x = pcl_point.x;
-        if (pcl_point.x < min_x) min_x = pcl_point.x;
-        if (pcl_point.y > max_y) max_y = pcl_point.y;
-        if (pcl_point.y < min_y) min_y = pcl_point.y;
-    }
-}
-
-
-
 void PlanningNode::callBackGoal(const geometry_msgs::PoseStamped::ConstPtr msg)
 {
-    
-    std::cout <<"get callBackGoal"<<std::endl;
+	resetOpenSpaceTask(false, "goal updated");
 	double yaw = amathutils::normalizeRadian(amathutils::getPoseYawAngle(msg->pose));
 	inputData.goalState.x = msg->pose.position.x;
 	inputData.goalState.y = msg->pose.position.y;
 	inputData.goalState.heading = yaw;
-	openSpaceGoalSet = true; 
-	//是否要添加到达终点以后，设置为false	
+	openSpaceGoalSet = true;
+	ROS_INFO_STREAM("[open_space] goal updated: (" << inputData.goalState.x
+		<< ", " << inputData.goalState.y << ", "
+		<< inputData.goalState.heading << ")");
+}
+
+void PlanningNode::callBackOpenSpaceInitialPose(
+	const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg)
+{
+	(void)msg;
+	// 车辆位姿由 simulate 节点实际更新；规划节点在此只负责使旧任务失效，
+	// 清除旧目标并等待基于新车辆位姿生成的下一帧局部栅格。
+	resetOpenSpaceTask(true, "vehicle start pose reset");
+}
+
+void PlanningNode::resetOpenSpaceTask(
+	bool wait_for_new_map, const char *reason)
+{
+	if (!PlanningConfig::get_instance()->enable_open_space_planner) {
+		return;
+	}
+
+	auto planner_it = planners.find(OPEN_SPACE);
+	if (planner_it != planners.end()) {
+		const auto open_space_planner =
+			std::dynamic_pointer_cast<OpenSpacePlanner>(planner_it->second);
+		if (open_space_planner) {
+			open_space_planner->resetPlanningState();
+		}
+	}
+
+	last_trajectory.clear();
+	planned_trajectory_ = planning_msgs::TrajectoryPointArray();
+	planning_start_point_ = TrajectoryPoint();
+	newBoundry = false;
+	newTrajectory = false;
+	newReplan = false;
+
+	// 新起点和新终点都表示开始一个全新任务；旧目标在写入新目标前统一失效。
+	inputData.goalState = VehicleState{};
+	openSpaceGoalSet = false;
+	if (wait_for_new_map) {
+		inputData.occGrid = nav_msgs::OccupancyGrid();
+		openSpaceMapReceived = false;
+		openSpaceMapMinStamp_ = ros::Time::now();
+	}
+
+	visualization_msgs::MarkerArray clear_markers;
+	clear_markers.markers.push_back(makeDeleteAllMarker());
+	pub_trajectory.publish(clear_markers);
+	pub_velocity_curve.publish(clear_markers);
+	pub_actual_velocity_curve.publish(clear_markers);
+
+	std_msgs::Empty reset_msg;
+	openSpaceTaskResetPub.publish(reset_msg);
+	ROS_INFO_STREAM("[open_space] task reset: " << reason
+		<< ", wait_for_new_map=" << (wait_for_new_map ? "true" : "false"));
 }
 
 
@@ -1078,8 +827,21 @@ void PlanningNode::callbackPose(const localization_msgs::Localization::ConstPtr 
 	navUncertainty = msg->original_ins.nav_uncertainty;
 	pose_inited_ = true;
 }
-
-
+void PlanningNode::callbackFreeSpaceMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+{
+	if (msg->info.resolution <= 0.0 || msg->info.width == 0 || msg->info.height == 0) {
+		ROS_WARN_THROTTLE(1.0, "Ignore invalid free_space_map.");
+		return;
+	}
+	if (!openSpaceMapMinStamp_.isZero() &&
+		!msg->header.stamp.isZero() &&
+		msg->header.stamp < openSpaceMapMinStamp_) {
+		return;
+	}
+	inputData.occGrid = *msg;
+	openSpaceMapReceived = true;
+	openSpaceMapMinStamp_ = ros::Time(0);
+}
 
 void PlanningNode::callbackObstacles(const perception_msgs::PredictionObstacles::ConstPtr &msg)
 {
@@ -1674,6 +1436,11 @@ bool  PlanningNode::platoonMassPoint()
 
 PLANNER_TYPE PlanningNode::plannerTypeDecision()
 {	
+	PlanningConfig *planning_config = PlanningConfig::get_instance();
+	if (planning_config->enable_open_space_planner) {
+		return OPEN_SPACE;
+	}
+
     if (trajectoryType != inputData.refArray.type){
 		std::cout <<"condition 1 "<<std::endl;
 	    return NONE_PLANNER;
@@ -1721,7 +1488,6 @@ PLANNER_TYPE PlanningNode::plannerTypeDecision()
 		return REVERSE;
 
 	
-    PlanningConfig *planning_config = PlanningConfig::get_instance();
 	if ((!planning_config->open_path_planner))
 	    return COMPLETE_REF_LINE;
 
@@ -1941,17 +1707,24 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
     
 	planning_msgs::TrajectoryPointArray trajectory;
 	planner_ptr->getTrajectory(trajectory);
-	pubReplan(planner_ptr->blockedObs());
+	if (planner_type != OPEN_SPACE) {
+		pubReplan(planner_ptr->blockedObs());
+	}
 	
-	trajectory.is_forward_shift = inputData.refArray.is_forward_shift;
-    trajectory.task_area = inputData.refArray.task_area;
+	// 开放空间规划器已根据混合搜索首段的运动方向设置该标志，不能被参考线轨迹覆盖。
+	if (planner_type != OPEN_SPACE) {
+		trajectory.is_forward_shift = inputData.refArray.is_forward_shift;
+	}
+	trajectory.task_area = inputData.refArray.task_area;
     trajectory.type = inputData.refArray.type;	
 	trajectory.header.stamp = time;
 	if (trajectory.header.frame_id.empty())
 		trajectory.header.frame_id = "map";
-	velocityPlanning(trajectory);
+	if (planner_type != OPEN_SPACE) {
+		velocityPlanning(trajectory);
+	}
 	planning_msgs::TrajectoryPointArray candidate_trajectory;
-	if (conflict_constraint_processor_.enabled()){
+	if (planner_type != OPEN_SPACE && conflict_constraint_processor_.enabled()){
 		// 先把基础速度规划后的候选轨迹给冲突判定节点，再用最近一次冲突消解决策修正本帧速度。
 		candidate_trajectory = trajectory;
 		trajectoryCandidatePub.publish(trajectory);
@@ -2071,6 +1844,5 @@ int main( int argc, char** argv )
 	ros::NodeHandle n;
 	PlanningNode planningNode(n);
 	ros::spin();
-	ROS_INFO(" planning The iteration end.");
 	return 0;
 }

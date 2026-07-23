@@ -106,7 +106,6 @@ std::vector<std::string> getStrArrayParam(ros::NodeHandle        &private_nh ,st
 	XmlRpc::XmlRpcValue xmlValue = xmlParam[0];
 	for (size_t i = 0;i < size; i++){
 		v_values.push_back(xmlValue[i]);
-		std::cout <<"xmlValue[i]  "<<xmlValue[i]<<std::endl;
 	}
 	return v_values;
 }

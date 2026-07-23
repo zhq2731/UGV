@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   pid
   vehicle_info_util
   planner_common
+  visualization_msgs
 )
 
 

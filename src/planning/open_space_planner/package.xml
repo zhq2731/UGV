@@ -19,4 +19,6 @@
   <build_depend>common</build_depend> 
   <build_depend>planning_msgs</build_depend>
   <build_depend>planner_common</build_depend> 
+  <build_depend>visualization_msgs</build_depend>
+  <exec_depend>visualization_msgs</exec_depend>
 </package>

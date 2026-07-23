@@ -12,6 +12,7 @@ add_message_files(
   DIRECTORY msg
   FILES
     ConflictConstraint.msg
+    OpenSpaceExecutionStatus.msg
     TrajectoryPoint.msg
 	TrajectoryPointArray.msg
 )

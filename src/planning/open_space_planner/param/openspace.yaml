@@ -1,5 +1,6 @@
 car_length: 5.0
 car_width: 3.0
+# 轨迹失效时的停车减速度，代码使用其绝对值并按当前速度方向施加。
 reverse_brake: -1.0
 reverse_speed: 0.45
 safe_reverse_dis: 0
@@ -11,4 +12,11 @@ segment_length_discrete_num: 5
 steering_penalty: 25.0
 steering_change_penalty: 10.0
 reversing_penalty: 25.0
-shot_distance: 30
+# 在距目标 shot_distance 内尝试 Reeds-Shepp 直接连接；更远处由 Hybrid A* 展开搜索。
+shot_distance: 25
+segment_end_position_tolerance: 0.20
+# 换挡点允许略大于最终泊车位的姿态余量，避免车辆已停稳却因约 0.1° 的边界误差无法进入下一段。
+segment_end_heading_tolerance: 0.15
+stop_speed_tolerance: 0.05
+goal_position_tolerance: 0.25
+goal_heading_tolerance: 0.0873

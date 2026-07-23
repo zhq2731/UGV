@@ -1,0 +1,84 @@
+<launch>
+  <!--
+    单车开放空间泊车仿真。
+
+    操作顺序：
+      1. 使用“2D Pose Estimate”初始化或重置仿真车辆位置；
+      2. 可选：使用“Publish Point”添加静态停车障碍物；
+      3. 使用“2D Nav Goal”设置泊车目标；
+      4. 点击 RViz 面板的“开始运动”按钮开始跟踪。
+
+    不启动 route、reference_line_node、编队节点、冲突预测或冲突消解节点。
+    simulate 负责发布 /free_space_map；planner 仅订阅该地图。
+  -->
+
+  <arg name="vehicle_type" default="tank500"/>
+  <arg name="vehicle_platform_file"
+       default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
+  <arg name="rviz" default="true"/>
+  <arg name="front_tire_steering_rate_limit_radps" default="0.50"/>
+
+  <group if="$(arg rviz)">
+    <node pkg="rviz" type="rviz" name="rviz"
+          args="-d $(find launch_node)/param/rviz/open-space-parking.rviz" required="true"/>
+  </group>
+
+  <node pkg="simulate" type="simulate" name="simulate" output="screen">
+    <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+    <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
+    <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
+    <param name="open_space_execution_mode" value="true"/>
+    <!-- 实际前轮转角最大变化速度，仅在泊车仿真模式中生效，单位 rad/s。 -->
+    <param name="open_space_front_tire_steering_rate_limit_radps"
+           value="$(arg front_tire_steering_rate_limit_radps)"/>
+  </node>
+
+  <node pkg="planner" type="planner" name="planner" output="screen">
+    <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+    <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+    <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
+
+    <!-- 强制开放空间规划；其内部不创建冲突消解和重规划链路。 -->
+    <param name="enable_open_space_planner" value="true"/>
+    <param name="enable_conflict_constraint" value="false"/>
+
+  </node>
+
+  <node pkg="trajectory_follower" type="trajectory_follower"
+        name="trajectory_follower" output="screen">
+    <rosparam file="$(find launch_node)/param/control/$(arg vehicle_type)/lateral_controller_defaults.param.yaml"/>
+    <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+    <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
+    <param name="open_space_execution_mode" value="true"/>
+    <param name="open_space_lookahead_distance" value="0.5"/>
+    <param name="open_space_speed_kp" value="1.5"/>
+    <param name="open_space_max_acceleration" value="0.5"/>
+    <param name="open_space_max_deceleration" value="1.0"/>
+    <param name="open_space_steering_prepare_tolerance" value="0.03"/>
+    <param name="open_space_stop_speed_tolerance" value="0.05"/>
+    <param name="open_space_hold_deceleration" value="1.0"/>
+    <param name="open_space_hold_brake_pedal" value="20.0"/>
+    <param name="open_space_steering_prepare_stable_cycles" value="3"/>
+    <!-- 轨迹耗尽反馈允许 0.30 m 的剩余弧长误差，并要求停车连续稳定超过 1 秒。 -->
+    <param name="open_space_segment_end_remaining_distance" value="0.30"/>
+    <param name="open_space_segment_end_stable_duration" value="1.0"/>
+
+    <!-- 仅对该开放空间 launch 覆盖 MPC 参数，道路场景 YAML 不受影响。 -->
+    <param name="traj_resample_dist" value="0.05"/>
+    <param name="mpc_prediction_horizon" value="50"/>
+    <param name="mpc_prediction_dt" value="0.1"/>
+    <param name="mpc_weight_lat_error" value="4.5"/>
+    <param name="mpc_weight_heading_error" value="0.3"/>
+    <param name="mpc_weight_steering_input" value="1.0"/>
+    <param name="mpc_weight_terminal_lat_error" value="2.0"/>
+    <param name="mpc_weight_terminal_heading_error" value="0.5"/>
+    <param name="input_delay" value="0.1"/>
+    <param name="vehicle_model_steer_tau" value="0.5"/>
+    <param name="steering_lpf_cutoff_hz" value="2.0"/>
+  </node>
+</launch>

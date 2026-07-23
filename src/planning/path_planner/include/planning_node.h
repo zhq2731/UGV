@@ -33,7 +33,6 @@
 #include "trajectory/reference_point.h"
 #include "trajectory/discretized_path.h"
 #include "reference_line_info.h"
-#include "common/planning_config.h"
 #include "decider/path_bounds_decider.h"
 #include "decider/piecewise_jerk_path_optimizer.h"
 #include "trajectory/trajectory_stitcher.h"
@@ -66,13 +65,9 @@
 #include "reversePlanner.h"
 #include "leavingVelocityPlanner.h"
 #include <std_msgs/Int32.h>
-#include "route_msgs/Replan.h"
 #include "hybrid_a_star/openSpacePlanner.h"
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Empty.h>
 #include <route_msgs/MultiPoint.h>
 
 
@@ -111,6 +106,7 @@ public:
     ros::Subscriber poseSub;
     ros::Subscriber chassisSub;
     ros::Subscriber obstaclesSub;
+    ros::Subscriber freeSpaceMapSub;
     ros::Publisher	trajectoryPub;
     ros::Publisher	trajectoryCandidatePub;
     ros::Publisher	pub_trajectory;
@@ -122,8 +118,7 @@ public:
     ros::Publisher	pub_platoon_log;
     ros::Publisher	pub_replan;
     ros::Publisher	pub_Replan;
-	ros::Publisher 	pubFreeSpaceMap;
-	ros::Publisher  pub_pc;
+	ros::Publisher  openSpaceTaskResetPub;
 	
 	ros::Subscriber clickPoint_sub_;
 	ros::Subscriber initialPose_sub_;
@@ -222,9 +217,24 @@ private:
     void callbackChassis(const driver_msgs::ChassisReport::ConstPtr &msg);
     void callbackPose(const localization_msgs::Localization::ConstPtr &msg);	
 	void callbackObstacles(const perception_msgs::PredictionObstacles::ConstPtr &msg);
+	/**
+	 * @brief 接收感知或泊车仿真节点发布的局部可行栅格
+	 *
+	 * 回调只缓存最新地图并设置已接收标志；栅格语义的解析与碰撞检查由 OpenSpacePlanner 完成。
+	 */
+	void callbackFreeSpaceMap(const nav_msgs::OccupancyGrid::ConstPtr &msg);
 	void callbackConflictConstraint(const planning_msgs::ConflictConstraint::ConstPtr &msg);
 	void callBackinitialPose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
+	/** @brief 开放空间仿真重新设置车辆起点时，清除旧目标和泊车任务状态。 */
+	void callBackOpenSpaceInitialPose(
+		const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
 	void callBackGoal(const geometry_msgs::PoseStamped::ConstPtr msg);
+	/**
+	 * @brief 重置开放空间任务的规划缓存，并通知控制器和仿真节点同步复位
+	 * @param wait_for_new_map 是否丢弃当前地图并等待起点更新后的新地图
+	 * @param reason 写入状态迁移日志的重置原因
+	 */
+	void resetOpenSpaceTask(bool wait_for_new_map, const char *reason);
 	void loadPlanningParam(ros::NodeHandle &private_nh_);
 	PLANNER_TYPE plannerTypeDecision();
 	void generateBound(ReferenceLine &refLine,PathBoundary &boundry,
@@ -271,11 +281,8 @@ private:
 	void  platoonVelocityPlanner(planning_msgs::TrajectoryPointArray &trajectory);
 	bool  platoonMassPoint();
 	bool  openSpaceGoalSet = false;
-	void obsToGrid(const std::vector< const Obstacle*> &obsList);
-	void computeBoundingBox(const vector<pcl::PointXYZI> obs_pcl,double& min_x, double& max_x, double& min_y, double& max_y);
-	void computeFreeSpacePoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pointCloudIn, float* free_space, int free_space_n = 360);
-	void freeGridMapFilter(float* freeSpacePoints, Eigen::MatrixXi &dst);
-	void publishFreeSpaceGridMap(Eigen::MatrixXi &freeSpaceGridMap, nav_msgs::OccupancyGrid& rosMap);
+	bool  openSpaceMapReceived = false;
+	ros::Time openSpaceMapMinStamp_;
 };
 
 bool PlanningNode::newBoundry = false;

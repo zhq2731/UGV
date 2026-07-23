@@ -14,6 +14,8 @@
 
 #include "trajectory_follower/mpc.hpp"
 
+#include <ros/ros.h>
+
 #include <algorithm>
 #include <deque>
 #include <limits>
@@ -58,7 +60,7 @@ bool MPC::calculateMPC(
   /* delay compensation */
 
   if (!updateStateForDelayCompensation(reference_trajectory, mpc_data.nearest_time, &x0)) {
-    std::cout <<"updateStateForDelayCompensation failed"<<std::endl;
+    ROS_WARN_THROTTLE(2.0, "[mpc] delay compensation failed");
     return false;
   }
 
@@ -69,7 +71,7 @@ bool MPC::calculateMPC(
     getPredictionDeltaTime(mpc_start_time, reference_trajectory, current_pose);
   if (!resampleMPCTrajectoryByTime(
         mpc_start_time, prediction_dt, reference_trajectory, &mpc_resampled_ref_traj)) {    
-    std::cout <<"trajectory resampling failed."<<std::endl;
+    ROS_WARN_THROTTLE(2.0, "[mpc] trajectory resampling failed");
     return false;
   }
 
@@ -79,7 +81,7 @@ bool MPC::calculateMPC(
   /* solve quadratic optimization */
   Eigen::VectorXd Uex;
   if (!executeOptimization(mpc_matrix, x0, prediction_dt, &Uex)) {
-    std::cout <<"optimization failed"<<std::endl;
+    ROS_WARN_THROTTLE(2.0, "[mpc] optimization failed");
     return false;
   }
 
@@ -209,6 +211,18 @@ void MPC::resetPrevResult(const autoware_msgs::SteeringReport & current_steer)
   m_raw_steer_cmd_pprev = current_steer.steering_tire_angle;
 }
 
+void MPC::resetForOpenSpaceTrajectory(
+  const autoware_msgs::SteeringReport & current_steer)
+{
+  resetPrevResult(current_steer);
+  for (auto & buffered_steer : m_input_buffer) {
+    buffered_steer = current_steer.steering_tire_angle;
+  }
+  // 新段首周期不能继续使用上一段末端的滤波输出，否则会立即撤销准备好的前轮角。
+  m_lpf_steering_cmd.reset(current_steer.steering_tire_angle);
+  m_steer_prediction_prev.reset();
+}
+
 bool MPC::getData(
   const trajectory_follower::MPCTrajectory & traj,
   const autoware_msgs::SteeringReport & current_steer,
@@ -228,7 +242,8 @@ bool MPC::getData(
     resetPrevResult(current_steer);
     //RCLCPP_WARN_SKIPFIRST_THROTTLE(
      // m_logger, *m_clock, duration, "calculateMPC: error in calculating nearest pose. stop mpc.");
-    std::cout <<"calculateMPC: error in calculating nearest pose. stop mpc."<<std::endl;
+    ROS_WARN_THROTTLE(2.0,
+      "[mpc] nearest-pose matching failed; MPC output is stopped");
     return false;
   }
 

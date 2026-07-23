@@ -80,6 +80,15 @@ public:
    */
   virtual ~MpcLateralController();
 
+  /**
+   * @brief 开放空间新段激活时重置横向控制器的跨段状态
+   * @param current_steer 新段交接时底盘反馈的实际前轮转角
+   *
+   * 清空旧轨迹平滑缓冲并向 MPC 传递实际转角，不影响道路轨迹的常规更新流程。
+   */
+  void resetForOpenSpaceTrajectory(
+    const autoware_msgs::SteeringReport & current_steer);
+
 private:
   ros::NodeHandle * node_;
 

@@ -110,6 +110,20 @@ public:
   void initialize(const double & dt, const double & f_cutoff_hz);
 
   /**
+   * @brief 将滤波器的输入、输出历史统一重置为指定值
+   * @param value 重置后两阶历史状态共同采用的值
+   *
+   * 开放空间轨迹切段时使用实际前轮角调用，避免新段第一帧受上一段滤波历史影响。
+   */
+  void reset(const double value)
+  {
+    m_y1 = value;
+    m_y2 = value;
+    m_u1 = value;
+    m_u2 = value;
+  }
+
+  /**
    * @brief filtering (call this function at each sampling time with input)
    * @param [in] u scalar input for filter
    * @return filtered scalar value

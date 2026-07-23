@@ -23,6 +23,9 @@
 // ROS includes
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <tf/transform_broadcaster.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/UInt8.h>
@@ -48,6 +51,7 @@
 #include "platoon_msgs/PlatoonMember.h"
 #include "platoon_msgs/PlatoonMission.h"
 #include "driver_msgs/MotionStartCmd.h"
+#include "std_msgs/Empty.h"
 #include "common/common.h"
 #include "route_msgs/MultiPoint.h"
 #include "route_msgs/InitPoint.h"
@@ -70,6 +74,14 @@ struct TrajectoryPointData
 	double relative_time;
 };
 
+/** @brief 仿真泊车场中用于生成激光遮挡的静态矩形障碍物。 */
+struct ParkingObstacle
+{
+	double x;
+	double y;
+	double yaw;
+};
+
 class Simulate
 {
 public:
@@ -88,6 +100,8 @@ public:
 	ros::Publisher pub_odometry_;
 	ros::Publisher pub_steering_;
 	ros::Publisher pub_velcoty_;
+	ros::Publisher free_space_map_pub_;
+	ros::Publisher parking_visualization_pub_;
 
 	ros::Subscriber platoonMember_sub_;
 	ros::Subscriber platoonMission_sub_;
@@ -96,6 +110,7 @@ public:
 	ros::Subscriber platoonMember_self_sub_;
 	ros::Subscriber platoonMission_self_sub_;
 	ros::Subscriber motion_start_sub_;
+	ros::Subscriber open_space_task_reset_sub_;
 	ros::Subscriber platoonConfig_self_sub_;
 	ros::Subscriber init_point_sub_;
 	ros::Subscriber trajectory_sub_;
@@ -112,6 +127,15 @@ public:
 	double normalizeRadian(const double _angle);
 	void callbackTimer(const ros::TimerEvent &event);
 	void callbackTimer2(const ros::TimerEvent &event);
+	/**
+	 * @brief 周期生成以自车为原点的激光射线式局部栅格并发布
+	 *
+	 * 每条射线上障碍物之前的已观测格置为25，命中格置为100，遮挡区保持未知，
+	 * 用于验证“只有已确认可达区域才可规划”的开放空间逻辑。
+	 */
+	void parkingGridTimer(const ros::TimerEvent &event);
+	/** @brief 发布仿真障碍物、车身与前轮实际转角的 RViz Marker。 */
+	void publishParkingVisualization(const ros::Time &stamp);
 
 	void initPoseCallBack(
 		const geometry_msgs::PoseWithCovarianceStamped::ConstPtr msg);
@@ -126,6 +150,8 @@ public:
 	void callBackinitialPose(const geometry_msgs::PoseStamped::ConstPtr msg);
 	void callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg);
 	void motionStartCallback(const driver_msgs::MotionStartCmd::ConstPtr &msg);
+	/** @brief 新泊车任务到来时停止车辆并清除上一轮运动命令状态。 */
+	void openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg);
 	void callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr msg);
 	void callBackInitPoint(const route_msgs::InitPoint::ConstPtr msg);
 	void callbackCloudmap(const std_msgs::UInt8::ConstPtr &msg);
@@ -137,9 +163,13 @@ public:
 	ros::NodeHandle private_nh_;
 	bool lon_timer_inited;
 	bool lat_timer_inited;
+	bool open_space_execution_mode_{false};
+	double open_space_front_tire_steering_rate_limit_radps_{0.25};
 
 	ros::Timer timer;
 	ros::Timer timer2;
+	ros::Timer parking_grid_timer_;
+	tf::TransformBroadcaster tf_broadcaster_;
 	projection::UtmProjector projector_;
 
 private:
@@ -149,7 +179,7 @@ private:
 	double acc;
 	vehicle_info_util::VehicleInfoUtil *vehcileInfo;
 	bool inited;
-	int steering;
+	double steering{0.0};
 	int plan_point_count = 0;
 
 	std::chrono::system_clock::time_point lon_last_time;
@@ -161,6 +191,13 @@ private:
 	std::map<double, TrajectoryPointData> trajectory_map;
 	ros::Time header_time;
 	bool last_is_forward_shift;
+	int map_length_;
+	int map_width_;
+	int map_point_num_;
+	double map_resolution_;
+	double parking_obstacle_length_;
+	double parking_obstacle_width_;
+	std::vector<ParkingObstacle> parking_obstacles_;
 
 	ros::Subscriber cloud_map_sub_;
 	geometry_msgs::Point map_origin_;

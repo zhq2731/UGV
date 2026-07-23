@@ -67,6 +67,7 @@ HybridAStar::~HybridAStar() {
 void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_upper,
                        double state_grid_resolution, double map_grid_resolution,double car_length_param,
                        double car_width_param,double wheel_base_param) {
+    rs_connect_path_.clear();
     //初始化车辆
 
     car_length = car_length_param;
@@ -86,8 +87,8 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
     // STATE_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_) );
     // STATE_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) );
     //按照分辨率 ，地图横纵向分别分为继几份
-    MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_));
-    MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_)  );
+    MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_) / MAP_GRID_RESOLUTION_);
+    MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) / MAP_GRID_RESOLUTION_);
     // MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_));
     // MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) );
 
@@ -96,7 +97,7 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
         map_data_ = nullptr;
     }
     // 地图总共有 X*Y个格子
-    map_data_ = new uint8_t[MAP_GRID_SIZE_X_ * MAP_GRID_SIZE_Y_];
+    map_data_ = new uint8_t[MAP_GRID_SIZE_X_ * MAP_GRID_SIZE_Y_]();
     // auto temp = STATE_GRID_SIZE_X_*STATE_GRID_SIZE_Y_;
     // std::cout<<"map_size"<<MAP_GRID_SIZE_X_ * MAP_GRID_SIZE_Y_<<"   state_size"<<temp<<std::endl;
     //将原本state_node_map_全部清空
@@ -154,6 +155,15 @@ inline bool HybridAStar::LineCheck(double x0, double y0, double x1, double y1) {
 
     auto delta_x = x1 - x0;
     auto delta_y = std::abs(y1 - y0);
+    if (delta_x < 1e-6) {
+        const HybridAStarType::Vec2i grid_index = steep
+            ? HybridAStarType::Vec2i(y0, x0)
+            : HybridAStarType::Vec2i(x0, y0);
+        const HybridAStarType::Vec2d map_point(
+            map_x_lower_ + grid_index.x() * MAP_GRID_RESOLUTION_,
+            map_y_lower_ + grid_index.y() * MAP_GRID_RESOLUTION_);
+        return !HasObstacle(grid_index) && !BeyondBoundary(map_point);
+    }
     auto delta_error = delta_y / delta_x;
     decltype(delta_x) error = 0;
     decltype(delta_x) y_step;
@@ -169,15 +179,15 @@ inline bool HybridAStar::LineCheck(double x0, double y0, double x1, double y1) {
     for (unsigned int i = 0; i < N; ++i) {
         if (steep) {
             if (HasObstacle(HybridAStarType::Vec2i(yk, x0 + i * 1.0))
-                || BeyondBoundary(HybridAStarType::Vec2d(yk * MAP_GRID_RESOLUTION_,
-                                        (x0 + i) * MAP_GRID_RESOLUTION_))
+                || BeyondBoundary(HybridAStarType::Vec2d(map_x_lower_ + yk * MAP_GRID_RESOLUTION_,
+                                        map_y_lower_ + (x0 + i) * MAP_GRID_RESOLUTION_))
                     ) {
                 return false;
             }
         } else {
             if (HasObstacle(HybridAStarType::Vec2i(x0 + i * 1.0, yk))
-                || BeyondBoundary(HybridAStarType::Vec2d((x0 + i) * MAP_GRID_RESOLUTION_,
-                                        yk * MAP_GRID_RESOLUTION_))
+                || BeyondBoundary(HybridAStarType::Vec2d(map_x_lower_ + (x0 + i) * MAP_GRID_RESOLUTION_,
+                                        map_y_lower_ + yk * MAP_GRID_RESOLUTION_))
                     ) {
                 return false;
             }
@@ -267,6 +277,10 @@ bool HybridAStar::CheckCollision(const double &x, const double &y, const double 
     check_collision_use_time += timer.End();
     num_check_collision++;
     return true;
+}
+
+bool HybridAStar::IsStateCollisionFree(const double &x, const double &y, const double &theta) {
+    return !BeyondBoundary(HybridAStarType::Vec2d(x, y)) && CheckCollision(x, y, theta);
 }
 
 bool HybridAStar::HasObstacle(const int grid_index_x, const int grid_index_y) const {
@@ -510,7 +524,10 @@ double HybridAStar::ComputeG(const StateNode::Ptr &current_node_ptr,
     return g;
 }
 
-bool HybridAStar::Search(const HybridAStarType::Vec3d &start_state, const HybridAStarType::Vec3d &goal_state) {
+bool HybridAStar::Search(
+    const HybridAStarType::Vec3d &start_state,
+    const HybridAStarType::Vec3d &goal_state,
+    const StateNode::DIRECTION required_start_direction) {
     Timer search_used_time;
 
     double neighbor_time = 0.0, compute_h_time = 0.0, compute_g_time = 0.0;
@@ -551,7 +568,12 @@ bool HybridAStar::Search(const HybridAStarType::Vec3d &start_state, const Hybrid
 
         if ((current_node_ptr->state_.head(2) - goal_node_ptr->state_.head(2)).norm() <= shot_distance_) {
             double rs_length = 0.0;
-            if (AnalyticExpansions(current_node_ptr, goal_node_ptr, rs_length)) {
+            // 只有从搜索起点直接进行 RS 连接时才检查换挡后的起步档位。
+            // 一旦已经完成第一层期望档位扩展，后续路径仍允许正常出现换挡点。
+            const StateNode::DIRECTION analytic_start_direction =
+                current_node_ptr == start_node_ptr ? required_start_direction : StateNode::NO;
+            if (AnalyticExpansions(
+                    current_node_ptr, goal_node_ptr, rs_length, analytic_start_direction)) {
                 terminal_node_ptr_ = goal_node_ptr;
 
                 StateNode::Ptr grid_node_ptr = terminal_node_ptr_->parent_node_;
@@ -585,6 +607,15 @@ bool HybridAStar::Search(const HybridAStarType::Vec3d &start_state, const Hybrid
 
         for (unsigned int i = 0; i < neighbor_nodes_ptr.size(); ++i) {
             neighbor_node_ptr = neighbor_nodes_ptr[i];
+
+            // 换挡点重新规划时，第一层只允许期望档位扩展，确保新轨迹从
+            // 当前实际停车位姿连续起步，而不是再次生成上一档位的微小前导段。
+            if (current_node_ptr == start_node_ptr &&
+                required_start_direction != StateNode::NO &&
+                neighbor_node_ptr->direction_ != required_start_direction) {
+                delete neighbor_node_ptr;
+                continue;
+            }
 
             Timer timer_compute_g;
             const double neighbor_edge_cost = ComputeG(current_node_ptr, neighbor_node_ptr);
@@ -643,7 +674,9 @@ HybridAStarType::VectorVec4d HybridAStar::GetSearchedTree() {
     for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
         for (int j = 0; j < STATE_GRID_SIZE_Y_; ++j) {
             for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k) {
-                if (state_node_map_[i][j][k] == nullptr || state_node_map_[i][j][k]->parent_node_ == nullptr) {
+                if (state_node_map_[i][j][k] == nullptr ||
+                    state_node_map_[i][j][k] == terminal_node_ptr_ ||
+                    state_node_map_[i][j][k]->parent_node_ == nullptr) {
                     continue;
                 }
 
@@ -750,19 +783,44 @@ void HybridAStar::Reset() {
 
     path_length_ = 0.0;
     terminal_node_ptr_ = nullptr;
+    rs_connect_path_.clear();
 }
 
-bool HybridAStar::AnalyticExpansions(const StateNode::Ptr &current_node_ptr,
-                                     const StateNode::Ptr &goal_node_ptr, double &length) {
+bool HybridAStar::AnalyticExpansions(
+    const StateNode::Ptr &current_node_ptr,
+    const StateNode::Ptr &goal_node_ptr,
+    double &length,
+    const StateNode::DIRECTION required_start_direction) {
     HybridAStarType::VectorVec3d rs_path_poses = rs_path_ptr_->GetRSPath(current_node_ptr->state_,
                                                         goal_node_ptr->state_,
                                                         move_step_size_, length);
+
+    if (required_start_direction != StateNode::NO) {
+        StateNode::DIRECTION actual_start_direction = StateNode::NO;
+        for (size_t i = 1; i < rs_path_poses.size(); ++i) {
+            const double dx = rs_path_poses[i].x() - rs_path_poses[i - 1].x();
+            const double dy = rs_path_poses[i].y() - rs_path_poses[i - 1].y();
+            if (std::hypot(dx, dy) <= 1.0e-6) {
+                continue;
+            }
+            const double tracking_angle = std::atan2(dy, dx);
+            const double heading_error = Mod2Pi(
+                tracking_angle - rs_path_poses[i - 1].z());
+            actual_start_direction = std::fabs(heading_error) < M_PI_2
+                ? StateNode::FORWARD : StateNode::BACKWARD;
+            break;
+        }
+        if (actual_start_direction != required_start_direction) {
+            return false;
+        }
+    }
 
     for (const auto &pose: rs_path_poses)
         if (BeyondBoundary(pose.head(2)) || !CheckCollision(pose.x(), pose.y(), pose.z())) {
             return false;
         };
 
+    rs_connect_path_ = rs_path_poses;
     goal_node_ptr->intermediate_states_ = rs_path_poses;
     goal_node_ptr->parent_node_ = current_node_ptr;
 

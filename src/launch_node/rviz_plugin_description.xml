@@ -6,4 +6,11 @@
       Publishes start and stop motion commands for the two-vehicle distributed simulation.
     </description>
   </class>
+  <class name="launch_node/SingleVehicleMotionPanel"
+         type="launch_node::SingleVehicleMotionPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      为单车开放空间泊车仿真发布运动开始与停止命令。
+    </description>
+  </class>
 </library>

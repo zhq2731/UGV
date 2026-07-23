@@ -14,8 +14,13 @@
   <build_depend>ins_msgs</build_depend>
   <build_depend>localization_msgs</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
   <build_depend>amathutils_lib</build_depend>
   <build_depend>vehicle_info_util</build_depend>  
   <build_depend>utm</build_depend> 

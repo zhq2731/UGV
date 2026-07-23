@@ -350,6 +350,16 @@ private:
   }
 
 public:
+  /**
+   * @brief 新开放空间轨迹段启用前，以实际前轮角重置跨段控制历史
+   * @param current_steer 底盘最新反馈的实际前轮转角
+   *
+   * 会清除上一轨迹段的优化结果、延迟补偿缓冲和滤波历史，
+   * 但不修改车辆的实际转角状态。
+   */
+  void resetForOpenSpaceTrajectory(
+    const autoware_msgs::SteeringReport & current_steer);
+
   //!< @brief reference trajectory to be followed
   trajectory_follower::MPCTrajectory m_ref_traj;
   //!< @brief MPC design parameter

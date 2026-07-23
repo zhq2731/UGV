@@ -72,14 +72,11 @@ public:
     double virtual_obs_length;
 	bool   virtual_moveing_obs;
 
-	int	mapParams_pointNum;
-	double mapParams_resolution;
-	int	mapParams_length;
-	int mapParams_width;
-
 	bool   open_velocity_planner;
 	bool   open_path_planner;
 	bool   stop_obs_strategy;
+	// 开启后由规划节点直接选择开放空间规划；该模式不使用冲突消解、全局重规划和通用速度规划。
+	bool   enable_open_space_planner = false;
 	
 	bool   enable_trajectory_stitcher;
 	double replan_lateral_distance_threshold;
@@ -92,5 +89,3 @@ public:
 private:
     PlanningConfig(){    }
 };
-
-

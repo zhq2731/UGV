@@ -9,7 +9,6 @@ catkin_package(
 )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL 1.8 REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
@@ -17,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   visualization_msgs
-  std_msgs
   autoware_msgs
   driver_msgs
   ins_msgs
@@ -42,13 +40,10 @@ find_package(catkin REQUIRED COMPONENTS
   open_space_planner
 )
 
-find_package(Eigen3 REQUIRED)
-
 include_directories(
   include
   ${EIGEN3_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
-  ${PCL_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -60,7 +55,7 @@ file(GLOB_RECURSE cpp_files src/*.cpp src/*.cc )
 
 add_executable(planner ${cpp_files})
 
-target_link_libraries(planner ${catkin_LIBRARIES} ${PCL_LIBRARY_DIRS} osqp )
+target_link_libraries(planner ${catkin_LIBRARIES} osqp)
 
 add_dependencies(planner ${catkin_EXPORTED_TARGETS} )
 

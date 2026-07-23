@@ -10,6 +10,10 @@ kDefaultRoadWidth: 20.0
 # 也不对原始速度规划结果做冲突让行修正，车辆按原规划流程运行。
 enable_conflict_constraint: true
 
+# 开放空间规划总开关。true 时 PlanningNode 强制使用 Hybrid A* 开放空间规划，
+# 并关闭冲突消解、重规划发布和通用速度规划；需要先通过任务或 /move_base_simple/goal 设置目标点。
+enable_open_space_planner: false
+
 # =========================
 # 速度曲线 RViz 可视化参数
 # =========================
@@ -56,8 +60,11 @@ virtual_moveing_obs: false
 
 mapParams_pointNum: 360 #栅格地图检测密度 
 mapParams_resolution: 0.2 #栅格地图分辨率
-mapParams_length: 40 #栅格地图原点距离自车中心的y距离
-mapParams_width: 40 #栅格地图原点距离自车中心的x距离
+mapParams_length: 40 # 自车局部坐标系 x 方向半宽，单位 m
+mapParams_width: 40 # 自车局部坐标系 y 方向半宽，单位 m
+# 单车开放空间仿真：/clicked_point 生成的静态矩形停车障碍物尺寸（米）。
+parking_obstacle_length: 5.0
+parking_obstacle_width: 2.5
 
 enable_trajectory_stitcher: true
 replan_lateral_distance_threshold: 0.5

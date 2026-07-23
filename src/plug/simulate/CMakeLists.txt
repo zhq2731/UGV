@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
   std_msgs
+  nav_msgs
+  tf
   visualization_msgs
   autoware_msgs
   driver_msgs

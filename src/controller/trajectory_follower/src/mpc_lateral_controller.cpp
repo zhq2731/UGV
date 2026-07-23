@@ -160,7 +160,7 @@ boost::optional<LateralOutput> MpcLateralController::run()
   const auto createLateralOutput = [this](const auto & cmd,const auto &mpc_data) {
     LateralOutput output;
 	output.lat_error = mpc_data.lateral_err;
-	output.yaw_error = mpc_data.lateral_err;
+	output.yaw_error = mpc_data.yaw_err;
 	output.pose = mpc_data.current_pose;
 	output.nearestPose = mpc_data.nearest_pose;
 	
@@ -170,8 +170,6 @@ boost::optional<LateralOutput> MpcLateralController::run()
   };
 
   if (isStoppedState()) {
-  	
-	std::cout <<"mpcisStoppedStateed"<<std::endl;
     // Reset input buffer
     for (auto & value : m_mpc.m_input_buffer) {
       value = m_ctrl_cmd_prev.steering_tire_angle;
@@ -199,6 +197,17 @@ void MpcLateralController::setInputData(InputData const & input_data)
   m_current_steering_ptr = input_data.current_steering_ptr;
   if (m_current_kinematic_state_ptr)
       m_current_kinematic_state_ptr->twist.twist.linear.x = input_data.vel;
+}
+
+void MpcLateralController::resetForOpenSpaceTrajectory(
+  const autoware_msgs::SteeringReport & current_steer)
+{
+  m_ctrl_cmd_prev.steering_tire_angle = current_steer.steering_tire_angle;
+  m_ctrl_cmd_prev.steering_tire_rotation_rate = 0.0;
+  m_steer_cmd_prev = current_steer.steering_tire_angle;
+  m_is_ctrl_cmd_prev_initialized = true;
+  m_trajectory_buffer.clear();
+  m_mpc.resetForOpenSpaceTrajectory(current_steer);
 }
 
 bool MpcLateralController::isSteerConverged(

@@ -30,7 +30,9 @@ include_directories(
 )
 
 add_library(launch_node_rviz_plugins
+  src/single_vehicle_motion_panel.cpp
   src/two_vehicle_motion_panel.cpp
+  include/launch_node/single_vehicle_motion_panel.h
   include/launch_node/two_vehicle_motion_panel.h
 )
 add_dependencies(launch_node_rviz_plugins ${catkin_EXPORTED_TARGETS})
