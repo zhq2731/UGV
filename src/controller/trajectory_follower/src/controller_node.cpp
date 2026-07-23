@@ -167,6 +167,9 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 		open_space_task_reset_sub_ = nh_.subscribe(
 			"/open_space_task_reset", 1,
 			&Controller::openSpaceTaskResetCallback, this);
+		open_space_goal_reached_sub_ = nh_.subscribe(
+			"open_space_goal_reached", 1,
+			&Controller::openSpaceGoalReachedCallback, this);
 	}
 	steer_compensation_sub = nh_.subscribe("/steering_offset_estimator", 1, &Controller::steerCompensationCallback, this);
 
@@ -271,6 +274,10 @@ const char *Controller::openSpaceExecutionStateName(OpenSpaceExecutionState stat
 		return "EXECUTING";
 	case OpenSpaceExecutionState::SEGMENT_END_HOLD:
 		return "SEGMENT_END_HOLD";
+	case OpenSpaceExecutionState::STRAIGHTEN_STEERING:
+		return "STRAIGHTEN_STEERING";
+	case OpenSpaceExecutionState::PARKING_COMPLETE:
+		return "PARKING_COMPLETE";
 	}
 	return "UNKNOWN";
 }
@@ -393,6 +400,18 @@ void Controller::openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg
 	setOpenSpaceExecutionState(OpenSpaceExecutionState::IDLE);
 	publishOpenSpaceHoldCommand();
 	ROS_INFO("[open_space_control] previous parking task cleared");
+}
+
+void Controller::openSpaceGoalReachedCallback(const std_msgs::Empty::ConstPtr &msg)
+{
+	(void)msg;
+	has_pending_open_space_trajectory_ = false;
+	pending_open_space_trajectory_ = planning_msgs::TrajectoryPointArray();
+	open_space_steering_prepare_target_ = 0.0;
+	open_space_steering_ready_cycles_ = 0;
+	open_space_segment_end_candidate_start_ = ros::Time(0);
+	setOpenSpaceExecutionState(OpenSpaceExecutionState::STRAIGHTEN_STEERING);
+	ROS_INFO("[open_space_control] parking goal reached; straighten front wheels");
 }
 
 void Controller::steerCompensationCallback(const std_msgs::Float32::ConstPtr &msg)
@@ -572,11 +591,76 @@ void Controller::updateOpenSpaceSegmentEndHold(double remaining_distance)
 		<< remaining_distance << " m, speed=" << input_data_.vel << " mps");
 }
 
+double Controller::publishOpenSpaceSteeringCommand(double target_tire_angle)
+{
+	double steering_limit = std::numeric_limits<double>::infinity();
+	if (std::fabs(vehcileInfo->w2s_primary_coeff) > 1.0e-3) {
+		steering_limit = std::fabs(
+			vehcileInfo->max_steer_angle_rad /
+			vehcileInfo->w2s_primary_coeff);
+	}
+	target_tire_angle = std::max(
+		-steering_limit, std::min(target_tire_angle, steering_limit));
+	const double actual_tire_angle = input_data_.current_steering_ptr
+		? input_data_.current_steering_ptr->steering_tire_angle : 0.0;
+
+	driver_msgs::SteeringWheelCmd lat_cmd;
+	constexpr double rad2deg = 180.0 / 3.1415926;
+	lat_cmd.steering_wheel_angle = target_tire_angle * rad2deg *
+		vehcileInfo->w2s_primary_coeff + steer_compensation;
+	lat_cmd.steering_wheel_angle_speed = vehcileInfo->steer_rate_lim_dps;
+	latcmd_pub_.publish(lat_cmd);
+
+	std_msgs::Float64 desired_angle_msg;
+	desired_angle_msg.data = target_tire_angle;
+	open_space_mpc_desired_tire_angle_pub_.publish(desired_angle_msg);
+	std_msgs::Float64 actual_angle_msg;
+	actual_angle_msg.data = actual_tire_angle;
+	open_space_mpc_actual_tire_angle_pub_.publish(actual_angle_msg);
+	return actual_tire_angle;
+}
+
+bool Controller::updateOpenSpaceSteeringReady(
+	double target_tire_angle, double actual_tire_angle)
+{
+	if (input_data_.current_steering_ptr &&
+		std::fabs(actual_tire_angle - target_tire_angle) <=
+			open_space_steering_prepare_tolerance) {
+		++open_space_steering_ready_cycles_;
+	} else {
+		open_space_steering_ready_cycles_ = 0;
+	}
+	return open_space_steering_ready_cycles_ >=
+		std::max(1, open_space_steering_prepare_stable_cycles);
+}
+
 
 void Controller::latControl()
 {
 	if (open_space_execution_mode &&
 		open_space_execution_state_ != OpenSpaceExecutionState::EXECUTING) {
+		if (open_space_execution_state_ == OpenSpaceExecutionState::STRAIGHTEN_STEERING ||
+			open_space_execution_state_ == OpenSpaceExecutionState::PARKING_COMPLETE) {
+			const double actual_tire_angle =
+				publishOpenSpaceSteeringCommand(0.0);
+			if (open_space_execution_state_ ==
+				OpenSpaceExecutionState::STRAIGHTEN_STEERING) {
+				const bool stopped =
+					std::fabs(input_data_.vel) <= open_space_stop_speed_tolerance;
+				const bool steering_ready = stopped &&
+					updateOpenSpaceSteeringReady(0.0, actual_tire_angle);
+				if (!stopped) {
+					open_space_steering_ready_cycles_ = 0;
+				}
+				if (steering_ready) {
+					setOpenSpaceExecutionState(
+						OpenSpaceExecutionState::PARKING_COMPLETE);
+					ROS_INFO("[open_space_control] front wheels straightened; parking complete");
+				}
+			}
+			return;
+		}
+
 		if (open_space_execution_state_ == OpenSpaceExecutionState::HOLD_STOP) {
 			if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
 				ROS_DEBUG_THROTTLE(0.5,
@@ -592,37 +676,11 @@ void Controller::latControl()
 			return;
 		}
 
-		const double steering_limit = std::fabs(
-			vehcileInfo->max_steer_angle_rad /
-			vehcileInfo->w2s_primary_coeff);
-		const double target_tire_angle = std::max(-steering_limit,
-			std::min(open_space_steering_prepare_target_, steering_limit));
-		const double actual_tire_angle = input_data_.current_steering_ptr
-			? input_data_.current_steering_ptr->steering_tire_angle : 0.0;
-		const bool steering_ready = input_data_.current_steering_ptr != nullptr &&
-			std::fabs(actual_tire_angle - target_tire_angle) <=
-				open_space_steering_prepare_tolerance;
-		if (steering_ready) {
-			++open_space_steering_ready_cycles_;
-		} else {
-			open_space_steering_ready_cycles_ = 0;
-		}
-		const bool ready = open_space_steering_ready_cycles_ >=
-			std::max(1, open_space_steering_prepare_stable_cycles);
-
-		driver_msgs::SteeringWheelCmd latCmd;
-		constexpr double rad2deg = 180.0 / 3.1415926;
-		latCmd.steering_wheel_angle = target_tire_angle * rad2deg *
-			vehcileInfo->w2s_primary_coeff + steer_compensation;
-		latCmd.steering_wheel_angle_speed = vehcileInfo->steer_rate_lim_dps;
-		latcmd_pub_.publish(latCmd);
-
-		std_msgs::Float64 desired_tire_angle;
-		desired_tire_angle.data = target_tire_angle;
-		open_space_mpc_desired_tire_angle_pub_.publish(desired_tire_angle);
-		std_msgs::Float64 actual_tire_angle_msg;
-		actual_tire_angle_msg.data = actual_tire_angle;
-		open_space_mpc_actual_tire_angle_pub_.publish(actual_tire_angle_msg);
+		const double target_tire_angle = open_space_steering_prepare_target_;
+		const double actual_tire_angle =
+			publishOpenSpaceSteeringCommand(target_tire_angle);
+		const bool ready = updateOpenSpaceSteeringReady(
+			target_tire_angle, actual_tire_angle);
 		ROS_DEBUG_THROTTLE(0.5,
 			"[open_space_control] steering preparation: target=%.3f rad, actual=%.3f rad, "
 			"stable=%d/%d, ready=%s",

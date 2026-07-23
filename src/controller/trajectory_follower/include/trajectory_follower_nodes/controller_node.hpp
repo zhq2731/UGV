@@ -133,7 +133,8 @@ private:
 	ros::Subscriber sub_pose_; 
 	ros::Subscriber sub_platoon_log; 
 
-	ros::Subscriber chassis_sub_, motion_start_sub_, open_space_task_reset_sub_;
+	ros::Subscriber chassis_sub_, motion_start_sub_;
+	ros::Subscriber open_space_task_reset_sub_, open_space_goal_reached_sub_;
 	
 	ros::Subscriber steer_compensation_sub;
 	ros::Publisher pub_diplay;
@@ -199,6 +200,8 @@ private:
 		PREPARE_STEERING,
 		EXECUTING,
 		SEGMENT_END_HOLD,
+		STRAIGHTEN_STEERING,
+		PARKING_COMPLETE,
 	};
 	OpenSpaceExecutionState open_space_execution_state_{OpenSpaceExecutionState::IDLE};
 	planning_msgs::TrajectoryPointArray pending_open_space_trajectory_;
@@ -251,6 +254,8 @@ private:
 	void motionStartCallback(const driver_msgs::MotionStartCmd::ConstPtr &msg);
 	/** @brief 新起点或新终点到来时，清除上一泊车轨迹和控制状态。 */
 	void openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg);
+	/** @brief 最终目标满足后停止 MPC，并进入保持制动下的前轮回正阶段。 */
+	void openSpaceGoalReachedCallback(const std_msgs::Empty::ConstPtr &msg);
 	void callbackPose(const localization_msgs::Localization::ConstPtr &msg);
 	double distance2D(geometry_msgs::Point &p1 ,geometry_msgs::Point &p2) ;
 	double	closestPointVel() const ;
@@ -289,6 +294,14 @@ private:
 	 */
 	double calculateOpenSpaceSteeringPrepareTarget(
 		const planning_msgs::TrajectoryPointArray &trajectory) const;
+	/**
+	 * @brief 发布指定前轮目标角，并同步输出泊车转角诊断话题
+	 * @return 底盘反馈的当前实际前轮角
+	 */
+	double publishOpenSpaceSteeringCommand(double target_tire_angle);
+	/** @brief 累计前轮角连续满足容差的周期数，并返回是否稳定到位。 */
+	bool updateOpenSpaceSteeringReady(
+		double target_tire_angle, double actual_tire_angle);
 	/** @brief 仅在状态发生变化时更新执行状态并记录迁移日志。 */
 	void setOpenSpaceExecutionState(OpenSpaceExecutionState state);
 	/** @brief 返回执行状态的可读名称，供状态迁移日志使用。 */

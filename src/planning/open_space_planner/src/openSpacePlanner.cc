@@ -271,6 +271,8 @@ void caculateDkappaos(planning_msgs::TrajectoryPointArray &trajectory)
 
 OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBack_){
 	debug_marker_pub_ = debug_nh_.advertise<visualization_msgs::MarkerArray>("/open_space_debug_marker", 1);
+	goal_reached_pub_ = debug_nh_.advertise<std_msgs::Empty>(
+		"open_space_goal_reached", 1, false);
 	execution_status_sub_ = debug_nh_.subscribe(
 		"open_space_execution_status", 1,
 		&OpenSpacePlanner::executionStatusCallback, this);
@@ -363,24 +365,25 @@ void OpenSpacePlanner::setParkingState(ParkingState state)
 	ROS_INFO_STREAM("[open_space] state " << parkingStateName(parking_state_)
 										<< " -> " << parkingStateName(state));
 	parking_state_ = state;
+	if (parking_state_ == ParkingState::GOAL_REACHED) {
+		goal_reached_pub_.publish(std_msgs::Empty());
+	}
 }
 
 void OpenSpacePlanner::resetPlanningState()
 {
-	// 终止当前搜索和已提交轨迹，避免新任务继续沿用上一任务的换挡点、
-	// 预期档位、控制反馈或目标到达状态。
+	// 终止当前搜索和已提交轨迹，避免新任务继续沿用上一任务的分段缓存、
+	// 控制反馈或目标到达状态。
 	kinodynamic_astar_searcher_ptr_->Reset();
 	final_trajectory_ = planning_msgs::TrajectoryPointArray();
 	committed_segment_ = planning_msgs::TrajectoryPointArray();
+	cached_segments_.clear();
 	committed_goal_state_ = VehicleState{};
 	current_costmap_ptr_.reset();
 	current_vehicle_state_ptr_.reset();
 	goal_vehicle_state_ptr_.reset();
 	has_committed_goal_ = false;
 	has_committed_segment_ = false;
-	has_expected_next_direction_ = false;
-	expected_next_forward_ = true;
-	constrain_replan_start_direction_ = false;
 	latest_execution_status_ = planning_msgs::OpenSpaceExecutionStatus();
 	has_execution_status_ = false;
 	setParkingState(ParkingState::WAITING_FOR_INPUT);
@@ -497,7 +500,17 @@ bool OpenSpacePlanner::isCommittedSegmentCollisionFree() const
 			nearest_index = i;
 		}
 	}
+	return isTrajectoryCollisionFree(committed_segment_, nearest_index);
+}
 
+bool OpenSpacePlanner::isTrajectoryCollisionFree(
+	const planning_msgs::TrajectoryPointArray &trajectory,
+	size_t start_index) const
+{
+	if (trajectory.points.empty() || start_index >= trajectory.points.size() ||
+		current_vehicle_state_ptr_ == nullptr) {
+		return false;
+	}
 	const double cos_yaw = std::cos(current_vehicle_state_ptr_->heading);
 	const double sin_yaw = std::sin(current_vehicle_state_ptr_->heading);
 	const auto to_local_and_check = [&](const planning_msgs::TrajectoryPoint &point) {
@@ -512,10 +525,10 @@ bool OpenSpacePlanner::isCommittedSegmentCollisionFree() const
 
 	// 以不大于一个栅格的间隔检查，避免仅检查 0.5 m 轨迹离散点而漏掉小障碍物。
 	const double sample_step = std::max(0.05, map_resolution_);
-	for (size_t i = nearest_index; i < committed_segment_.points.size(); ++i) {
-		if (i > nearest_index) {
-			const auto &previous = committed_segment_.points[i - 1];
-			const auto &current = committed_segment_.points[i];
+	for (size_t i = start_index; i < trajectory.points.size(); ++i) {
+		if (i > start_index) {
+			const auto &previous = trajectory.points[i - 1];
+			const auto &current = trajectory.points[i];
 			const double distance = std::hypot(current.x - previous.x, current.y - previous.y);
 			const size_t samples = std::max<size_t>(1, static_cast<size_t>(std::ceil(distance / sample_step)));
 			for (size_t sample = 1; sample < samples; ++sample) {
@@ -530,9 +543,36 @@ bool OpenSpacePlanner::isCommittedSegmentCollisionFree() const
 				}
 			}
 		}
-		if (!to_local_and_check(committed_segment_.points[i])) {
+		if (!to_local_and_check(trajectory.points[i])) {
 			return false;
 		}
+	}
+	return true;
+}
+
+bool OpenSpacePlanner::commitNextCachedSegment(double cur_time)
+{
+	if (cached_segments_.empty() || goal_vehicle_state_ptr_ == nullptr) {
+		return false;
+	}
+
+	final_trajectory_ = std::move(cached_segments_.front());
+	cached_segments_.pop_front();
+	final_trajectory_.header.stamp = ros::Time(cur_time);
+	final_trajectory_.header.frame_id = "map";
+	committed_segment_ = final_trajectory_;
+	committed_goal_state_ = *goal_vehicle_state_ptr_;
+	has_committed_goal_ = true;
+	has_committed_segment_ = true;
+	has_execution_status_ = false;
+	setParkingState(ParkingState::TRACKING_COMMITTED_SEGMENT);
+
+	ROS_INFO_STREAM("[open_space] commit cached "
+		<< (final_trajectory_.is_forward_shift ? "forward" : "reverse")
+		<< " segment, points=" << final_trajectory_.points.size()
+		<< ", cached segments remaining=" << cached_segments_.size());
+	if (callBack != nullptr) {
+		callBack(&final_trajectory_, nullptr, nullptr, nullptr, nullptr);
 	}
 	return true;
 }
@@ -574,11 +614,9 @@ bool OpenSpacePlanner::beginEmergencyBraking(double cur_time, const char *reason
 	final_trajectory_ = makeEmergencyStopTrajectory(cur_time);
 	committed_segment_.points.clear();
 	has_committed_segment_ = false;
+	cached_segments_.clear();
 	// 紧急制动已经中断原轨迹，原轨迹的末端执行反馈不再有效。
 	has_execution_status_ = false;
-	// 紧急停车发生在原轨迹段中部，旧路径给出的下一档位已不再可靠。
-	has_expected_next_direction_ = false;
-	constrain_replan_start_direction_ = false;
 	setParkingState(ParkingState::EMERGENCY_BRAKING);
 	ROS_WARN_STREAM("[open_space] committed segment invalid (" << reason
 					<< "), publishing emergency stop trajectory");
@@ -601,8 +639,7 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 		isGoalChanged(*goal_vehicle_state_ptr_)) {
 		has_committed_segment_ = false;
 		committed_segment_.points.clear();
-		has_expected_next_direction_ = false;
-		constrain_replan_start_direction_ = false;
+		cached_segments_.clear();
 		has_execution_status_ = false;
 		setParkingState(ParkingState::PLANNING);
 	}
@@ -618,8 +655,7 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 		if (isGoalReached()) {
 			has_committed_segment_ = false;
 			committed_segment_.points.clear();
-			has_expected_next_direction_ = false;
-			constrain_replan_start_direction_ = false;
+			cached_segments_.clear();
 			has_execution_status_ = false;
 			setParkingState(ParkingState::GOAL_REACHED);
 		} else if (isCommittedSegmentFinished()) {
@@ -655,24 +691,28 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 	if (parking_state_ == ParkingState::REPLAN_AFTER_SEGMENT_END_MISS) {
 		has_committed_segment_ = false;
 		committed_segment_.points.clear();
-		has_expected_next_direction_ = false;
-		constrain_replan_start_direction_ = false;
+		cached_segments_.clear();
 		has_execution_status_ = false;
 		setParkingState(ParkingState::PLANNING);
 		return false;
 	}
 
-	// 换挡点的最后一个发布段要求零速度；确认停稳后的下一规划周期才生成新段。
+	// 正常到达换挡点后复核初次搜索缓存的下一段；只有缓存失效或已经耗尽时才重新搜索。
 	if (parking_state_ == ParkingState::STOP_AT_CUSP) {
-		constrain_replan_start_direction_ = has_expected_next_direction_;
-		if (constrain_replan_start_direction_) {
-			ROS_INFO_STREAM("[open_space] next replan must start "
-				<< (expected_next_forward_ ? "forward" : "reverse"));
+		if (!cached_segments_.empty()) {
+			if (!initializeCurrentMap()) {
+				ROS_WARN_THROTTLE(
+					2.0, "[open_space] cusp waits for a valid current map");
+				return false;
+			}
+			if (isTrajectoryCollisionFree(cached_segments_.front(), 0)) {
+				return commitNextCachedSegment(cur_time);
+			}
+			ROS_WARN("[open_space] cached next segment conflicts with current map; replan");
+			cached_segments_.clear();
 		}
-		ROS_DEBUG_STREAM("[open_space] cusp handling complete; replan from current pose ("
-						<< current_vehicle_state_ptr_->x << ", "
-						<< current_vehicle_state_ptr_->y << ", "
-						<< current_vehicle_state_ptr_->heading << ")");
+		has_committed_segment_ = false;
+		committed_segment_.points.clear();
 		setParkingState(ParkingState::PLANNING);
 		return false;
 	}
@@ -683,8 +723,7 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 
 	if (isGoalReached()) {
 		has_committed_segment_ = false;
-		has_expected_next_direction_ = false;
-		constrain_replan_start_direction_ = false;
+		cached_segments_.clear();
 		setParkingState(ParkingState::GOAL_REACHED);
 		return false;
 	}
@@ -722,70 +761,7 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 		goal_local_x,
 		goal_local_y,
 		Mod2Pi(goal_yaw - start_yaw));
-	const StateNode::DIRECTION required_start_direction =
-		constrain_replan_start_direction_
-			? (expected_next_forward_ ? StateNode::FORWARD : StateNode::BACKWARD)
-			: StateNode::NO;
-	if (kinodynamic_astar_searcher_ptr_->Search(
-			start_state_map, goal_state_map, required_start_direction))
-		{
-			auto path = kinodynamic_astar_searcher_ptr_->GetPath();
-		publishSearchDebugMarkers(kinodynamic_astar_searcher_ptr_->GetSearchedTree(),
-		                          kinodynamic_astar_searcher_ptr_->GetRsConnectPath(),
-		                          start_state);
-		// 将path分段
-		//在栅格地图里的路径
-		std::vector<HybridAStarType::VectorVec4d> path_split_result_os = path_split(path);
-		if (path_split_result_os.empty() || path_split_result_os.front().size() < 2) {
-			kinodynamic_astar_searcher_ptr_->Reset();
-			ROS_WARN_THROTTLE(
-				2.0, "[open_space] search result has no executable segment");
-			return false;
-		}
-		//转到UTM
-		planning_msgs::TrajectoryPointArray path_os = GetTraject(path_split_result_os[0], start_state);
-		// 得到具有位置、曲率、曲率变化的路径
-		caculateKappaos(1, path_os);
-		caculateAccumulated_s_os(path_os);
-		caculateDkappaos(path_os);
-		// 在路径上附速度
-		// planning_msgs::TrajectoryPointArray path_os_out;
-		final_trajectory_ = Velocity_Profile_output_os(
-			openspace_config, std::move(path_os));
-		// 每个提交段都必须在其末端停车；后续同档位段由状态机重新规划。
-		if (!final_trajectory_.points.empty()) {
-			final_trajectory_.points.back().v = 0.0;
-			final_trajectory_.points.back().a = 0.0;
-		}
-        ros::Time time_stamp(cur_time);
-		final_trajectory_.header.stamp = time_stamp;
-		committed_segment_ = final_trajectory_;
-		committed_goal_state_ = *goal_vehicle_state_ptr_;
-		has_committed_goal_ = true;
-		has_committed_segment_ = true;
-		has_execution_status_ = false;
-		constrain_replan_start_direction_ = false;
-		if (path_split_result_os.size() > 1 &&
-			!path_split_result_os[1].empty()) {
-			expected_next_forward_ = path_split_result_os[1].front().w() > 0.5;
-			has_expected_next_direction_ = true;
-			ROS_DEBUG_STREAM("[open_space] remember next cusp direction: "
-				<< (expected_next_forward_ ? "forward" : "reverse"));
-		} else {
-			has_expected_next_direction_ = false;
-		}
-			ROS_INFO_STREAM("[open_space] commit "
-				<< (final_trajectory_.is_forward_shift ? "forward" : "reverse")
-				<< " segment, points=" << final_trajectory_.points.size()
-				<< ", remaining candidate segments=" << path_split_result_os.size() - 1);
-		setParkingState(ParkingState::TRACKING_COMMITTED_SEGMENT);
-		// 开放空间规划同样需要走显示回调，供可视化话题显示规划轨迹。
-		if (callBack != nullptr && final_trajectory_.points.size() > 1) {
-			callBack(&final_trajectory_, nullptr, nullptr, nullptr, nullptr);
-		}
-		}
-	else
-	{
+	if (!kinodynamic_astar_searcher_ptr_->Search(start_state_map, goal_state_map)) {
 		ROS_WARN_STREAM_THROTTLE(
 			2.0, "[open_space] Hybrid A* search failed from ("
 			<< start_state.x() << ", " << start_state.y() << ", " << start_state.z()
@@ -793,8 +769,35 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 			<< goal_state.z() << ")");
 		return false;
 	}
+
+	const auto path = kinodynamic_astar_searcher_ptr_->GetPath();
+	publishSearchDebugMarkers(kinodynamic_astar_searcher_ptr_->GetSearchedTree(),
+		kinodynamic_astar_searcher_ptr_->GetRsConnectPath(), start_state);
+	const auto split_paths = path_split(path);
+	const bool has_invalid_segment = split_paths.empty() ||
+		std::any_of(split_paths.begin(), split_paths.end(),
+			[](const HybridAStarType::VectorVec4d &segment) {
+				return segment.size() < 2;
+			});
+	if (has_invalid_segment) {
+		kinodynamic_astar_searcher_ptr_->Reset();
+		ROS_WARN_THROTTLE(
+			2.0, "[open_space] search result has no executable segment");
+		return false;
+	}
+
+	// 所有分段都基于本次搜索起点转换到 map 坐标，并在正常换挡时依次提交。
+	cached_segments_.clear();
+	for (const auto &split_path : split_paths) {
+		auto segment = GetTraject(split_path, start_state);
+		caculateKappaos(1, segment);
+		caculateAccumulated_s_os(segment);
+		caculateDkappaos(segment);
+		cached_segments_.push_back(
+			Velocity_Profile_output_os(openspace_config, std::move(segment)));
+	}
 	kinodynamic_astar_searcher_ptr_->Reset();
-	return true;
+	return commitNextCachedSegment(cur_time);
 }
 
 void OpenSpacePlanner::publishSearchDebugMarkers(

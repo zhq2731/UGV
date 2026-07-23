@@ -2,10 +2,12 @@
 #pragma once
 #include "common/inputData.h"
 #include "common/basePlanner.h"
+#include <deque>
 #include <memory>
 #include <nav_msgs/OccupancyGrid.h>
 #include "hybrid_a_star/hybrid_a_star.h"
 #include <ros/ros.h>
+#include <std_msgs/Empty.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <planning_msgs/OpenSpaceExecutionStatus.h>
 
@@ -20,7 +22,7 @@ public:
 	/** @brief 清除上一泊车任务的轨迹、反馈和状态机状态，等待新的规划输入。 */
 	void resetPlanningState();
 private:
-	// 只向控制器提交一个同档位轨迹段；下一段必须在换挡点停车后重新规划。
+	// 控制器一次只接收一个同档位轨迹段；正常到达换挡点后提交缓存的下一段。
 	enum class ParkingState {
 		WAITING_FOR_INPUT,
 		PLANNING,
@@ -39,19 +41,16 @@ private:
 	double map_resolution_{0.0};
 	planning_msgs::TrajectoryPointArray final_trajectory_;
 	planning_msgs::TrajectoryPointArray committed_segment_;
+	std::deque<planning_msgs::TrajectoryPointArray> cached_segments_;
 	VehicleState committed_goal_state_;
 	ParkingState parking_state_{ParkingState::WAITING_FOR_INPUT};
 	bool has_committed_goal_{false};
 	bool has_committed_segment_{false};
-	// 首次完整搜索已经给出了换挡后的候选档位。车辆在换挡点停稳后仍从
-	// 实际位姿重新搜索，但新搜索的第一段必须继承该档位约束。
-	bool has_expected_next_direction_{false};
-	bool expected_next_forward_{true};
-	bool constrain_replan_start_direction_{false};
 
 	std::shared_ptr<HybridAStar> kinodynamic_astar_searcher_ptr_;
 	ros::NodeHandle debug_nh_;
 	ros::Publisher debug_marker_pub_;
+	ros::Publisher goal_reached_pub_;
 	ros::Subscriber execution_status_sub_;
 	planning_msgs::OpenSpaceExecutionStatus latest_execution_status_;
 	bool has_execution_status_{false};
@@ -86,6 +85,16 @@ private:
 	bool initializeCurrentMap();
 	/** @brief 从车辆当前进度起，在最新局部栅格上复核已提交段的剩余车身扫掠位姿。 */
 	bool isCommittedSegmentCollisionFree() const;
+	/**
+	 * @brief 从指定轨迹点开始检查离散轨迹及其点间插值是否与最新栅格冲突
+	 * @param trajectory 待检查的 map 坐标轨迹
+	 * @param start_index 开始检查的轨迹点下标
+	 */
+	bool isTrajectoryCollisionFree(
+		const planning_msgs::TrajectoryPointArray &trajectory,
+		size_t start_index) const;
+	/** @brief 从缓存取出下一同档位段，更新时间戳并提交给控制器。 */
+	bool commitNextCachedSegment(double cur_time);
 	/** @brief 以当前位姿和速度构造原地停车轨迹，用于轨迹失效时覆盖旧轨迹。 */
 	planning_msgs::TrajectoryPointArray makeEmergencyStopTrajectory(double cur_time) const;
 	/** @brief 清除失效已提交段、切换紧急制动状态并发布停车轨迹。 */

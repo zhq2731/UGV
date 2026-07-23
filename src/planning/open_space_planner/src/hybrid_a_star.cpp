@@ -526,8 +526,7 @@ double HybridAStar::ComputeG(const StateNode::Ptr &current_node_ptr,
 
 bool HybridAStar::Search(
     const HybridAStarType::Vec3d &start_state,
-    const HybridAStarType::Vec3d &goal_state,
-    const StateNode::DIRECTION required_start_direction) {
+    const HybridAStarType::Vec3d &goal_state) {
     Timer search_used_time;
 
     double neighbor_time = 0.0, compute_h_time = 0.0, compute_g_time = 0.0;
@@ -568,12 +567,7 @@ bool HybridAStar::Search(
 
         if ((current_node_ptr->state_.head(2) - goal_node_ptr->state_.head(2)).norm() <= shot_distance_) {
             double rs_length = 0.0;
-            // 只有从搜索起点直接进行 RS 连接时才检查换挡后的起步档位。
-            // 一旦已经完成第一层期望档位扩展，后续路径仍允许正常出现换挡点。
-            const StateNode::DIRECTION analytic_start_direction =
-                current_node_ptr == start_node_ptr ? required_start_direction : StateNode::NO;
-            if (AnalyticExpansions(
-                    current_node_ptr, goal_node_ptr, rs_length, analytic_start_direction)) {
+            if (AnalyticExpansions(current_node_ptr, goal_node_ptr, rs_length)) {
                 terminal_node_ptr_ = goal_node_ptr;
 
                 StateNode::Ptr grid_node_ptr = terminal_node_ptr_->parent_node_;
@@ -607,15 +601,6 @@ bool HybridAStar::Search(
 
         for (unsigned int i = 0; i < neighbor_nodes_ptr.size(); ++i) {
             neighbor_node_ptr = neighbor_nodes_ptr[i];
-
-            // 换挡点重新规划时，第一层只允许期望档位扩展，确保新轨迹从
-            // 当前实际停车位姿连续起步，而不是再次生成上一档位的微小前导段。
-            if (current_node_ptr == start_node_ptr &&
-                required_start_direction != StateNode::NO &&
-                neighbor_node_ptr->direction_ != required_start_direction) {
-                delete neighbor_node_ptr;
-                continue;
-            }
 
             Timer timer_compute_g;
             const double neighbor_edge_cost = ComputeG(current_node_ptr, neighbor_node_ptr);
@@ -789,31 +774,10 @@ void HybridAStar::Reset() {
 bool HybridAStar::AnalyticExpansions(
     const StateNode::Ptr &current_node_ptr,
     const StateNode::Ptr &goal_node_ptr,
-    double &length,
-    const StateNode::DIRECTION required_start_direction) {
+    double &length) {
     HybridAStarType::VectorVec3d rs_path_poses = rs_path_ptr_->GetRSPath(current_node_ptr->state_,
                                                         goal_node_ptr->state_,
                                                         move_step_size_, length);
-
-    if (required_start_direction != StateNode::NO) {
-        StateNode::DIRECTION actual_start_direction = StateNode::NO;
-        for (size_t i = 1; i < rs_path_poses.size(); ++i) {
-            const double dx = rs_path_poses[i].x() - rs_path_poses[i - 1].x();
-            const double dy = rs_path_poses[i].y() - rs_path_poses[i - 1].y();
-            if (std::hypot(dx, dy) <= 1.0e-6) {
-                continue;
-            }
-            const double tracking_angle = std::atan2(dy, dx);
-            const double heading_error = Mod2Pi(
-                tracking_angle - rs_path_poses[i - 1].z());
-            actual_start_direction = std::fabs(heading_error) < M_PI_2
-                ? StateNode::FORWARD : StateNode::BACKWARD;
-            break;
-        }
-        if (actual_start_direction != required_start_direction) {
-            return false;
-        }
-    }
 
     for (const auto &pose: rs_path_poses)
         if (BeyondBoundary(pose.head(2)) || !CheckCollision(pose.x(), pose.y(), pose.z())) {

@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslint
   roslib
+  std_msgs
   amathutils_lib
   common
   planning_msgs
