@@ -43,6 +43,8 @@ Simulate::Simulate(ros::NodeHandle &nh) : nh_(nh), private_nh_("~")
 	pub_chassis_ = nh_.advertise<driver_msgs::ChassisReport>("chassis", 10);
 	if (open_space_execution_mode_)
 	{
+		// 泊车专用的感知栅格、转向执行器和档位执行器参数只在本模式读取。
+		// 道路仿真不会订阅档位命令，也不会改变原有速度、转角反馈语义。
 		private_nh_.param<int>("mapParams_length", map_length_, 40);
 		private_nh_.param<int>("mapParams_width", map_width_, 40);
 		private_nh_.param<int>("mapParams_pointNum", map_point_num_, 360);
@@ -53,8 +55,19 @@ Simulate::Simulate(ros::NodeHandle &nh) : nh_(nh), private_nh_("~")
 			"parking_obstacle_width", parking_obstacle_width_, 2.5);
 		private_nh_.param<double>("open_space_front_tire_steering_rate_limit_radps",
 			open_space_front_tire_steering_rate_limit_radps_, 0.25);
+		private_nh_.param<bool>("open_space_virtual_gear_shift",
+			open_space_virtual_gear_shift_, false);
+		private_nh_.param<double>("open_space_virtual_gear_shift_delay",
+			open_space_virtual_gear_shift_delay_, 0.3);
 		open_space_front_tire_steering_rate_limit_radps_ = std::max(
 			0.0, open_space_front_tire_steering_rate_limit_radps_);
+		open_space_virtual_gear_shift_delay_ = std::max(
+			0.0, open_space_virtual_gear_shift_delay_);
+		if (open_space_virtual_gear_shift_) {
+			gearcmd_sub_ = nh_.subscribe(
+				"auto_chassis_gear_cmd", 1,
+				&Simulate::onGearControlCommand, this);
+		}
 		free_space_map_pub_ =
 			nh_.advertise<nav_msgs::OccupancyGrid>("free_space_map", 1, true);
 		parking_visualization_pub_ =
@@ -131,6 +144,7 @@ void Simulate::openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg)
 	acc = 0.0;
 	lon_timer_inited = false;
 	lat_timer_inited = false;
+	resetVirtualGearState();
 	publishChassis();
 	ROS_INFO("[open_space_sim] previous parking motion cleared; waiting for motion start");
 }
@@ -166,6 +180,17 @@ void Simulate::callbackTimer2(const ros::TimerEvent &event)
 {
 	if (!inited)
 		return;
+	// 模拟真实TCU：只有车辆停稳且换挡执行延迟已经结束，实际档位才改变。
+	// 控制器随后通过周期发布的ChassisReport完成档位反馈握手。
+	if (open_space_virtual_gear_shift_ && gear_shift_pending_ &&
+		std::fabs(v) <= 0.05 &&
+		(event.current_real - gear_shift_start_time_).toSec() >=
+			open_space_virtual_gear_shift_delay_) {
+		gear_location_ = pending_gear_location_;
+		gear_shift_pending_ = false;
+		ROS_INFO_STREAM("[open_space_sim] gear changed to "
+			<< static_cast<int>(gear_location_));
+	}
 	publishGpsdata();
 	publishChassis();
 }
@@ -608,13 +633,58 @@ void Simulate::publishChassis()
 
 	driver_msgs::ChassisReport chassis;
 	chassis.steering_wheel_angle = steering;
-	chassis.current_velocity = v;
+	// 开启虚拟档位后，速度方向由gear_location表达，current_velocity保持绝对值，
+	// 与真实底盘常见反馈形式一致；旧道路仿真仍发布原有有符号速度。
+	chassis.current_velocity =
+		open_space_virtual_gear_shift_ ? std::fabs(v) : v;
+	chassis.gear_location =
+		open_space_virtual_gear_shift_ ? gear_location_ : 0;
 	chassis.driving_mode = 1;
 
 	pub_chassis_.publish(chassis);
 	ray_msgs::Report bit_report_;
 	bit_report_.motion.vehicle_speed = v; // m/s
 	bit_report_pub_.publish(bit_report_);
+}
+
+void Simulate::onGearControlCommand(const driver_msgs::GearCmd::ConstPtr msg)
+{
+	if (!open_space_virtual_gear_shift_ || !inited) {
+		return;
+	}
+	const uint8_t target_gear = msg->gear_location;
+	// 当前仿真仅支持空挡0、前进挡1和倒挡7，其他协议值不进入执行器状态。
+	if (target_gear != 0 && target_gear != 1 && target_gear != 7) {
+		ROS_WARN_THROTTLE(1.0,
+			"[open_space_sim] ignore unsupported gear command: %d",
+			static_cast<int>(target_gear));
+		return;
+	}
+	if (target_gear == gear_location_) {
+		// 已在目标档位时直接取消遗留请求，底盘反馈会继续报告当前档位。
+		gear_shift_pending_ = false;
+		return;
+	}
+	if (gear_shift_pending_ && pending_gear_location_ == target_gear) {
+		// 控制器会周期重发档位请求；相同请求不能反复刷新换挡起始时间。
+		return;
+	}
+	// 新目标档位到来时启动一次新的延迟换挡过程。
+	pending_gear_location_ = target_gear;
+	gear_shift_start_time_ = ros::Time::now();
+	gear_shift_pending_ = true;
+	ROS_INFO_STREAM("[open_space_sim] gear request "
+		<< static_cast<int>(gear_location_) << " -> "
+		<< static_cast<int>(pending_gear_location_));
+}
+
+void Simulate::resetVirtualGearState()
+{
+	// 新起点或新任务必须从确定的空挡状态开始，不能继承上一任务的换挡计时。
+	gear_location_ = 0;
+	pending_gear_location_ = 0;
+	gear_shift_pending_ = false;
+	gear_shift_start_time_ = ros::Time(0);
 }
 
 void Simulate::onLonControlCommand(const driver_msgs::DriveCmd::ConstPtr msg)
@@ -752,6 +822,7 @@ void Simulate::initPoseCallBack(
 	motion_start = 0;
 	lon_timer_inited = false;
 	lat_timer_inited = false;
+	resetVirtualGearState();
 	parking_obstacles_.clear();
 	publishGpsdata();
 	publishChassis();

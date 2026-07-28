@@ -5,6 +5,7 @@
 #include <geometry_msgs/Point.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <memory>
 #include <vector>
@@ -38,6 +39,7 @@
 #include <ros/package.h>
 
 #include "driver_msgs/DriveCmd.h"
+#include "driver_msgs/GearCmd.h"
 #include "driver_msgs/ChassisReport.h"
 #include "driver_msgs/SteeringWheelCmd.h"
 #include <chrono>
@@ -90,6 +92,7 @@ public:
 	virtual ~Simulate() {}
 	ros::Subscriber loncmd_sub_;
 	ros::Subscriber latcmd_sub_;
+	ros::Subscriber gearcmd_sub_;
 	ros::Subscriber clickPoint_sub_;
 	ros::Subscriber initialPose_sub_;
 	ros::Subscriber goal_sub_;
@@ -122,6 +125,8 @@ public:
 
 	void onLonControlCommand(const driver_msgs::DriveCmd::ConstPtr msg);
 	void onLatControlCommand(const driver_msgs::SteeringWheelCmd::ConstPtr msg);
+	/** @brief 接收泊车档位请求，并启动带延迟的虚拟换挡过程。 */
+	void onGearControlCommand(const driver_msgs::GearCmd::ConstPtr msg);
 	void publishChassis();
 	void publishGpsdata();
 	double normalizeRadian(const double _angle);
@@ -163,8 +168,13 @@ public:
 	ros::NodeHandle private_nh_;
 	bool lon_timer_inited;
 	bool lat_timer_inited;
+	// 以下执行器模型仅在开放空间泊车仿真中启用，不改变原道路仿真行为。
 	bool open_space_execution_mode_{false};
+	// 实际前轮角每秒允许变化的最大弧度，用于模拟转向执行器动态。
 	double open_space_front_tire_steering_rate_limit_radps_{0.25};
+	// 开启后，档位命令不会立即生效，而是在停稳并等待配置延迟后更新底盘反馈。
+	bool open_space_virtual_gear_shift_{false};
+	double open_space_virtual_gear_shift_delay_{0.3};
 
 	ros::Timer timer;
 	ros::Timer timer2;
@@ -188,6 +198,11 @@ private:
 	std::vector<unsigned char> vehicle_num_list;
 	bool built = false;
 	unsigned char motion_start = 0;
+	// 虚拟档位执行器状态：实际反馈档位、待切换档位、执行标志和开始时间。
+	uint8_t gear_location_{0};
+	uint8_t pending_gear_location_{0};
+	bool gear_shift_pending_{false};
+	ros::Time gear_shift_start_time_;
 	std::map<double, TrajectoryPointData> trajectory_map;
 	ros::Time header_time;
 	bool last_is_forward_shift;
@@ -201,4 +216,7 @@ private:
 
 	ros::Subscriber cloud_map_sub_;
 	geometry_msgs::Point map_origin_;
+
+	/** @brief 清除虚拟换挡过程并恢复空挡。 */
+	void resetVirtualGearState();
 };

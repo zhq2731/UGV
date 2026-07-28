@@ -2,7 +2,7 @@ car_length: 5.0
 car_width: 3.0
 # 轨迹失效时的停车减速度，代码使用其绝对值并按当前速度方向施加。
 reverse_brake: -1.0
-reverse_speed: 0.45
+reverse_speed: 1.0
 safe_reverse_dis: 0
 steering_angle: 36.0
 steering_angle_discrete_num: 6

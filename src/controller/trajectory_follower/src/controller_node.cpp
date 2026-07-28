@@ -36,6 +36,14 @@ namespace control
 namespace trajectory_follower_nodes
 {
 
+namespace
+{
+// 与当前底盘协议保持一致；无有效目标档位时使用8阻止误触发换挡。
+constexpr uint8_t kGearDrive = 1;
+constexpr uint8_t kGearReverse = 7;
+constexpr uint8_t kGearInvalid = 8;
+}  // namespace
+
 
 // Keep the angle within [-pi, pi]
 double normalized_angle(double angle) {
@@ -83,12 +91,9 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 
 	private_nh.param<bool>("open_lon_controller",  open_lon_controller, true);
 	private_nh.param<bool>("open_lat_controller",  open_lat_controller, true);
-	private_nh.param<bool>("open_simulate",  open_simulate, false);
+	private_nh.param<bool>(
+		"open_simulate", reference_line_simulation, false);
 	private_nh.param<bool>("open_space_execution_mode", open_space_execution_mode, false);
-	private_nh.param<double>("open_space_lookahead_distance", open_space_lookahead_distance, 0.5);
-	private_nh.param<double>("open_space_speed_kp", open_space_speed_kp, 1.5);
-	private_nh.param<double>("open_space_max_acceleration", open_space_max_acceleration, 0.5);
-	private_nh.param<double>("open_space_max_deceleration", open_space_max_deceleration, 1.0);
 	private_nh.param<double>("open_space_steering_prepare_tolerance",
 		open_space_steering_prepare_tolerance, 0.03);
 	private_nh.param<double>("open_space_stop_speed_tolerance",
@@ -103,6 +108,8 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 		open_space_segment_end_stable_duration, 1.0);
 	private_nh.param<int>("open_space_steering_prepare_stable_cycles",
 		open_space_steering_prepare_stable_cycles, 3);
+	private_nh.param<int>("open_space_gear_confirm_stable_cycles",
+		open_space_gear_confirm_stable_cycles, 3);
 	private_nh.param<double>("heading_compensation_degree",  heading_compensation_degree, 0.0);
 	
 
@@ -122,9 +129,13 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
     ::common::getPlatformParam(vehicle_platform_file,platform_param);
 
 
-	// 开放空间仿真使用独立的低速纵向控制，不需要构造道路纵向控制器。
-	// 道路模式开启 open_lon_controller 时仍按原流程加载参数并创建控制器。
-	if (open_lon_controller) {
+	// 控制节点只按场景选择纵控。泊车纵控自行读取理想仿真、CARLA或实车后端，
+	// 道路场景仍默认创建原参考线纵向控制器。
+	if (open_space_execution_mode) {
+		open_space_longitudinal_controller_ =
+			std::make_shared<trajectory_follower::OpenSpaceLongitudinalController>(
+				private_nh);
+	} else if (open_lon_controller) {
 		std::string param_node_dir = ros::package::getPath("launch_node");
 		std::string lon_config_yaml_file = param_node_dir +
 			std::string("/param/control/") + platform_param.vehicle_type +
@@ -215,9 +226,11 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 void Controller::onTrajectory(const planning_msgs::TrajectoryPointArray::Ptr msg)
 {
 	if (open_space_execution_mode) {
+		// 泊车轨迹不能收到后立即执行，必须先经过停稳、换挡和前轮准备流程。
 		stageOpenSpaceTrajectory(*msg);
 		return;
 	}
+	// 参考线场景保持原逻辑，收到轨迹后直接更新控制器输入。
 	activateTrajectory(*msg);
 }
 
@@ -228,7 +241,6 @@ void Controller::activateTrajectory(const planning_msgs::TrajectoryPointArray &t
 	}
 	inputTrajectoryType = trajectory.type;
 	sim_trajectory = trajectory;
-	open_space_progress_index_ = 0;
 	open_space_segment_end_candidate_start_ = ros::Time(0);
 	if (!open_space_execution_mode) {
 		// 道路时间索引仿真沿用原有虚拟尾点；泊车以规划段真实末点为停车点。
@@ -239,6 +251,7 @@ void Controller::activateTrajectory(const planning_msgs::TrajectoryPointArray &t
 		sim_trajectory.points.push_back(lastPoint);
 	}
 
+	// planning_msgs用于规划和纵控；横向MPC需要转换成autoware轨迹格式。
 	boost::shared_ptr<autoware_msgs::TrajectoryPointArray> trajectoryPtr(new autoware_msgs::TrajectoryPointArray);
 	for (const auto &p : trajectory.points) {
         autoware_msgs::TrajectoryPoint point;
@@ -255,6 +268,10 @@ void Controller::activateTrajectory(const planning_msgs::TrajectoryPointArray &t
     }
 	
 	lon_input.trajectory_data = trajectory;
+	if (open_space_execution_mode && open_space_longitudinal_controller_) {
+		// 激活新轨迹段时清除上一段的纵向投影、积分和加速度历史。
+		open_space_longitudinal_controller_->Reset();
+	}
 
 	current_waypoints_ = *trajectoryPtr;
     input_data_.current_trajectory_ptr = trajectoryPtr;
@@ -268,6 +285,8 @@ const char *Controller::openSpaceExecutionStateName(OpenSpaceExecutionState stat
 		return "IDLE";
 	case OpenSpaceExecutionState::HOLD_STOP:
 		return "HOLD_STOP";
+	case OpenSpaceExecutionState::SHIFT_GEAR:
+		return "SHIFT_GEAR";
 	case OpenSpaceExecutionState::PREPARE_STEERING:
 		return "PREPARE_STEERING";
 	case OpenSpaceExecutionState::EXECUTING:
@@ -287,6 +306,7 @@ void Controller::setOpenSpaceExecutionState(OpenSpaceExecutionState state)
 	if (open_space_execution_state_ == state) {
 		return;
 	}
+	// 所有状态变化统一经过此函数，确保每次有效迁移都只有一条可追踪日志。
 	ROS_INFO_STREAM("[open_space_control] state "
 		<< openSpaceExecutionStateName(open_space_execution_state_)
 		<< " -> " << openSpaceExecutionStateName(state));
@@ -296,6 +316,7 @@ void Controller::setOpenSpaceExecutionState(OpenSpaceExecutionState state)
 bool Controller::isOpenSpaceStopTrajectory(
 	const planning_msgs::TrajectoryPointArray &trajectory) const
 {
+	// 少于两个点无法构成可跟踪运动段；其余轨迹只要存在非零速度就视为运动段。
 	if (trajectory.points.size() < 2) {
 		return true;
 	}
@@ -314,6 +335,7 @@ double Controller::calculateOpenSpaceSteeringPrepareTarget(
 		return 0.0;
 	}
 	const double wheel_base = vehcileInfo->wheel_base_m;
+	// 车辆配置给出方向盘最大角，除以方向盘传动比得到实际前轮角上限。
 	double steering_limit = std::numeric_limits<double>::infinity();
 	if (std::fabs(vehcileInfo->w2s_primary_coeff) > 1.0e-3) {
 		steering_limit = std::fabs(
@@ -334,29 +356,51 @@ void Controller::stageOpenSpaceTrajectory(const planning_msgs::TrajectoryPointAr
 		return;
 	}
 	if (isOpenSpaceStopTrajectory(trajectory)) {
+		// 纯停车轨迹不需要换挡和转角准备，立即激活以覆盖上一段运动参考。
 		has_pending_open_space_trajectory_ = false;
+		open_space_target_gear_ = kGearInvalid;
+		open_space_gear_confirmed_cycles_ = 0;
 		activateTrajectory(trajectory);
 		setOpenSpaceExecutionState(OpenSpaceExecutionState::EXECUTING);
 		ROS_WARN("[open_space_control] activate stop segment immediately");
 		return;
 	}
 
+	// 运动轨迹先保存在pending缓冲，不能在转角准备完成前暴露给MPC和纵控。
 	pending_open_space_trajectory_ = trajectory;
 	has_pending_open_space_trajectory_ = true;
 	open_space_steering_prepare_target_ =
 		calculateOpenSpaceSteeringPrepareTarget(pending_open_space_trajectory_);
 	open_space_steering_ready_cycles_ = 0;
+	// 轨迹方向决定目标档位；车辆停稳并收到实际档位反馈后才允许准备转向。
+	open_space_target_gear_ =
+		trajectory.is_forward_shift ? kGearDrive : kGearReverse;
+	open_space_gear_confirmed_cycles_ = 0;
 	setOpenSpaceExecutionState(OpenSpaceExecutionState::HOLD_STOP);
 	ROS_INFO_STREAM("[open_space_control] receive pending "
 		<< (trajectory.is_forward_shift ? "forward" : "reverse")
-		<< " segment, steering target=" << open_space_steering_prepare_target_ << " rad");
+		<< " segment, target gear=" << static_cast<int>(open_space_target_gear_)
+		<< ", steering target=" << open_space_steering_prepare_target_ << " rad");
 }
 
 
 
 void Controller::chassisCallback(const driver_msgs::ChassisReport::ConstPtr &msg)
 {
-   
+	open_space_actual_gear_ = msg->gear_location;
+	// 档位反馈需连续稳定若干周期，避免单帧跳变提前释放纵向控制。
+	if (open_space_execution_mode &&
+		open_space_execution_state_ == OpenSpaceExecutionState::SHIFT_GEAR &&
+		open_space_target_gear_ != kGearInvalid &&
+		open_space_actual_gear_ == open_space_target_gear_) {
+		open_space_gear_confirmed_cycles_ = std::min(
+			open_space_gear_confirmed_cycles_ + 1,
+			std::max(1, open_space_gear_confirm_stable_cycles));
+	} else if (open_space_execution_state_ ==
+		OpenSpaceExecutionState::SHIFT_GEAR) {
+		open_space_gear_confirmed_cycles_ = 0;
+	}
+
 	input_data_.vel = (7 == msg->gear_location)?(-msg->current_velocity):msg->current_velocity;
 	double steer  = (double)(msg->steering_wheel_angle -steer_compensation_degree)/vehcileInfo->w2s_primary_coeff;
 	steer = steer / 180.0 * M_PI;
@@ -388,9 +432,13 @@ void Controller::openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg
 	lateral_output_ = boost::none;
 	open_space_steering_ready_cycles_ = 0;
 	open_space_steering_prepare_target_ = 0.0;
-	open_space_progress_index_ = 0;
+	open_space_target_gear_ = kGearInvalid;
+	open_space_gear_confirmed_cycles_ = 0;
 	open_space_segment_end_candidate_start_ = ros::Time(0);
 	lon_input.motion_start_cmd.motion_start = 0;
+	if (open_space_longitudinal_controller_) {
+		open_space_longitudinal_controller_->Reset();
+	}
 	const auto mpc_controller = std::dynamic_pointer_cast<
 		trajectory_follower::MpcLateralController>(lateral_controller_);
 	if (mpc_controller && input_data_.current_steering_ptr) {
@@ -409,7 +457,12 @@ void Controller::openSpaceGoalReachedCallback(const std_msgs::Empty::ConstPtr &m
 	pending_open_space_trajectory_ = planning_msgs::TrajectoryPointArray();
 	open_space_steering_prepare_target_ = 0.0;
 	open_space_steering_ready_cycles_ = 0;
+	open_space_target_gear_ = kGearInvalid;
+	open_space_gear_confirmed_cycles_ = 0;
 	open_space_segment_end_candidate_start_ = ros::Time(0);
+	if (open_space_longitudinal_controller_) {
+		open_space_longitudinal_controller_->Reset();
+	}
 	setOpenSpaceExecutionState(OpenSpaceExecutionState::STRAIGHTEN_STEERING);
 	ROS_INFO("[open_space_control] parking goal reached; straighten front wheels");
 }
@@ -527,6 +580,38 @@ void Controller::lonControl()
 
 }
 
+void Controller::openSpaceLonControl()
+{
+	if (!open_space_longitudinal_controller_) {
+		// 泊车控制器未构造或后端不可用时保持制动，禁止沿用旧纵向命令。
+		publishOpenSpaceHoldCommand();
+		return;
+	}
+
+	driver_msgs::DriveCmd command;
+	double remaining_distance = 0.0;
+	if (!open_space_longitudinal_controller_->Compute(
+		lon_input, &command, &remaining_distance))
+	{
+		// CARLA或实车接口尚未实现时同样采用失败即停车的安全策略。
+		publishOpenSpaceHoldCommand();
+		return;
+	}
+
+	// EXECUTING状态才会发布泊车纵向命令；剩余弧长继续交给段结束状态机判断。
+	mHeader.stamp = ros::Time::now();
+	mHeader.seq++;
+	command.header = mHeader;
+	loncmd_pub_.publish(command);
+	controlLog.current_v = input_data_.vel * 3.6;
+	controlLog.deired_v = command.velocity_target * 3.6;
+	controlLog.v_error = controlLog.deired_v - controlLog.current_v;
+	controlLog.throttle = command.throttle_pedal;
+	controlLog.brake_pedal = command.brake_pedal;
+	controlLog.deired_acc = command.acc_target;
+	updateOpenSpaceSegmentEndHold(remaining_distance);
+}
+
 void Controller::publishOpenSpaceHoldCommand()
 {
 	driver_msgs::DriveCmd hold_cmd;
@@ -538,7 +623,7 @@ void Controller::publishOpenSpaceHoldCommand()
 	hold_cmd.brake_pedal = std::max(0.0, std::min(100.0,
 		open_space_hold_brake_pedal));
 	// 车辆仍在运动时，减速度方向必须始终与当前速度相反；停稳后通过
-	// brake_pedal 维持行车制动，允许控制器继续完成原地前轮准备。
+	// brake_pedal 维持行车制动，允许控制器继续完成原地换挡与前轮准备。
 	if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
 		hold_cmd.acc_target = -std::copysign(
 			std::max(0.0, open_space_hold_deceleration), input_data_.vel);
@@ -551,13 +636,29 @@ void Controller::publishOpenSpaceHoldCommand()
 		input_data_.vel, hold_cmd.acc_target, hold_cmd.brake_pedal);
 }
 
+void Controller::publishOpenSpaceGearCommand()
+{
+	if (open_space_target_gear_ == kGearInvalid) {
+		return;
+	}
+	driver_msgs::GearCmd gear_cmd;
+	mHeader.stamp = ros::Time::now();
+	mHeader.seq++;
+	gear_cmd.header = mHeader;
+	gear_cmd.gear_location = open_space_target_gear_;
+	gearcmd_pub_.publish(gear_cmd);
+}
+
 void Controller::updateOpenSpaceSegmentEndHold(double remaining_distance)
 {
 	if (open_space_execution_state_ != OpenSpaceExecutionState::EXECUTING) {
+		// 离开执行状态后候选计时失去意义，避免下一段继承旧的稳定时间。
 		open_space_segment_end_candidate_start_ = ros::Time(0);
 		return;
 	}
 
+	// 只有“接近末端、规划末点要求零速、车辆实际停稳”同时满足才开始计时。
+	// remaining_distance采用轨迹弧长，弯曲泊车轨迹下比末点直线距离更可靠。
 	const bool is_end_hold_candidate =
 		remaining_distance <= std::max(0.0,
 			open_space_segment_end_remaining_distance) &&
@@ -571,6 +672,7 @@ void Controller::updateOpenSpaceSegmentEndHold(double remaining_distance)
 
 	const ros::Time now = ros::Time::now();
 	if (open_space_segment_end_candidate_start_.isZero()) {
+		// 第一次满足只记录起始时间，不立即上报，滤除瞬时零速和定位抖动。
 		open_space_segment_end_candidate_start_ = now;
 		return;
 	}
@@ -580,6 +682,7 @@ void Controller::updateOpenSpaceSegmentEndHold(double remaining_distance)
 		return;
 	}
 
+	// 发布一次段末保持状态给规划器；状态切换后本函数不会在下一周期重复上报。
 	planning_msgs::OpenSpaceExecutionStatus status;
 	status.header.stamp = now;
 	status.state = planning_msgs::OpenSpaceExecutionStatus::SEGMENT_END_HOLD;
@@ -664,10 +767,37 @@ void Controller::latControl()
 		if (open_space_execution_state_ == OpenSpaceExecutionState::HOLD_STOP) {
 			if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
 				ROS_DEBUG_THROTTLE(0.5,
-					"[open_space_control] wait stop before steering preparation: speed=%.3f mps",
+					"[open_space_control] wait stop before gear shift: speed=%.3f mps",
 					input_data_.vel);
 				return;
 			}
+			// 只有车辆真实停稳后才能请求新档位。
+			open_space_gear_confirmed_cycles_ = 0;
+			setOpenSpaceExecutionState(OpenSpaceExecutionState::SHIFT_GEAR);
+		}
+
+		if (open_space_execution_state_ == OpenSpaceExecutionState::SHIFT_GEAR) {
+			if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
+				// 换挡期间若车辆重新运动，退回停车保持，不能继续准备转向。
+				open_space_gear_confirmed_cycles_ = 0;
+				setOpenSpaceExecutionState(OpenSpaceExecutionState::HOLD_STOP);
+				return;
+			}
+			publishOpenSpaceGearCommand();
+			if (open_space_actual_gear_ != open_space_target_gear_ ||
+				open_space_gear_confirmed_cycles_ <
+					std::max(1, open_space_gear_confirm_stable_cycles)) {
+				ROS_DEBUG_THROTTLE(0.5,
+					"[open_space_control] wait gear: target=%d, actual=%d, stable=%d/%d",
+					static_cast<int>(open_space_target_gear_),
+					static_cast<int>(open_space_actual_gear_),
+					open_space_gear_confirmed_cycles_,
+					std::max(1, open_space_gear_confirm_stable_cycles));
+				return;
+			}
+			// 档位握手完成后才进入前轮转角准备阶段。
+			ROS_INFO_STREAM("[open_space_control] gear confirmed: "
+				<< static_cast<int>(open_space_actual_gear_));
 			setOpenSpaceExecutionState(OpenSpaceExecutionState::PREPARE_STEERING);
 		}
 
@@ -822,10 +952,6 @@ void Controller::computeLonSim(driver_msgs::DriveCmd &lonCmd)
 {  
     if (!sim_trajectory.points.size())
 		return ;
-	if (open_space_execution_mode) {
-		computeOpenSpaceLonSim(lonCmd);
-		return;
-	}
     auto time_now = ros::Time::now().toSec();
     const double veh_rel_time =
       time_now - sim_trajectory.header.stamp.toSec();
@@ -865,9 +991,13 @@ void Controller::run()
 	const bool open_space_hold = open_space_execution_mode &&
 		open_space_execution_state_ != OpenSpaceExecutionState::EXECUTING;
 	if (open_space_hold) {
-		// 不再沿用前一段轨迹的纵向控制输出；停车与前轮准备均由泊车执行器接管。
+		// 不再沿用前一段轨迹的纵向输出；停车、换挡与前轮准备均保持制动。
 		publishOpenSpaceHoldCommand();
+	} else if (open_space_execution_mode) {
+		// 泊车模式只在EXECUTING阶段调用独立泊车纵控。
+		openSpaceLonControl();
 	} else if (open_lon_controller){
+		// 非泊车模式保持原参考线纵向控制链路不变。
 		lonControl();
 		diplayDesireVelocity();
 	}
@@ -901,139 +1031,11 @@ void Controller::run()
 		 controlLog.driving_s = 0.0;
 	}
 	
-	if (open_simulate && !open_space_hold){
+	if (!open_space_execution_mode && reference_line_simulation){
 		driver_msgs::DriveCmd lonCmd;
 		computeLonSim(lonCmd);
 		loncmd_pub_.publish(lonCmd);
 	}
-}
-
-void Controller::computeOpenSpaceLonSim(driver_msgs::DriveCmd &lonCmd)
-{
-	if (open_space_execution_state_ != OpenSpaceExecutionState::EXECUTING) {
-		lonCmd.velocity_target = 0.0;
-		lonCmd.acc_target = 0.0;
-		return;
-	}
-	if (sim_trajectory.points.size() < 2) {
-		lonCmd.velocity_target = 0.0;
-		lonCmd.acc_target = 0.0;
-		return;
-	}
-	const size_t last_index = sim_trajectory.points.size() - 1;
-	open_space_progress_index_ = std::min(open_space_progress_index_, last_index);
-	if (open_space_progress_index_ >= last_index) {
-		lonCmd.velocity_target = 0.0;
-		lonCmd.acc_target = 0.0;
-		updateOpenSpaceSegmentEndHold(0.0);
-		return;
-	}
-
-	const auto &vehicle_position = current_pose_.pose.pose.position;
-	const size_t search_begin = open_space_progress_index_ > 2
-		? open_space_progress_index_ - 2 : 0;
-	size_t projection_segment_index = search_begin;
-	double projection_ratio = 0.0;
-	double projection_distance = std::numeric_limits<double>::infinity();
-	for (size_t i = search_begin; i < last_index; ++i) {
-		const auto &start = sim_trajectory.points[i];
-		const auto &end = sim_trajectory.points[i + 1];
-		const double segment_x = end.x - start.x;
-		const double segment_y = end.y - start.y;
-		const double segment_length_squared = segment_x * segment_x + segment_y * segment_y;
-		if (segment_length_squared <= 1.0e-9) {
-			continue;
-		}
-		const double ratio = std::max(0.0, std::min(1.0,
-			((vehicle_position.x - start.x) * segment_x +
-			 (vehicle_position.y - start.y) * segment_y) / segment_length_squared));
-		const double projection_x = start.x + ratio * segment_x;
-		const double projection_y = start.y + ratio * segment_y;
-		const double distance = std::hypot(vehicle_position.x - projection_x,
-		                                  vehicle_position.y - projection_y);
-		if (distance < projection_distance) {
-			projection_distance = distance;
-			projection_segment_index = i;
-			projection_ratio = ratio;
-		}
-	}
-	// 已提交段内的空间进度单调递增，避免在换挡点附近因定位噪声选到车后的轨迹点。
-	if (projection_segment_index >= open_space_progress_index_) {
-		open_space_progress_index_ = projection_segment_index;
-	} else {
-		projection_segment_index = open_space_progress_index_;
-		projection_ratio = 0.0;
-	}
-
-	const auto segment_length = [&](const size_t index) {
-		return amathutils::distance2D(sim_trajectory.points[index],
-		                              sim_trajectory.points[index + 1]);
-	};
-	double remaining_distance =
-		(1.0 - projection_ratio) * segment_length(projection_segment_index);
-	for (size_t i = projection_segment_index + 1; i < last_index; ++i) {
-		remaining_distance += segment_length(i);
-	}
-
-	// 从连续投影点沿轨迹前进指定的物理预瞄距离。
-	size_t target_index = projection_segment_index + 1;
-	double lookahead_distance = (1.0 - projection_ratio) * segment_length(projection_segment_index);
-	while (target_index < last_index && lookahead_distance < open_space_lookahead_distance) {
-		lookahead_distance += segment_length(target_index);
-		++target_index;
-	}
-	const bool segment_requests_stop =
-		std::fabs(sim_trajectory.points[last_index].v) <= 1.0e-3;
-
-	// 预瞄点到达末端零速点时不能立即停车。保留预瞄范围内最后一个非零速度，
-	// 实际减速时机由下方基于剩余距离的制动约束决定。
-	size_t speed_reference_index = target_index;
-	if (segment_requests_stop) {
-		while (speed_reference_index > open_space_progress_index_ &&
-			std::fabs(sim_trajectory.points[speed_reference_index].v) <= 1.0e-3) {
-			--speed_reference_index;
-		}
-	}
-	double target_velocity = sim_trajectory.points[speed_reference_index].v;
-	if (!sim_trajectory.is_forward_shift && target_velocity > 0.0) {
-		target_velocity = -target_velocity;
-	}
-	if (segment_requests_stop) {
-		const double braking_limit = std::sqrt(std::max(
-			0.0, 2.0 * std::max(open_space_max_deceleration, 1.0e-3) * remaining_distance));
-		target_velocity = std::copysign(
-			std::min(std::fabs(target_velocity), braking_limit), target_velocity);
-		if (remaining_distance <= 0.05) {
-			target_velocity = 0.0;
-		}
-	}
-
-	const double current_velocity = input_data_.vel;
-	double acceleration_command = open_space_speed_kp * (target_velocity - current_velocity);
-	const bool is_braking =
-		(std::fabs(target_velocity) < std::fabs(current_velocity)) ||
-		(current_velocity * target_velocity < 0.0);
-	const double acceleration_limit = std::max(
-		1.0e-3, is_braking ? open_space_max_deceleration : open_space_max_acceleration);
-	acceleration_command = std::max(-acceleration_limit,
-		std::min(acceleration_command, acceleration_limit));
-	if (segment_requests_stop && std::fabs(current_velocity) > 1.0e-3) {
-		const double safe_stop_speed = std::sqrt(std::max(
-			0.0, 2.0 * std::max(open_space_max_deceleration, 1.0e-3) * remaining_distance));
-		if (std::fabs(current_velocity) > safe_stop_speed) {
-			// 单独使用比例环在低速时减速度衰减过快，可能越过泊车换挡点。
-			// 此处强制满足物理可停车速度包络。
-			acceleration_command = -std::copysign(open_space_max_deceleration,
-				current_velocity);
-		}
-	}
-
-	lonCmd.velocity_target = target_velocity;
-	lonCmd.acc_target = acceleration_command;
-	// 判断的是轨迹末点是否要求停车，而不是当前周期的动态减速速度。
-	// 因此 0.30 m 宽容范围只用于识别“已停住但未到严苛换挡点”，
-	// 不会改变上方纵向控制器原有的停车位置。
-	updateOpenSpaceSegmentEndHold(remaining_distance);
 }
 
 

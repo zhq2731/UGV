@@ -23,10 +23,12 @@
 #include "tf2_ros/transform_listener.h"
 #include "trajectory_follower/lateral_controller_base.hpp"
 #include "trajectory_follower/lowpass_filter.hpp"
+#include "trajectory_follower/open_space_longitudinal_controller.hpp"
 #include "autoware_msgs/TrajectoryPointArray.h"
 #include "autoware_msgs/TrajectoryPoint.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -151,6 +153,8 @@ private:
 
 	/**************longititude control**************/
 	std::shared_ptr<car::control::LonController> longitudinal_controller_;
+	std::shared_ptr<trajectory_follower::OpenSpaceLongitudinalController>
+		open_space_longitudinal_controller_;
 	std_msgs::Header mHeader;
 	ros::Publisher gearcmd_pub_; /**档位发布者*/
 	ros::Publisher parking_brake_pub_; /**档位发布者*/
@@ -179,14 +183,11 @@ private:
 	bool debug;
 	bool open_lat_controller;
 	bool open_lon_controller;
-	bool open_simulate;
+	// 兼容原参考线时间索引仿真；不参与泊车执行后端选择。
+	bool reference_line_simulation;
 	// 开放空间泊车一次只执行一个已提交的低速轨迹段，
 	// 与原有参考线的时间索引仿真逻辑保持隔离。
 	bool open_space_execution_mode;
-	double open_space_lookahead_distance;
-	double open_space_speed_kp;
-	double open_space_max_acceleration;
-	double open_space_max_deceleration;
 	double open_space_steering_prepare_tolerance;
 	double open_space_stop_speed_tolerance;
 	double open_space_hold_deceleration;
@@ -194,21 +195,37 @@ private:
 	double open_space_segment_end_remaining_distance;
 	double open_space_segment_end_stable_duration;
 	int open_space_steering_prepare_stable_cycles;
+	int open_space_gear_confirm_stable_cycles;
+	/**
+	 * @brief 泊车控制节点的执行状态机
+	 *
+	 * 正常单段交接顺序：
+	 * IDLE -> HOLD_STOP -> SHIFT_GEAR -> PREPARE_STEERING -> EXECUTING。
+	 * 轨迹段执行完成后进入SEGMENT_END_HOLD，等待规划器下发下一段；
+	 * 最终目标完成后进入STRAIGHTEN_STEERING并在前轮回正后结束。
+	 */
 	enum class OpenSpaceExecutionState {
-		IDLE,
-		HOLD_STOP,
-		PREPARE_STEERING,
-		EXECUTING,
-		SEGMENT_END_HOLD,
-		STRAIGHTEN_STEERING,
-		PARKING_COMPLETE,
+		IDLE,                  // 尚未收到可执行的泊车轨迹段。
+		HOLD_STOP,             // 持续制动，等待车辆完全停稳。
+		SHIFT_GEAR,            // 周期发送目标档位并等待底盘反馈稳定。
+		PREPARE_STEERING,      // 原地调整前轮角到新轨迹起点所需角度。
+		EXECUTING,             // 横向MPC和泊车纵控共同跟踪当前轨迹段。
+		SEGMENT_END_HOLD,      // 当前段已稳定停住，保持制动并等待下一段。
+		STRAIGHTEN_STEERING,   // 最终目标完成后保持停车并将前轮回正。
+		PARKING_COMPLETE,      // 前轮已稳定回正，泊车控制流程结束。
 	};
 	OpenSpaceExecutionState open_space_execution_state_{OpenSpaceExecutionState::IDLE};
+	// 新轨迹先暂存，档位和前轮准备完成后才写入实际控制器输入。
 	planning_msgs::TrajectoryPointArray pending_open_space_trajectory_;
 	bool has_pending_open_space_trajectory_{false};
+	// 前轮目标角连续满足容差的计数，防止单帧到位误判。
 	int open_space_steering_ready_cycles_{0};
 	double open_space_steering_prepare_target_{0.0};
-	size_t open_space_progress_index_{0};
+	// 档位请求与底盘反馈分开保存，只有连续反馈一致才完成换挡握手。
+	uint8_t open_space_target_gear_{8};
+	uint8_t open_space_actual_gear_{8};
+	int open_space_gear_confirmed_cycles_{0};
+	// 记录首次满足段末停车条件的时刻，用于判断连续稳定时间。
 	ros::Time open_space_segment_end_candidate_start_;
 	double heading_compensation_degree;
 	bool lat_use_current_velocity_only;
@@ -261,28 +278,32 @@ private:
 	double	closestPointVel() const ;
 	double normalized_angle(double angle) ;
 	void lonControl();
+	/** @brief 仅在泊车EXECUTING状态调用泊车专用纵向控制器。 */
+	void openSpaceLonControl();
 	/**
-	 * @brief 在泊车轨迹待接管或前轮准备阶段持续发布制动保持命令
+	 * @brief 在泊车轨迹待接管、换挡或前轮准备阶段持续发布制动保持命令
 	 *
 	 * 该命令覆盖上一段纵向输出：车辆未停稳时按速度反向减速，停稳后继续保持制动踏板。
 	 */
 	void publishOpenSpaceHoldCommand();
+	/**
+	 * @brief 周期发布待执行轨迹段要求的档位，直到底盘反馈确认完成
+	 */
+	void publishOpenSpaceGearCommand();
 	void latControl();
 	void diplayDesireVelocity();
 	size_t QueryLowerBoundPoint(const double relative_time,
-                                                   planning_msgs::TrajectoryPointArray &trajectory,const double epsilon = 1.0e-5) const ;
+	                                                   planning_msgs::TrajectoryPointArray &trajectory,const double epsilon = 1.0e-5) const ;
 	void computeLonSim(driver_msgs::DriveCmd &lonCmd);
 	/**
-	 * @brief 根据已激活的单段泊车轨迹计算低速纵向命令
-	 * @param lonCmd 输出的目标速度与受限加速度命令
+	 * @brief 将轨迹转换并写入横向、纵向控制器的当前激活缓冲
 	 *
-	 * 函数用轨迹投影更新进度，按弧长选取预瞄速度，并在段末应用可停车速度包络。
+	 * 泊车模式不追加道路仿真使用的虚拟尾点，并同时重置新泊车纵控的
+	 * 轨迹投影、速度积分与加速度历史。
 	 */
-	void computeOpenSpaceLonSim(driver_msgs::DriveCmd &lonCmd);
-	/** @brief 将轨迹写入横向与纵向跟踪缓冲，作为当前激活轨迹。 */
 	void activateTrajectory(const planning_msgs::TrajectoryPointArray &trajectory);
 	/**
-	 * @brief 接收新泊车段并转入“停车—转角准备—执行”交接流程
+	 * @brief 接收新泊车段并转入“停车—换挡—转角准备—执行”交接流程
 	 * @param trajectory 规划器下发的单一档位轨迹段
 	 */
 	void stageOpenSpaceTrajectory(const planning_msgs::TrajectoryPointArray &trajectory);

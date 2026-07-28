@@ -30,6 +30,9 @@
     <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
     <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
     <param name="open_space_execution_mode" value="true"/>
+    <!-- 泊车仿真模拟档位执行器：接收控制档位指令，延迟后通过 chassis 反馈实际档位。 -->
+    <param name="open_space_virtual_gear_shift" value="true"/>
+    <param name="open_space_virtual_gear_shift_delay" value="0.30"/>
     <!-- 实际前轮转角最大变化速度，仅在泊车仿真模式中生效，单位 rad/s。 -->
     <param name="open_space_front_tire_steering_rate_limit_radps"
            value="$(arg front_tire_steering_rate_limit_radps)"/>
@@ -55,15 +58,24 @@
     <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
     <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
     <param name="open_space_execution_mode" value="true"/>
+    <!-- 泊车纵控内部选择执行后端；控制节点只负责泊车/参考线场景门控。 -->
+    <param name="open_space_longitudinal_control_mode" value="ideal_acceleration"/>
     <param name="open_space_lookahead_distance" value="0.5"/>
-    <param name="open_space_speed_kp" value="1.5"/>
+    <param name="open_space_forward_speed_kp" value="1.5"/>
+    <param name="open_space_forward_speed_ki" value="0.0"/>
+    <param name="open_space_reverse_speed_kp" value="1.5"/>
+    <param name="open_space_reverse_speed_ki" value="0.0"/>
+    <param name="open_space_speed_integral_limit" value="0.5"/>
     <param name="open_space_max_acceleration" value="0.5"/>
     <param name="open_space_max_deceleration" value="1.0"/>
+    <param name="open_space_max_jerk" value="2.0"/>
+    <param name="open_space_longitudinal_control_period" value="0.02"/>
     <param name="open_space_steering_prepare_tolerance" value="0.03"/>
     <param name="open_space_stop_speed_tolerance" value="0.05"/>
     <param name="open_space_hold_deceleration" value="1.0"/>
     <param name="open_space_hold_brake_pedal" value="20.0"/>
     <param name="open_space_steering_prepare_stable_cycles" value="3"/>
+    <param name="open_space_gear_confirm_stable_cycles" value="3"/>
     <!-- 轨迹耗尽反馈允许 0.30 m 的剩余弧长误差，并要求停车连续稳定超过 1 秒。 -->
     <param name="open_space_segment_end_remaining_distance" value="0.30"/>
     <param name="open_space_segment_end_stable_duration" value="1.0"/>
