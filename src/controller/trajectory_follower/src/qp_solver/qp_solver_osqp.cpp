@@ -60,27 +60,38 @@ bool QPSolverOSQP::solve(
   /* execute optimization */
   auto result = osqpsolver_.optimize(h_mat, osqpA, f, lower_bound, upper_bound);
 
-  std::vector<double> U_osqp = std::get<0>(result);
-  u = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>>(
-    &U_osqp[0], static_cast<Eigen::Index>(U_osqp.size()), 1);
-
   const int status_val = std::get<3>(result);
-  if (status_val != 1) {
+  // OSQP 的主求解状态决定本次优化是否可用。SOLVED_INACCURATE 仍然提供
+  // 满足工程容差的主解，允许 MPC 使用；其余状态必须明确返回失败，不能再由
+  // polish 状态误判为成功。
+  constexpr int kOsqpSolved = 1;
+  constexpr int kOsqpSolvedInaccurate = 2;
+  if (status_val != kOsqpSolved &&
+    status_val != kOsqpSolvedInaccurate)
+  {
     // OSQP 连续失败时只限频输出，避免控制周期刷屏。
     ROS_WARN_THROTTLE(2.0, "[mpc] OSQP status: %s",
       osqpsolver_.getStatusMessage().c_str());
-  }
-
-  // polish status: successful (1), unperformed (0), (-1) unsuccessful
-  int status_polish = std::get<2>(result);
-  if (status_polish == -1) {
-   // RCLCPP_WARN(logger_, "osqp status_polish = %d (unsuccessful)", status_polish);
     return false;
   }
-  if (status_polish == 0) {
-    //RCLCPP_WARN(logger_, "osqp status_polish = %d (unperformed)", status_polish);
-    return true;
+
+  const std::vector<double> & osqp_solution = std::get<0>(result);
+  if (osqp_solution.size() != static_cast<size_t>(dim_u)) {
+    ROS_WARN_THROTTLE(
+      2.0, "[mpc] OSQP returned invalid solution size: %zu, expected: %ld",
+      osqp_solution.size(), static_cast<long>(dim_u));
+    return false;
   }
+
+  u = Eigen::Map<const Eigen::VectorXd>(
+    osqp_solution.data(), static_cast<Eigen::Index>(osqp_solution.size()));
+  if (!u.allFinite()) {
+    ROS_WARN_THROTTLE(2.0, "[mpc] OSQP returned non-finite solution");
+    return false;
+  }
+
+  // polish 只是对已经成功的主解做精修：1=成功、0=未执行、-1=失败。
+  // 即使精修失败，主解仍然有效，不能因此让横向控制回退为上一转角命令。
   return true;
 }
 }  // namespace trajectory_follower

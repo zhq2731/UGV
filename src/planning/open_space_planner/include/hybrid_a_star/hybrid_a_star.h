@@ -44,14 +44,20 @@ using namespace  geometry_point;
 
 struct OpenSpace_config
 {
-    //车辆信息 车长、车宽、视界系数(0到0.1之间，越大考虑越宽范围的障碍物)
+    // 车辆外形均以后轴中心为位姿参考点。
     double car_length;
     double car_width;
-    //速度信息 
+    double rear_overhang;
+    // 轨迹几何与速度规划参数。
+    double trajectory_resample_resolution;
+    double forward_speed;
     double reverse_speed;
+    double max_acceleration;
+    double max_deceleration;
+    double max_lateral_acceleration;
+    double max_front_tire_steering_rate;
+    // 轨迹失效时的紧急制动减速度。
     double reverse_brake;
-    //安全距离
-    double safe_reverse_dis;
     //混合A*参数
     double steering_angle ;
     int steering_angle_discrete_num ;
@@ -135,7 +141,8 @@ public:
 
     void Init(double x_lower, double x_upper, double y_lower, double y_upper,
               double state_grid_resolution, double map_grid_resolution,double car_length_param,
-                       double car_width_param,double wheel_base_param);
+              double car_width_param, double wheel_base_param,
+              double rear_overhang_param);
 
     /**
      * @brief 在当前障碍物栅格上执行 Hybrid A* 搜索

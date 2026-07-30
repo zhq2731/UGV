@@ -16,7 +16,7 @@
   <arg name="vehicle_platform_file"
        default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
   <arg name="rviz" default="true"/>
-  <arg name="front_tire_steering_rate_limit_radps" default="0.50"/>
+  <arg name="front_tire_steering_rate_limit_radps" default="0.23"/>
 
   <group if="$(arg rviz)">
     <node pkg="rviz" type="rviz" name="rviz"

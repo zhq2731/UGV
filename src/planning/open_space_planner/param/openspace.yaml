@@ -1,12 +1,23 @@
 car_length: 5.0
 car_width: 3.0
+# 后轴中心到车尾距离，用于构造后轴参考的碰撞包络。
+rear_overhang: 1.35
 # 轨迹失效时的停车减速度，代码使用其绝对值并按当前速度方向施加。
 reverse_brake: -1.0
-reverse_speed: 1.0
-safe_reverse_dis: 0
-steering_angle: 36.0
+# 开放空间轨迹按弧长重采样后再计算曲率和速度。
+trajectory_resample_resolution: 0.2
+forward_speed: 1.0
+reverse_speed: 0.5
+max_acceleration: 0.5
+max_deceleration: 1.0
+max_lateral_acceleration: 0.5
+# 按方向盘250 deg/s和转向传动比18.5折算，单位rad/s。
+max_front_tire_steering_rate: 0.23
+# 略小于控制器实际可用的32.4°前轮转角，给跟踪控制保留余量。
+steering_angle: 32.0
 steering_angle_discrete_num: 6
-wheel_base: 3.3
+# 与tank500仿真及控制车辆参数统一。
+wheel_base: 2.85
 segment_length: 2.0
 segment_length_discrete_num: 5
 steering_penalty: 25.0

@@ -50,7 +50,7 @@ private:
   enum class OutputMode
   {
     IDEAL_ACCELERATION,  // 输出目标速度和目标加速度，供当前轻量仿真节点积分。
-    CARLA_PEDAL,         // 输出CARLA需要的油门、制动百分比，暂留实现接口。
+    CARLA_PEDAL,         // 将期望加速度映射为CARLA/Lite使用的油门、制动百分比。
     VEHICLE,             // 输出实车执行器命令，暂留具体车型适配接口。
   };
 
@@ -72,7 +72,12 @@ private:
     const car::control::InputData &input,
     driver_msgs::DriveCmd *command,
     double *remaining_distance);
-  /** @brief CARLA踏板控制后端预留入口；实现前返回false使控制节点保持制动。 */
+  /**
+   * @brief CARLA踏板控制后端
+   *
+   * 先复用统一的轨迹投影与速度闭环得到有符号期望加速度，再依据当前档位
+   * 转成沿行驶方向的加减速度，最后通过可配置执行器增益反算油门和制动。
+   */
   bool computeCarlaPedalCommand(
     const car::control::InputData &input,
     driver_msgs::DriveCmd *command,
@@ -125,6 +130,13 @@ private:
   double max_deceleration_{1.0};
   double max_jerk_{2.0};
   double nominal_control_period_{0.02};
+  // CARLA/Lite归一化踏板执行器模型。DriveCmd内部仍使用0～100百分比。
+  double carla_throttle_acceleration_gain_{3.0};
+  double carla_brake_deceleration_gain_{6.0};
+  double carla_rolling_resistance_{0.15};
+  double carla_acceleration_deadband_{0.02};
+  double carla_stop_brake_pedal_{20.0};
+  double stop_speed_tolerance_{0.05};
 
   // 以下状态只属于当前已激活轨迹段，切换轨迹段时由Reset统一清除。
   std::size_t progress_index_{0};

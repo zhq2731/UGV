@@ -88,6 +88,23 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     "open_space_max_jerk", max_jerk_, 2.0);
   node.param<double>(
     "open_space_longitudinal_control_period", nominal_control_period_, 0.02);
+  node.param<double>(
+    "open_space_carla_throttle_acceleration_gain",
+    carla_throttle_acceleration_gain_, 3.0);
+  node.param<double>(
+    "open_space_carla_brake_deceleration_gain",
+    carla_brake_deceleration_gain_, 6.0);
+  node.param<double>(
+    "open_space_carla_rolling_resistance",
+    carla_rolling_resistance_, 0.15);
+  node.param<double>(
+    "open_space_carla_acceleration_deadband",
+    carla_acceleration_deadband_, 0.02);
+  node.param<double>(
+    "open_space_carla_stop_brake_pedal",
+    carla_stop_brake_pedal_, 20.0);
+  node.param<double>(
+    "open_space_stop_speed_tolerance", stop_speed_tolerance_, 0.05);
 
   lookahead_distance_ = std::max(0.0, lookahead_distance_);
   speed_integral_limit_ = std::max(0.0, speed_integral_limit_);
@@ -95,6 +112,15 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   max_deceleration_ = std::max(1.0e-3, max_deceleration_);
   max_jerk_ = std::max(0.0, max_jerk_);
   nominal_control_period_ = std::max(1.0e-3, nominal_control_period_);
+  carla_throttle_acceleration_gain_ =
+    std::max(1.0e-3, carla_throttle_acceleration_gain_);
+  carla_brake_deceleration_gain_ =
+    std::max(1.0e-3, carla_brake_deceleration_gain_);
+  carla_rolling_resistance_ = std::max(0.0, carla_rolling_resistance_);
+  carla_acceleration_deadband_ = std::max(0.0, carla_acceleration_deadband_);
+  carla_stop_brake_pedal_ =
+    clampValue(carla_stop_brake_pedal_, 0.0, 100.0);
+  stop_speed_tolerance_ = std::max(0.0, stop_speed_tolerance_);
 
   ROS_INFO_STREAM("[open_space_lon] output mode: "
     << outputModeName(output_mode_));
@@ -161,13 +187,59 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   driver_msgs::DriveCmd *command,
   double *remaining_distance)
 {
-  // 预留CARLA油门、制动百分比映射入口，完成前保持安全失败语义。
-  (void)input;
-  (void)command;
-  (void)remaining_distance;
-  ROS_WARN_THROTTLE(
-    2.0, "[open_space_lon] CARLA pedal mode is reserved but not implemented");
-  return false;
+  MotionReference reference;
+  if (!computeMotionReference(input, &reference)) {
+    return false;
+  }
+
+  const double current_velocity = currentSignedVelocity(input);
+  const double acceleration_command = computeAccelerationCommand(
+    reference.target_velocity, current_velocity,
+    reference.remaining_distance, reference.requests_stop, controlPeriod());
+  const double direction =
+    input.trajectory_data.is_forward_shift ? 1.0 : -1.0;
+  // 倒车加速时a_cmd为负，乘档位方向后仍得到正的沿行驶方向加速度；
+  // 因此踏板选择不能简单使用a_cmd正负号。
+  const double drive_direction_acceleration =
+    direction * acceleration_command;
+
+  double throttle = 0.0;
+  double brake = 0.0;
+  const bool target_stopped =
+    std::fabs(reference.target_velocity) <= 1.0e-3;
+  const bool vehicle_stopped =
+    std::fabs(current_velocity) <= stop_speed_tolerance_;
+  if (target_stopped && vehicle_stopped) {
+    // 末端停稳后维持行车制动，下一周期控制状态机会转入SEGMENT_END_HOLD。
+    brake = carla_stop_brake_pedal_ / 100.0;
+  } else if (drive_direction_acceleration >
+    carla_acceleration_deadband_ && !target_stopped)
+  {
+    // 驱动时补偿滚动阻力，减少低速匀速阶段的稳态误差。
+    throttle = clampValue(
+      (drive_direction_acceleration + carla_rolling_resistance_) /
+      carla_throttle_acceleration_gain_, 0.0, 1.0);
+  } else if (drive_direction_acceleration <
+    -carla_acceleration_deadband_)
+  {
+    // 滚动阻力本身参与减速，只由制动器补足剩余减速度。
+    brake = clampValue(
+      (-drive_direction_acceleration - carla_rolling_resistance_) /
+      carla_brake_deceleration_gain_, 0.0, 1.0);
+  } else if (!target_stopped) {
+    // a_cmd接近零但仍要求行驶时，仅补偿滚动阻力以维持低速。
+    throttle = clampValue(
+      carla_rolling_resistance_ / carla_throttle_acceleration_gain_,
+      0.0, 1.0);
+  }
+
+  command->velocity_target = reference.target_velocity;
+  command->acc_target = acceleration_command;
+  command->throttle_pedal = 100.0 * throttle;
+  command->brake_pedal = 100.0 * brake;
+  command->engine_torque_target = 0.0;
+  *remaining_distance = reference.remaining_distance;
+  return true;
 }
 
 bool OpenSpaceLongitudinalController::computeVehicleCommand(

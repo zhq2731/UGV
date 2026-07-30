@@ -1,0 +1,51 @@
+# Lite比赛平台只启用泊车专用控制链路，参考线纵横向控制器不参与计算。
+open_space_execution_mode: true
+open_space_longitudinal_control_mode: "carla_pedal"
+open_lat_controller: true
+open_lon_controller: true
+enable_control_log: false
+
+# Lite与控制器均使用数学坐标系yaw，抵消控制节点历史固定的+90°变换。
+heading_compensation_degree: -90.0
+
+# 单段执行状态机：停车、换挡反馈确认、前轮准备完成后才允许纵向运动。
+open_space_steering_prepare_tolerance: 0.03
+open_space_stop_speed_tolerance: 0.05
+open_space_hold_deceleration: 1.0
+open_space_hold_brake_pedal: 20.0
+open_space_steering_prepare_stable_cycles: 3
+open_space_gear_confirm_stable_cycles: 3
+open_space_segment_end_remaining_distance: 0.30
+open_space_segment_end_stable_duration: 1.0
+
+# 泊车速度闭环及加速度、jerk约束。
+open_space_lookahead_distance: 0.5
+open_space_forward_speed_kp: 1.5
+open_space_forward_speed_ki: 0.0
+open_space_reverse_speed_kp: 1.5
+open_space_reverse_speed_ki: 0.0
+open_space_speed_integral_limit: 0.5
+open_space_max_acceleration: 0.5
+open_space_max_deceleration: 1.0
+open_space_max_jerk: 2.0
+open_space_longitudinal_control_period: 0.02
+
+# 比赛Lite默认动力学：归一化油门/制动分别对应3.0/6.0 m/s²，滚阻0.15 m/s²。
+open_space_carla_throttle_acceleration_gain: 3.0
+open_space_carla_brake_deceleration_gain: 6.0
+open_space_carla_rolling_resistance: 0.15
+open_space_carla_acceleration_deadband: 0.02
+open_space_carla_stop_brake_pedal: 20.0
+
+# Lite执行器没有额外输入延迟，泊车MPC仍按0.05 m弧长均匀重采样。
+traj_resample_dist: 0.05
+mpc_prediction_horizon: 50
+mpc_prediction_dt: 0.1
+mpc_weight_lat_error: 4.5
+mpc_weight_heading_error: 0.3
+mpc_weight_steering_input: 1.0
+mpc_weight_terminal_lat_error: 2.0
+mpc_weight_terminal_heading_error: 0.5
+input_delay: 0.0
+vehicle_model_steer_tau: 0.005
+steering_lpf_cutoff_hz: 2.0

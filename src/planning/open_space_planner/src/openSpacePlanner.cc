@@ -151,8 +151,40 @@ double length(planning_msgs::TrajectoryPoint point1, planning_msgs::TrajectoryPo
     return std::sqrt(dot2D(point, point));
 }
 
-void resamplePoints(double resolution, std::vector<planning_msgs::TrajectoryPoint> &pts)
+bool isFinitePose(const planning_msgs::TrajectoryPoint &point)
 {
+    return std::isfinite(point.x) && std::isfinite(point.y) &&
+        std::isfinite(point.theta);
+}
+
+bool removeDuplicatePoints(std::vector<planning_msgs::TrajectoryPoint> &points)
+{
+    constexpr double kMinimumPointDistance = 1.0e-3;
+    std::vector<planning_msgs::TrajectoryPoint> filtered;
+    filtered.reserve(points.size());
+    for (const auto &point : points) {
+        if (!isFinitePose(point)) {
+            return false;
+        }
+        if (filtered.empty() ||
+            length(filtered.back(), point) >= kMinimumPointDistance)
+        {
+            filtered.push_back(point);
+        }
+    }
+    points = std::move(filtered);
+    return points.size() >= 2;
+}
+
+bool resamplePoints(
+    double resolution, std::vector<planning_msgs::TrajectoryPoint> &pts)
+{
+    if (!removeDuplicatePoints(pts) ||
+        !std::isfinite(resolution) || resolution <= 0.0)
+    {
+        return false;
+    }
+
     double acculate_s = 0;
     std::vector<double> accumulated_lengths;
     accumulated_lengths.push_back(0.0);
@@ -180,11 +212,20 @@ void resamplePoints(double resolution, std::vector<planning_msgs::TrajectoryPoin
         const auto back_length = accumulated_lengths.at(index_pair.first);
         const auto front_length = accumulated_lengths.at(index_pair.second);
         const auto segment_length = front_length - back_length;
+        if (segment_length <= std::numeric_limits<double>::epsilon()) {
+            return false;
+        }
         auto target_point = add_2d(back_point, scaled_2d(direction_vector, (target_length - back_length) / segment_length));
-        target_point.theta = back_point.theta + ((target_length - back_length) / segment_length) * (front_point.theta - back_point.theta);
+        const double interpolation_ratio =
+            (target_length - back_length) / segment_length;
+        // 航向必须沿最短角度插值，避免跨越±π时绕行接近一整圈。
+        target_point.theta = Mod2Pi(
+            back_point.theta + interpolation_ratio *
+            Mod2Pi(front_point.theta - back_point.theta));
         resampled_points.push_back(target_point);
     }
     pts = std::move(resampled_points);
+    return pts.size() >= 2;
 }
 
 // 计算kappa 相关函数
@@ -201,42 +242,48 @@ void caculateAccumulated_s_os(planning_msgs::TrajectoryPointArray &trajectory)
     }
 }
 
-// 计算kappa
-void caculateKappaos(
-    const size_t curvature_smoothing_num, planning_msgs::TrajectoryPointArray &traj)
+// 根据车辆航向随弧长的变化计算几何曲率，避免三点圆拟合跨越RS基元连接点。
+bool calculateKappaFromHeadingOs(
+    planning_msgs::TrajectoryPointArray &trajectory)
 {
-
-    /* calculate curvature by circle fitting from three points */
-    planning_msgs::TrajectoryPoint p1, p2, p3;
-    const size_t max_smoothing_num =
-        static_cast<size_t>(std::floor(0.5 * (static_cast<double>(traj.points.size() - 1))));
-    const size_t L = std::min(curvature_smoothing_num, max_smoothing_num);
-    for (size_t i = L; i < traj.points.size() - L; ++i)
-    {
-        const size_t curr_idx = i;
-        const size_t prev_idx = curr_idx - L;
-        const size_t next_idx = curr_idx + L;
-        p1.x = traj.points[prev_idx].x;
-        p2.x = traj.points[curr_idx].x;
-        p3.x = traj.points[next_idx].x;
-        p1.y = traj.points[prev_idx].y;
-        p2.y = traj.points[curr_idx].y;
-        p3.y = traj.points[next_idx].y;
-        const double den = std::max(
-            length(p1, p2) * length(p2, p3) * length(p3, p1),
-            std::numeric_limits<double>::epsilon());
-        const double curvature =
-            2.0 * ((p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)) / den;
-        traj.points.at(curr_idx).kappa = curvature;
+    if (trajectory.points.size() < 2) {
+        return false;
     }
 
-    /* first and last curvature is copied from next value */
-    for (size_t i = 0; i < std::min(L, traj.points.size()); ++i)
-    {
-        traj.points.at(i).kappa = traj.points.at(std::min(L, traj.points.size() - 1)).kappa;
-        traj.points.at(traj.points.size() - i - 1).kappa =
-            traj.points.at(std::max(traj.points.size() - L - 1, size_t(0))).kappa;
+    const size_t interval_count = trajectory.points.size() - 1;
+    std::vector<double> interval_length(interval_count, 0.0);
+    std::vector<double> interval_curvature(interval_count, 0.0);
+    for (size_t i = 0; i < interval_count; ++i) {
+        const auto &current = trajectory.points[i];
+        const auto &next = trajectory.points[i + 1];
+        const double ds = next.s - current.s;
+        if (!std::isfinite(ds) ||
+            ds <= std::numeric_limits<double>::epsilon())
+        {
+            return false;
+        }
+
+        interval_length[i] = ds;
+        interval_curvature[i] =
+            Mod2Pi(next.theta - current.theta) / ds;
     }
+
+    trajectory.points.front().kappa = interval_curvature.front();
+    for (size_t i = 1; i + 1 < trajectory.points.size(); ++i) {
+        const double total_length =
+            interval_length[i - 1] + interval_length[i];
+        // 连接点曲率取左右区间按弧长加权的平均值，不跨越多个基元强行拟合圆。
+        trajectory.points[i].kappa =
+            (interval_curvature[i - 1] * interval_length[i - 1] +
+             interval_curvature[i] * interval_length[i]) /
+            total_length;
+    }
+    trajectory.points.back().kappa = interval_curvature.back();
+
+    // 点序始终沿实际行驶方向排列。倒车时轨迹切向等于车头航向加π，
+    // 常量π不改变航向导数，因此这里无需按档位反号；控制端会再按档位
+    // 将该几何曲率换算为实际前轮转角。
+    return true;
 }
 
 // 计算dkappa
@@ -251,20 +298,111 @@ void caculateDkappaos(planning_msgs::TrajectoryPointArray &trajectory)
         if (i == 0)
         {
             dkappa = (trajectory.points[i + 1].kappa - trajectory.points[i].kappa) /
-                     (trajectory.points[i + 1].s - trajectory.points[i].s);
+                     std::max(
+                         trajectory.points[i + 1].s - trajectory.points[i].s,
+                         std::numeric_limits<double>::epsilon());
         }
         else if (i == trajectory.points.size() - 1)
         {
             dkappa = (trajectory.points[i].kappa - trajectory.points[i - 1].kappa) /
-                     (trajectory.points[i].s - trajectory.points[i - 1].s);
+                     std::max(
+                         trajectory.points[i].s - trajectory.points[i - 1].s,
+                         std::numeric_limits<double>::epsilon());
         }
         else
         {
             dkappa = (trajectory.points[i + 1].kappa - trajectory.points[i - 1].kappa) /
-                     (trajectory.points[i + 1].s - trajectory.points[i - 1].s);
+                     std::max(
+                         trajectory.points[i + 1].s - trajectory.points[i - 1].s,
+                         std::numeric_limits<double>::epsilon());
         }
         trajectory.points[i].dkappa = dkappa;
     }
+}
+
+bool isRsConnectionContinuous(
+    const HybridAStarType::VectorVec3d &path,
+    const HybridAStarType::VectorVec3d &rs_path,
+    double position_tolerance)
+{
+    if (rs_path.empty()) {
+        return true;
+    }
+    if (path.empty()) {
+        return false;
+    }
+
+    // RS首点应与Hybrid A*解析扩展起点重合；从后向前找可避开节点边界重复点。
+    size_t connection_index = path.size();
+    double nearest_distance = std::numeric_limits<double>::infinity();
+    for (size_t i = path.size(); i-- > 0;) {
+        const double distance = (path[i].head(2) - rs_path.front().head(2)).norm();
+        if (distance < nearest_distance) {
+            nearest_distance = distance;
+            connection_index = i;
+        }
+    }
+    if (connection_index >= path.size() ||
+        nearest_distance > position_tolerance ||
+        std::fabs(Mod2Pi(
+            path[connection_index].z() - rs_path.front().z())) > 0.05)
+    {
+        return false;
+    }
+
+    // GetPath会删除重复的RS首点，因此完整路径下一点应对应RS第二点。
+    if (rs_path.size() > 1 && connection_index + 1 < path.size()) {
+        const double next_distance =
+            (path[connection_index + 1].head(2) - rs_path[1].head(2)).norm();
+        const double next_heading_error = std::fabs(Mod2Pi(
+            path[connection_index + 1].z() - rs_path[1].z()));
+        return next_distance <= position_tolerance && next_heading_error <= 0.05;
+    }
+    return rs_path.size() == 1;
+}
+
+bool isTrajectoryGeometryValid(
+    const planning_msgs::TrajectoryPointArray &trajectory,
+    const OpenSpace_config &config)
+{
+    if (trajectory.points.size() < 3 ||
+        config.wheel_base <= 0.0 ||
+        config.trajectory_resample_resolution <= 0.0)
+    {
+        return false;
+    }
+
+    const double maximum_curvature =
+        std::tan(config.steering_angle * M_PI / 180.0) /
+        config.wheel_base;
+    const double curvature_tolerance = 1.10 * std::fabs(maximum_curvature);
+    const double dkappa_tolerance =
+        2.0 * curvature_tolerance /
+        config.trajectory_resample_resolution;
+    const double maximum_point_gap =
+        1.5 * config.trajectory_resample_resolution;
+    for (size_t i = 0; i < trajectory.points.size(); ++i) {
+        const auto &point = trajectory.points[i];
+        if (!isFinitePose(point) ||
+            !std::isfinite(point.s) ||
+            !std::isfinite(point.kappa) ||
+            !std::isfinite(point.dkappa) ||
+            std::fabs(point.kappa) > curvature_tolerance ||
+            std::fabs(point.dkappa) > dkappa_tolerance)
+        {
+            return false;
+        }
+        if (i == 0) {
+            continue;
+        }
+
+        const auto &previous = trajectory.points[i - 1];
+        const double point_gap = length(previous, point);
+        if (point_gap < 1.0e-4 || point_gap > maximum_point_gap) {
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace
@@ -280,6 +418,11 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
     param_node_dir = ros::package::getPath("open_space_planner");
 
     std::string openspace_config_yaml_file = param_node_dir + std::string("/param/") + std::string("openspace.yaml");
+    // 比赛接入可通过节点私有参数选用专用车辆配置，默认行为保持不变。
+    ros::NodeHandle private_nh("~");
+    private_nh.param<std::string>(
+        "open_space_config_file", openspace_config_yaml_file,
+        openspace_config_yaml_file);
     YAML::Node config_;
 
     // 加载配置参数
@@ -287,9 +430,18 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
 
     openspace_config.car_length = config_["car_length"].as<double>();
     openspace_config.car_width = config_["car_width"].as<double>();
+    openspace_config.rear_overhang = config_["rear_overhang"].as<double>();
     openspace_config.reverse_brake = config_["reverse_brake"].as<double>();
+    openspace_config.trajectory_resample_resolution =
+        config_["trajectory_resample_resolution"].as<double>();
+    openspace_config.forward_speed = config_["forward_speed"].as<double>();
     openspace_config.reverse_speed = config_["reverse_speed"].as<double>();
-    openspace_config.safe_reverse_dis = config_["safe_reverse_dis"].as<double>();
+    openspace_config.max_acceleration = config_["max_acceleration"].as<double>();
+    openspace_config.max_deceleration = config_["max_deceleration"].as<double>();
+    openspace_config.max_lateral_acceleration =
+        config_["max_lateral_acceleration"].as<double>();
+    openspace_config.max_front_tire_steering_rate =
+        config_["max_front_tire_steering_rate"].as<double>();
     openspace_config.steering_angle = config_["steering_angle"].as<double>();
     openspace_config.steering_angle_discrete_num = config_["steering_angle_discrete_num"].as<int>();
     openspace_config.wheel_base = config_["wheel_base"].as<double>();
@@ -469,7 +621,8 @@ bool OpenSpacePlanner::initializeCurrentMap()
 		1.0, map_resolution_,
 		openspace_config.car_length,
 		openspace_config.car_width,
-		openspace_config.wheel_base);
+		openspace_config.wheel_base,
+		openspace_config.rear_overhang);
 
 	for (unsigned int w = 0; w < current_costmap_ptr_->info.width; ++w) {
 		for (unsigned int h = 0; h < current_costmap_ptr_->info.height; ++h) {
@@ -771,8 +924,19 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 	}
 
 	const auto path = kinodynamic_astar_searcher_ptr_->GetPath();
+	const auto &rs_path = kinodynamic_astar_searcher_ptr_->GetRsConnectPath();
 	publishSearchDebugMarkers(kinodynamic_astar_searcher_ptr_->GetSearchedTree(),
-		kinodynamic_astar_searcher_ptr_->GetRsConnectPath(), start_state);
+		rs_path, start_state);
+	if (!isRsConnectionContinuous(
+		path, rs_path,
+		std::max(1.0e-3,
+			0.1 * openspace_config.trajectory_resample_resolution)))
+	{
+		kinodynamic_astar_searcher_ptr_->Reset();
+		ROS_WARN_THROTTLE(
+			2.0, "[open_space] Hybrid A* and RS connection is discontinuous");
+		return false;
+	}
 	const auto split_paths = path_split(path);
 	const bool has_invalid_segment = split_paths.empty() ||
 		std::any_of(split_paths.begin(), split_paths.end(),
@@ -790,9 +954,29 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 	cached_segments_.clear();
 	for (const auto &split_path : split_paths) {
 		auto segment = GetTraject(split_path, start_state);
-		caculateKappaos(1, segment);
+		if (segment.points.size() < 3) {
+			cached_segments_.clear();
+			kinodynamic_astar_searcher_ptr_->Reset();
+			ROS_WARN_THROTTLE(
+				2.0, "[open_space] trajectory resampling produced an invalid segment");
+			return false;
+		}
 		caculateAccumulated_s_os(segment);
+		if (!calculateKappaFromHeadingOs(segment)) {
+			cached_segments_.clear();
+			kinodynamic_astar_searcher_ptr_->Reset();
+			ROS_WARN_THROTTLE(
+				2.0, "[open_space] trajectory heading curvature calculation failed");
+			return false;
+		}
 		caculateDkappaos(segment);
+		if (!isTrajectoryGeometryValid(segment, openspace_config)) {
+			cached_segments_.clear();
+			kinodynamic_astar_searcher_ptr_->Reset();
+			ROS_WARN_THROTTLE(
+				2.0, "[open_space] trajectory geometry quality check failed");
+			return false;
+		}
 		cached_segments_.push_back(
 			Velocity_Profile_output_os(openspace_config, std::move(segment)));
 	}
@@ -881,7 +1065,11 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::GetTraject(const HybridASt
         tra_resample.push_back(point);
     }
 
-    resamplePoints(0.5, tra_resample);
+    if (!resamplePoints(
+        openspace_config.trajectory_resample_resolution, tra_resample))
+    {
+        return traject_in;
+    }
 
     // 控制器的横向 MPC 至少需要 3 个参考点。搜索末端附近的小段经重采样后
     // 可能仅剩起终两个点；在两点之间补一个几何中点，使其仍能作为独立换挡段执行。
@@ -913,50 +1101,105 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::Velocity_Profile_output_os
     const OpenSpace_config &vel_config,
     planning_msgs::TrajectoryPointArray trajectory)
 {
-    if (trajectory.points.empty()) {
+    if (trajectory.points.size() < 2) {
         return trajectory;
     }
 
     const double direction = trajectory.is_forward_shift ? 1.0 : -1.0;
-    const double cruise_speed = direction * std::fabs(vel_config.reverse_speed);
-    const size_t last_index = trajectory.points.size() - 1;
+    const double maximum_speed = std::max(
+        0.0, trajectory.is_forward_shift
+            ? vel_config.forward_speed : vel_config.reverse_speed);
+    const double maximum_acceleration =
+        std::max(1.0e-3, vel_config.max_acceleration);
+    const double maximum_deceleration =
+        std::max(1.0e-3, vel_config.max_deceleration);
+    const double maximum_lateral_acceleration =
+        std::max(1.0e-3, vel_config.max_lateral_acceleration);
+    const double maximum_steering_rate =
+        std::max(1.0e-3, vel_config.max_front_tire_steering_rate);
+    const double wheel_base = std::max(1.0e-3, vel_config.wheel_base);
+    const size_t point_count = trajectory.points.size();
 
-    // 控制器会在每个新段前停车并准备前轮角，因此每段都从零速起步、在末端零速停车。
-    for (auto &point : trajectory.points) {
-        point.v = 0.0;
-        point.a = 0.0;
-    }
-
-    size_t stop_index = last_index;
-    double distance_to_end = 0.0;
-    for (size_t i = last_index; i > 1; --i) {
-        distance_to_end += distance2D(
-            Point2D(trajectory.points[i].x, trajectory.points[i].y),
-            Point2D(trajectory.points[i - 1].x, trajectory.points[i - 1].y));
-        if (distance_to_end >= std::max(0.0, vel_config.safe_reverse_dis)) {
-            stop_index = i;
-            break;
+    // 先生成不带方向符号的局部速度上限，前进和倒车共用同一套约束计算。
+    std::vector<double> speed(point_count, maximum_speed);
+    for (size_t i = 0; i < point_count; ++i) {
+        const double curvature = std::fabs(trajectory.points[i].kappa);
+        if (curvature > 1.0e-6) {
+            speed[i] = std::min(speed[i], std::sqrt(
+                maximum_lateral_acceleration / curvature));
         }
     }
 
-    // 长轨迹后半程降低参考速度；短轨迹至少保留一个非零中间点，避免退化成停车指令。
-    for (size_t i = 1; i < stop_index; ++i) {
-        const bool use_cruise_speed = stop_index < 4 || i < stop_index / 2;
-        trajectory.points[i].v = use_cruise_speed ? cruise_speed : 0.5 * cruise_speed;
+    // 直接约束相邻点的实际前轮角变化。若两端速度均不超过该区间上限，
+    // 按平均速度计算得到的转角变化率一定不会超过车辆物理能力。
+    for (size_t i = 1; i < point_count; ++i) {
+        const double ds =
+            trajectory.points[i].s - trajectory.points[i - 1].s;
+        const double previous_steering = std::atan(
+            wheel_base * trajectory.points[i - 1].kappa);
+        const double current_steering = std::atan(
+            wheel_base * trajectory.points[i].kappa);
+        const double steering_change =
+            std::fabs(current_steering - previous_steering);
+        if (steering_change <= 1.0e-6) {
+            continue;
+        }
+
+        const double interval_speed_limit =
+            maximum_steering_rate * ds / steering_change;
+        speed[i - 1] = std::min(speed[i - 1], interval_speed_limit);
+        speed[i] = std::min(speed[i], interval_speed_limit);
     }
 
-    double relative_time = 0.0;
-    trajectory.points.front().relative_time = 0.0;
-    for (size_t i = 1; i < trajectory.points.size(); ++i) {
-        const double distance = distance2D(
-            Point2D(trajectory.points[i].x, trajectory.points[i].y),
-            Point2D(trajectory.points[i - 1].x, trajectory.points[i - 1].y));
-        const double reference_speed = std::max(
-            {std::fabs(trajectory.points[i - 1].v),
-             std::fabs(trajectory.points[i].v), 0.02});
-        relative_time += distance / reference_speed;
-        trajectory.points[i].relative_time = relative_time;
+    // 每个换挡段都必须从静止起步并在真实段末停车。
+    speed.front() = 0.0;
+    speed.back() = 0.0;
+
+    // 前向扫描限制起步和曲率变化后的再加速过程。
+    for (size_t i = 1; i < point_count; ++i) {
+        const double ds =
+            trajectory.points[i].s - trajectory.points[i - 1].s;
+        const double reachable_speed = std::sqrt(
+            speed[i - 1] * speed[i - 1] +
+            2.0 * maximum_acceleration * ds);
+        speed[i] = std::min(speed[i], reachable_speed);
     }
+
+    // 后向扫描保证任一点都能按配置减速度在段末零速点前停车。
+    for (size_t i = point_count - 1; i > 0; --i) {
+        const double ds =
+            trajectory.points[i].s - trajectory.points[i - 1].s;
+        const double stoppable_speed = std::sqrt(
+            speed[i] * speed[i] +
+            2.0 * maximum_deceleration * ds);
+        speed[i - 1] = std::min(speed[i - 1], stoppable_speed);
+    }
+
+    for (size_t i = 0; i < point_count; ++i) {
+        trajectory.points[i].v = direction * speed[i];
+        trajectory.points[i].a = 0.0;
+        trajectory.points[i].relative_time = 0.0;
+    }
+
+    // 用相邻点平均速度生成时间，再由有符号速度差计算一致的规划加速度。
+    for (size_t i = 1; i < point_count; ++i) {
+        const double ds =
+            trajectory.points[i].s - trajectory.points[i - 1].s;
+        const double speed_sum = speed[i - 1] + speed[i];
+        if (speed_sum <= 1.0e-6) {
+            // 正常运动段不会进入此分支；保留有限时间以避免异常短段产生除零。
+            trajectory.points[i].relative_time =
+                trajectory.points[i - 1].relative_time +
+                2.0 * std::sqrt(ds / maximum_acceleration);
+            continue;
+        }
+        const double dt = 2.0 * ds / speed_sum;
+        trajectory.points[i].relative_time =
+            trajectory.points[i - 1].relative_time + dt;
+        trajectory.points[i - 1].a =
+            (trajectory.points[i].v - trajectory.points[i - 1].v) / dt;
+    }
+    trajectory.points.back().a = 0.0;
     return trajectory;
 }
 

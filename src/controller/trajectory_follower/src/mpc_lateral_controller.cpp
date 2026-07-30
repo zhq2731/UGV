@@ -199,17 +199,6 @@ void MpcLateralController::setInputData(InputData const & input_data)
       m_current_kinematic_state_ptr->twist.twist.linear.x = input_data.vel;
 }
 
-void MpcLateralController::resetForOpenSpaceTrajectory(
-  const autoware_msgs::SteeringReport & current_steer)
-{
-  m_ctrl_cmd_prev.steering_tire_angle = current_steer.steering_tire_angle;
-  m_ctrl_cmd_prev.steering_tire_rotation_rate = 0.0;
-  m_steer_cmd_prev = current_steer.steering_tire_angle;
-  m_is_ctrl_cmd_prev_initialized = true;
-  m_trajectory_buffer.clear();
-  m_mpc.resetForOpenSpaceTrajectory(current_steer);
-}
-
 bool MpcLateralController::isSteerConverged(
   const autoware_msgs::AckermannLateralCommand & cmd) const
 {

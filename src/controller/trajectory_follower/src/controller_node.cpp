@@ -14,6 +14,7 @@
 
 #include "trajectory_follower_nodes/controller_node.hpp"
 #include "trajectory_follower/mpc_lateral_controller.hpp"
+#include "trajectory_follower/open_space_mpc_lateral_controller.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -122,7 +123,15 @@ Controller::Controller(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	lon_input.motion_start_cmd.motion_start = 2; // invalid
 	timeout_thr_sec_ = 0.5;//declare_parameter<double>("timeout_thr_sec", 0.5);
 
-	lateral_controller_ = std::make_shared<trajectory_follower::MpcLateralController>(private_nh);
+	// 泊车和参考线分别创建独立的横向控制器实例。两种模式在单次启动中
+	// 只会构造其中一个，既不会重复计算，也不会共享轨迹或控制历史。
+	if (open_space_execution_mode) {
+		lateral_controller_ = std::make_shared<
+			trajectory_follower::OpenSpaceMpcLateralController>(private_nh);
+	} else {
+		lateral_controller_ = std::make_shared<
+			trajectory_follower::MpcLateralController>(private_nh);
+	}
 
 	std::string vehicle_platform_file;
 	private_nh.param<std::string>("vehicle_platform_file", vehicle_platform_file, "vehicle_platform.yaml");
@@ -439,10 +448,11 @@ void Controller::openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg
 	if (open_space_longitudinal_controller_) {
 		open_space_longitudinal_controller_->Reset();
 	}
-	const auto mpc_controller = std::dynamic_pointer_cast<
-		trajectory_follower::MpcLateralController>(lateral_controller_);
-	if (mpc_controller && input_data_.current_steering_ptr) {
-		mpc_controller->resetForOpenSpaceTrajectory(
+	const auto open_space_mpc_controller = std::dynamic_pointer_cast<
+		trajectory_follower::OpenSpaceMpcLateralController>(
+			lateral_controller_);
+	if (open_space_mpc_controller && input_data_.current_steering_ptr) {
+		open_space_mpc_controller->resetForNewTrajectory(
 			*input_data_.current_steering_ptr);
 	}
 	setOpenSpaceExecutionState(OpenSpaceExecutionState::IDLE);
@@ -823,10 +833,12 @@ void Controller::latControl()
 			activateTrajectory(pending_open_space_trajectory_);
 			// 新段准备完成后，以当前实际前轮角初始化 MPC 的上一控制量、延迟缓冲
 			// 和转角滤波状态，避免首周期重新输出上一段末端转角。
-			const auto mpc_controller = std::dynamic_pointer_cast<
-				trajectory_follower::MpcLateralController>(lateral_controller_);
-			if (mpc_controller && input_data_.current_steering_ptr) {
-				mpc_controller->resetForOpenSpaceTrajectory(
+			const auto open_space_mpc_controller = std::dynamic_pointer_cast<
+				trajectory_follower::OpenSpaceMpcLateralController>(
+					lateral_controller_);
+			if (open_space_mpc_controller &&
+				input_data_.current_steering_ptr) {
+				open_space_mpc_controller->resetForNewTrajectory(
 					*input_data_.current_steering_ptr);
 			}
 			has_pending_open_space_trajectory_ = false;

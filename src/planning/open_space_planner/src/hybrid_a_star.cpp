@@ -66,14 +66,21 @@ HybridAStar::~HybridAStar() {
 
 void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_upper,
                        double state_grid_resolution, double map_grid_resolution,double car_length_param,
-                       double car_width_param,double wheel_base_param) {
+                       double car_width_param, double wheel_base_param,
+                       double rear_overhang_param) {
+    // 局部地图尺寸会随车辆和目标位置改变。必须在覆盖尺寸变量之前按照旧尺寸
+    // 释放旧搜索网格，否则第二次规划可能用新边界遍历旧数组并发生越界。
+    openset_.clear();
+    ReleaseMemory();
     rs_connect_path_.clear();
+    path_length_ = 0.0;
     //初始化车辆
 
     car_length = car_length_param;
     car_width = car_width_param;
     wheel_base_ = wheel_base_param;
-    SetVehicleShape(car_length, car_width, wheel_base_);
+    // 位姿参考点位于后轴中心，车身后边界应使用后悬而不是轴距。
+    SetVehicleShape(car_length, car_width, rear_overhang_param);
 
     map_x_lower_ = x_lower;
     map_x_upper_ = x_upper;
@@ -92,41 +99,10 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
     // MAP_GRID_SIZE_X_ = std::floor((map_x_upper_ - map_x_lower_));
     // MAP_GRID_SIZE_Y_ = std::floor((map_y_upper_ - map_y_lower_) );
 
-    if (map_data_) {
-        delete[] map_data_;
-        map_data_ = nullptr;
-    }
     // 地图总共有 X*Y个格子
     map_data_ = new uint8_t[MAP_GRID_SIZE_X_ * MAP_GRID_SIZE_Y_]();
     // auto temp = STATE_GRID_SIZE_X_*STATE_GRID_SIZE_Y_;
     // std::cout<<"map_size"<<MAP_GRID_SIZE_X_ * MAP_GRID_SIZE_Y_<<"   state_size"<<temp<<std::endl;
-    //将原本state_node_map_全部清空
-    if (state_node_map_) {
-        for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
-
-            if (state_node_map_[i] == nullptr)
-                continue;
-
-            for (int j = 0; j < STATE_GRID_SIZE_Y_; ++j) {
-                if (state_node_map_[i][j] == nullptr)
-                    continue;
-
-                for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k) {
-                    if (state_node_map_[i][j][k] != nullptr) {
-                        delete state_node_map_[i][j][k];
-                        state_node_map_[i][j][k] = nullptr;
-                    }
-                }
-                delete[] state_node_map_[i][j];
-                state_node_map_[i][j] = nullptr;
-            }
-            delete[] state_node_map_[i];
-            state_node_map_[i] = nullptr;
-        }
-
-        delete[] state_node_map_;
-        state_node_map_ = nullptr;
-    }
 
     state_node_map_ = new StateNode::Ptr **[STATE_GRID_SIZE_X_];
     for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
@@ -322,7 +298,7 @@ void HybridAStar::SetObstacle(const double pt_x, const double pt_y) {
 }
 
 void HybridAStar::SetVehicleShape(double length, double width, double rear_axle_dist) {
-    //长、宽、轴距
+    // 后轴中心为原点：车尾位于 -rear_axle_dist，车头位于 length-rear_axle_dist。
     vehicle_shape_.resize(8);
     vehicle_shape_.block<2, 1>(0, 0) = HybridAStarType::Vec2d(-rear_axle_dist, width / 2);
     vehicle_shape_.block<2, 1>(2, 0) = HybridAStarType::Vec2d(length - rear_axle_dist, width / 2);

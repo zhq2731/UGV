@@ -1,0 +1,60 @@
+<launch>
+  <!--
+    比赛Lite平台的单车开放空间泊车闭环：
+      /chatter、/goal_pose、/map
+        -> lite_parking_bridge
+        -> odomData、chassis、/move_base_simple/goal、/free_space_map
+        -> planner
+        -> trajectory
+        -> trajectory_follower
+        -> lite_parking_bridge
+        -> /vehicle_control_cmd
+  -->
+  <arg name="vehicle_id" default="0"/>
+  <arg name="map_crop_margin" default="20.0"/>
+  <arg name="enable_control" default="true"/>
+  <arg name="auto_motion_start" default="true"/>
+  <arg name="vehicle_type" default="lite_parking"/>
+  <arg name="vehicle_platform_file"
+       default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
+  <arg name="open_space_config_file"
+       default="$(find open_space_planner)/param/openspace_lite.yaml"/>
+
+  <node pkg="lite_parking_bridge" type="lite_parking_bridge_node"
+        name="lite_parking_bridge" output="screen">
+    <param name="vehicle_id" value="$(arg vehicle_id)"/>
+    <param name="map_crop_margin" value="$(arg map_crop_margin)"/>
+    <param name="max_front_tire_angle_rad" value="0.5585053606"/>
+    <param name="steering_ratio" value="1.0"/>
+    <param name="enable_vehicle_control" value="$(arg enable_control)"/>
+    <param name="auto_motion_start" value="$(arg auto_motion_start)"/>
+    <param name="control_publish_rate" value="50.0"/>
+    <param name="control_command_timeout" value="0.5"/>
+  </node>
+
+  <node pkg="planner" type="planner" name="planner" output="screen">
+    <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+    <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+    <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+    <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
+
+    <!-- Lite 和规划器均使用数学坐标系 yaw；抵消 PlanningNode 历史的固定 +90°。 -->
+    <param name="heading_compensation_degree" value="-90.0"/>
+    <param name="enable_open_space_planner" value="true"/>
+    <param name="enable_conflict_constraint" value="false"/>
+    <param name="open_space_config_file" value="$(arg open_space_config_file)"/>
+  </node>
+
+  <group if="$(arg enable_control)">
+    <node pkg="trajectory_follower" type="trajectory_follower"
+          name="trajectory_follower" output="screen">
+      <!-- 复用成熟MPC参数的完整基线，再用Lite专用参数覆盖泊车相关项。 -->
+      <rosparam file="$(find launch_node)/param/control/tank500/lateral_controller_defaults.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/control/lite_parking/open_space_controller.param.yaml"/>
+      <param name="vehicle_platform_file" value="$(arg vehicle_platform_file)"/>
+    </node>
+  </group>
+</launch>

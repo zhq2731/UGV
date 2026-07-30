@@ -28,6 +28,7 @@
 #define GLOG_USE_GLOG_EXPORT
 #include "hybrid_a_star/rs_path.h"
 
+#include <algorithm>
 #include <glog/logging.h>
 
 // P 371: TABLE 1
@@ -519,29 +520,54 @@ HybridAStarType::TypeVectorVecd<3> RSPath::GetRSPath(const HybridAStarType::Vec3
 //              << rs_path.type_[2] << " " << rs_path.type_[3] << " "
 //              << rs_path.type_[4] << std::endl;
 
-    const double path_length = rs_path.Length() * turning_radius_;
-    const auto interpolation_number = static_cast<unsigned int> (path_length / step_size);
-
-    double phi;
-
+    const double normalized_length = rs_path.Length();
+    const double path_length = normalized_length * turning_radius_;
     HybridAStarType::TypeVectorVecd<3> path_poses;
+    if (!std::isfinite(path_length) || path_length <= 0.0 ||
+        !std::isfinite(step_size) || step_size <= 0.0)
+    {
+        return path_poses;
+    }
 
-    for (unsigned int i = 0; i <= interpolation_number; ++i) {
-        double v;
-        double t = i * 1.0 / interpolation_number;
-        double seg = t * rs_path.Length();
+    // 固定步长采样之外必须显式保留每个L/R/S基元的边界。尤其在换向点，
+    // 若一个采样区间跨过前进和倒车，净位移会被抵消，后续用航向差除以
+    // 净位移时会得到虚假的大曲率，且path_split也无法识别真实换挡点。
+    std::vector<double> sample_progress{0.0, normalized_length};
+    const auto interpolation_number = std::max(
+        1u, static_cast<unsigned int>(std::ceil(path_length / step_size)));
+    for (unsigned int i = 1; i < interpolation_number; ++i) {
+        sample_progress.push_back(
+            normalized_length * static_cast<double>(i) /
+            static_cast<double>(interpolation_number));
+    }
+    double primitive_end = 0.0;
+    for (unsigned int i = 0; i < 5u; ++i) {
+        primitive_end += std::fabs(rs_path.length_[i]);
+        if (primitive_end > 0.0 && primitive_end < normalized_length) {
+            sample_progress.push_back(primitive_end);
+        }
+    }
+    std::sort(sample_progress.begin(), sample_progress.end());
+    sample_progress.erase(
+        std::unique(
+            sample_progress.begin(), sample_progress.end(),
+            [](double lhs, double rhs) {
+                return std::fabs(lhs - rhs) <= 1.0e-10;
+            }),
+        sample_progress.end());
+
+    for (const double progress : sample_progress) {
+        double remaining = progress;
 
         HybridAStarType::Vec3d temp_pose(0.0, 0.0, start_state.z());
-        for (unsigned int j = 0; j < 5u && seg > 0; ++j) {
-            if (rs_path.length_[j] < 0.0) {
-                v = std::max(-seg, rs_path.length_[j]);
-                seg += v;
-            } else {
-                v = std::min(seg, rs_path.length_[j]);
-                seg -= v;
-            }
+        for (unsigned int j = 0; j < 5u && remaining > 1.0e-12; ++j) {
+            const double primitive_length = rs_path.length_[j];
+            const double traveled =
+                std::min(remaining, std::fabs(primitive_length));
+            const double v = std::copysign(traveled, primitive_length);
+            remaining -= traveled;
 
-            phi = temp_pose.z();
+            const double phi = temp_pose.z();
             switch (rs_path.type_[j]) {
                 case L:
                     temp_pose.x() = std::sin(phi + v) - std::sin(phi) + temp_pose.x();
