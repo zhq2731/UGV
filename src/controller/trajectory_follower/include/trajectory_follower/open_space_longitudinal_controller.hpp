@@ -143,14 +143,14 @@ private:
   double carla_acceleration_deadband_{0.02};
   double carla_stop_brake_pedal_{20.0};
   double stop_speed_tolerance_{0.05};
+  // 倒车自然滑行减速度（2026-08-04 重新标定实测 1.4~2.0 m/s²，取 1.8）。
+  // 倒车停车距离估算用该值而非 max_deceleration，避免滑行提前触发导致停在换挡点前。
+  double reverse_coast_deceleration_{1.8};
 
   // 以下状态只属于当前已激活轨迹段，切换轨迹段时由Reset统一清除。
   std::size_t progress_index_{0};
   double speed_error_integral_{0.0};
   double previous_acceleration_command_{0.0};
-  // Cybertruck倒车一旦进入末端停车包络便锁存滑行状态，避免减速阶段
-  // 继续使用标定有效区间之外的小油门；新轨迹段由Reset解除锁存。
-  bool reverse_terminal_coast_active_{false};
   ros::Time previous_compute_time_;
 };
 

@@ -35,15 +35,20 @@ open_space_carla_reverse_throttle_acceleration_gain: 13.9301003409
 open_space_carla_forward_throttle_offset: 0.1997415547
 open_space_carla_reverse_throttle_offset: 2.2421886213
 
-# 前进制动: D=13.44596*B-0.04205 (R^2=0.9682)。
-# 倒车非零制动存在约1.9 m/s^2跳变，线性拟合仅作为保护分支；正常泊车
-# 通过0.65 m/s^2减速度限幅使用约0.726 m/s^2的倒挡自然滑行减速。
-open_space_carla_forward_brake_deceleration_gain: 13.4459561024
-open_space_carla_reverse_brake_deceleration_gain: 3.0771218730
-open_space_carla_forward_brake_offset: -0.0420474050
-open_space_carla_reverse_brake_offset: 1.9286224048
+# 2026-08-04 重新标定（当前 --ros-control 环境，Town06 平直路）。
+# 前进制动增益 ~8.0、倒车制动增益 ~5.3（m/s² 每单位踏板）。
+# offset 取 0：刹车直接提供请求减速度，不依赖滑行基线（滑行随位置漂移
+# ~0.1~1.9 m/s² 不可靠）。减速命令（>死区）一律走刹车分支。
+open_space_carla_forward_brake_deceleration_gain: 8.0
+open_space_carla_reverse_brake_deceleration_gain: 5.3
+open_space_carla_forward_brake_offset: 0.0
+open_space_carla_reverse_brake_offset: 0.0
 open_space_carla_acceleration_deadband: 0.02
 open_space_carla_stop_brake_pedal: 2.0
+
+# 倒车自然滑行减速度（重新标定实测 1.4~2.0 m/s²，取 1.8）。
+# 用于倒车停车距离估算（第1项修正），替代 max_deceleration=0.65。
+open_space_carla_reverse_coast_deceleration: 1.8
 
 traj_resample_dist: 0.05
 mpc_prediction_horizon: 50

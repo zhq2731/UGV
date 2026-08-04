@@ -133,6 +133,9 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     carla_stop_brake_pedal_, 20.0);
   node.param<double>(
     "open_space_stop_speed_tolerance", stop_speed_tolerance_, 0.05);
+  node.param<double>(
+    "open_space_carla_reverse_coast_deceleration",
+    reverse_coast_deceleration_, 1.8);
 
   lookahead_distance_ = std::max(0.0, lookahead_distance_);
   speed_integral_limit_ = std::max(0.0, speed_integral_limit_);
@@ -156,6 +159,7 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   carla_stop_brake_pedal_ =
     clampValue(carla_stop_brake_pedal_, 0.0, 100.0);
   stop_speed_tolerance_ = std::max(0.0, stop_speed_tolerance_);
+  reverse_coast_deceleration_ = std::max(0.1, reverse_coast_deceleration_);
 
   ROS_INFO_STREAM("[open_space_lon] output mode: "
     << outputModeName(output_mode_));
@@ -191,7 +195,6 @@ void OpenSpaceLongitudinalController::Reset()
   progress_index_ = 0;
   speed_error_integral_ = 0.0;
   previous_acceleration_command_ = 0.0;
-  reverse_terminal_coast_active_ = false;
   previous_compute_time_ = ros::Time(0);
 }
 
@@ -250,25 +253,6 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   const double brake_offset = is_forward ?
     carla_forward_brake_offset_ : carla_reverse_brake_offset_;
 
-  // 倒车油门标定仅覆盖有效驱动区，使用仿射模型反算出的低油门无法
-  // 可靠地产生期望减速度。停车距离达到剩余弧长后锁存为松油门滑行，
-  // 直到本段停稳；这样不会在末端仍下发未标定的小油门。
-  if (!is_forward && reference.requests_stop &&
-    std::fabs(current_velocity) > 1.0e-3 &&
-    !reverse_terminal_coast_active_)
-  {
-    const double required_stopping_distance = jerkLimitedStoppingDistance(
-      current_velocity, max_deceleration_, max_jerk_);
-    if (required_stopping_distance >= reference.remaining_distance) {
-      reverse_terminal_coast_active_ = true;
-      speed_error_integral_ = 0.0;
-      ROS_INFO_STREAM("[open_space_lon] enter reverse terminal coast: remaining="
-        << reference.remaining_distance << " m, stopping_distance="
-        << required_stopping_distance << " m, speed="
-        << current_velocity << " mps");
-    }
-  }
-
   double throttle = 0.0;
   double brake = 0.0;
   const bool target_stopped =
@@ -278,31 +262,29 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   if (target_stopped && vehicle_stopped) {
     // 末端停稳后维持行车制动，下一周期控制状态机会转入SEGMENT_END_HOLD。
     brake = carla_stop_brake_pedal_ / 100.0;
-  } else if (!is_forward && reverse_terminal_coast_active_) {
-    // 倒车末端行驶中不使用跳变明显的低开度制动，仅完全松开油门，
-    // 利用已标定的自然滑行减速度停车；停稳后由上面的分支施加保持制动。
-    throttle = 0.0;
-    brake = 0.0;
-  } else if (!target_stopped && drive_direction_acceleration >
-    -throttle_offset + carla_acceleration_deadband_)
-  {
-    // 踏板模型a=G*T-offset也覆盖轻微减速区；继续施加少量油门可避免
-    // Cybertruck倒挡松油门时约0.73 m/s^2的突兀发动机制动。
-    throttle = clampValue(
-      (drive_direction_acceleration + throttle_offset) /
-      throttle_gain, 0.0, 1.0);
   } else if (drive_direction_acceleration <
     -carla_acceleration_deadband_)
   {
-    // 制动模型D=G*B+offset；offset可与油门侧阻力补偿独立标定。
+    // 需要沿行驶方向减速 → 使用制动分支（主要停车手段，不再依赖滑行）。
+    // 制动模型给出请求减速度之上的附加制动力；offset 取较小值（弱滑行
+    // 基线），使制动在弱滑行区域也能可靠起作用。
     brake = clampValue(
       (-drive_direction_acceleration - brake_offset) /
       brake_gain, 0.0, 1.0);
+    // 停车阶段保证最小制动力，避免接近零速时滑行溜车。
+    if (target_stopped) {
+      brake = std::max(brake, 0.05);
+    }
   } else if (!target_stopped) {
-    // a_cmd接近零但仍要求行驶时，使用标定的零加速度油门。
+    // 加速或保持速度 → 油门。a_cmd 接近零但仍要求行驶时，
+    // 用标定的零加速度油门（即 offset/gain）。
     throttle = clampValue(
-      throttle_offset / throttle_gain,
-      0.0, 1.0);
+      (drive_direction_acceleration + throttle_offset) /
+      throttle_gain, 0.0, 1.0);
+  } else {
+    // 目标停车且车辆仍在缓慢移动、减速命令落在死区内时，
+    // 直接施加最小制动力，确保停稳而不是滑行。
+    brake = 0.05;
   }
 
   command->velocity_target = reference.target_velocity;
@@ -476,8 +458,12 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
 
   if (requests_stop && std::fabs(current_velocity) > 1.0e-3) {
     // 比较实际所需停车距离与剩余弧长，必要时优先制动并清除速度积分。
-    const double required_stopping_distance = jerkLimitedStoppingDistance(
-      current_velocity, max_deceleration_, max_jerk_);
+    // 倒车用实测滑行减速度的常量减速距离，前进沿用 jerk 受限估算。
+    const double required_stopping_distance = reverse ?
+      current_velocity * current_velocity /
+          (2.0 * reverse_coast_deceleration_) :
+      jerkLimitedStoppingDistance(
+          current_velocity, max_deceleration_, max_jerk_);
     if (required_stopping_distance >= remaining_distance) {
       acceleration_command =
         -std::copysign(max_deceleration_, current_velocity);
