@@ -130,10 +130,16 @@ private:
   double max_deceleration_{1.0};
   double max_jerk_{2.0};
   double nominal_control_period_{0.02};
-  // CARLA/Lite归一化踏板执行器模型。DriveCmd内部仍使用0～100百分比。
-  double carla_throttle_acceleration_gain_{3.0};
-  double carla_brake_deceleration_gain_{6.0};
-  double carla_rolling_resistance_{0.15};
+  // CARLA/Lite归一化踏板执行器模型。Cybertruck前进和倒车的传动、
+  // 发动机制动差异很大，因此两方向独立标定。DriveCmd仍使用0～100百分比。
+  double carla_forward_throttle_acceleration_gain_{3.0};
+  double carla_reverse_throttle_acceleration_gain_{3.0};
+  double carla_forward_throttle_offset_{0.15};
+  double carla_reverse_throttle_offset_{0.15};
+  double carla_forward_brake_deceleration_gain_{6.0};
+  double carla_reverse_brake_deceleration_gain_{6.0};
+  double carla_forward_brake_offset_{0.15};
+  double carla_reverse_brake_offset_{0.15};
   double carla_acceleration_deadband_{0.02};
   double carla_stop_brake_pedal_{20.0};
   double stop_speed_tolerance_{0.05};
@@ -142,6 +148,9 @@ private:
   std::size_t progress_index_{0};
   double speed_error_integral_{0.0};
   double previous_acceleration_command_{0.0};
+  // Cybertruck倒车一旦进入末端停车包络便锁存滑行状态，避免减速阶段
+  // 继续使用标定有效区间之外的小油门；新轨迹段由Reset解除锁存。
+  bool reverse_terminal_coast_active_{false};
   ros::Time previous_compute_time_;
 };
 

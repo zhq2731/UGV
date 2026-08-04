@@ -1,0 +1,30 @@
+# 当前CARLA 0.9.15-dev Cybertruck运行实例参数，位姿参考点为后轴中心。
+wheel_base_m: 4.0752487613
+front_overhang_m: 0.9684294591
+rear_overhang_m: 1.2298751500
+
+vehicle_width_m: 2.3895740509
+vehicle_height_m: 2.0981912613
+
+left_overhang_m: 0.0
+right_overhang_m: 0.0
+
+# 等效自行车前轮角限制35度对应的后轴中心转弯半径。
+min_turn_radius: 5.8200583954
+
+# 控制话题中的方向盘角直接表达等效自行车前轮角。
+w2s_cubic_coeff: 0.0
+w2s_quadratic_coeff: 0.0
+w2s_primary_coeff: 1.0
+w2s_constant_term_coeff: 0.0
+
+s2w_cubic_coeff: 0.0
+s2w_quadratic_coeff: 0.0
+s2w_primary_coeff: 1.0
+s2w_constant_term_coeff: 0.0
+
+long_expansion_distance_m: 0.0
+lat_expansion_distance_m: 0.0
+
+steer_rate_lim_dps: 13.18
+max_steer_angle_rad: 0.6108652382

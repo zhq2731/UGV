@@ -43,4 +43,5 @@ install(TARGETS task_scheduler_node
 
 install(DIRECTORY config launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  OPTIONAL
 )

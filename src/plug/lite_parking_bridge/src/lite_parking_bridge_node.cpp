@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <driver_msgs/ChassisReport.h>
@@ -20,7 +21,6 @@
 namespace {
 
 constexpr std::size_t kChatterFieldCount = 18;
-constexpr int8_t kPlannerFreeCell = 25;
 
 double clamp(const double value, const double lower, const double upper)
 {
@@ -33,15 +33,6 @@ geometry_msgs::Quaternion quaternionFromYaw(const double yaw)
   quaternion.z = std::sin(0.5 * yaw);
   quaternion.w = std::cos(0.5 * yaw);
   return quaternion;
-}
-
-double yawFromQuaternion(const geometry_msgs::Quaternion &quaternion)
-{
-  return std::atan2(
-      2.0 * (quaternion.w * quaternion.z +
-             quaternion.x * quaternion.y),
-      1.0 - 2.0 * (quaternion.y * quaternion.y +
-                   quaternion.z * quaternion.z));
 }
 
 bool isValidVehicleId(const double value)
@@ -57,8 +48,9 @@ bool isValidVehicleId(const double value)
  *
  * 该节点不生成轨迹或控制量，只完成两侧协议转换：状态、目标、地图和轨迹
  * 从Lite接入现有规划控制链路，控制器输出则汇总为Lite的单条车辆控制消息。
- * 状态和目标均以后轴中心为参考点，保持全局x、y、yaw不变；Lite全局地图
- * 则转换成以当前车辆为原点的局部栅格，满足开放空间规划器的输入约定。
+ * Lite/CARLA 的状态、目标和展示轨迹以 actor 中心为参考点，规划器和
+ * 控制器以后轴中心为参考点。桥接节点负责两种参考点之间的平移，并把
+ * actor 中心局部栅格的坐标表示转换成后轴中心局部坐标系。
  */
 class LiteParkingBridge
 {
@@ -66,10 +58,43 @@ public:
   LiteParkingBridge() : private_nh_("~")
   {
     private_nh_.param("vehicle_id", vehicle_id_, 0);
-    private_nh_.param("map_crop_margin", map_crop_margin_, 20.0);
+    private_nh_.param<std::string>(
+        "local_grid_topic", local_grid_topic_,
+        "/segmenter/points_freeGridMap");
     private_nh_.param(
         "max_front_tire_angle_rad", max_front_tire_angle_rad_,
-        32.0 * M_PI / 180.0);
+        35.0 * M_PI / 180.0);
+    private_nh_.param(
+        "carla_max_inner_wheel_angle_rad",
+        carla_max_inner_wheel_angle_rad_, 70.0 * M_PI / 180.0);
+    private_nh_.param(
+        "carla_wheel_base_m", carla_wheel_base_m_, 4.0752487613);
+    private_nh_.param(
+        "carla_front_track_m", carla_front_track_m_, 1.9454631016);
+    private_nh_.param<std::string>(
+        "steering_calibration_model", steering_calibration_model_,
+        "ackermann");
+    private_nh_.param(
+        "max_normalized_steer", max_normalized_steer_, 1.0);
+    private_nh_.param(
+        "normalized_to_tire_linear", normalized_to_tire_linear_, 0.0);
+    private_nh_.param(
+        "normalized_to_tire_cubic", normalized_to_tire_cubic_, 0.0);
+    private_nh_.param(
+        "normalized_to_tire_quintic", normalized_to_tire_quintic_, 0.0);
+    private_nh_.param(
+        "tire_to_normalized_linear", tire_to_normalized_linear_, 0.0);
+    private_nh_.param(
+        "tire_to_normalized_cubic", tire_to_normalized_cubic_, 0.0);
+    private_nh_.param(
+        "tire_to_normalized_quintic", tire_to_normalized_quintic_, 0.0);
+    private_nh_.param(
+        "actor_center_to_rear_axle_m", actor_center_to_rear_axle_m_, 0.0);
+    private_nh_.param(
+        "local_grid_x_shift_to_rear_axle_m",
+        local_grid_x_shift_to_rear_axle_m_, actor_center_to_rear_axle_m_);
+    private_nh_.param<std::string>(
+        "rear_axle_frame_id", rear_axle_frame_id_, "rear_axle");
     private_nh_.param("steering_ratio", steering_ratio_, 1.0);
     private_nh_.param(
         "enable_vehicle_control", enable_vehicle_control_, true);
@@ -78,6 +103,81 @@ public:
     private_nh_.param("control_command_timeout", control_command_timeout_, 0.5);
     max_front_tire_angle_rad_ =
         std::max(1.0e-3, std::fabs(max_front_tire_angle_rad_));
+    carla_max_inner_wheel_angle_rad_ = std::max(
+        1.0e-3, std::min(
+            std::fabs(carla_max_inner_wheel_angle_rad_),
+            0.5 * M_PI - 1.0e-3));
+    carla_wheel_base_m_ = std::max(1.0e-3, carla_wheel_base_m_);
+    carla_front_track_m_ = std::max(0.0, carla_front_track_m_);
+    max_normalized_steer_ = clamp(
+        std::fabs(max_normalized_steer_), 1.0e-3, 1.0);
+    if (steering_calibration_model_ != "ackermann" &&
+        steering_calibration_model_ != "empirical_odd_polynomial") {
+      ROS_WARN(
+          "[lite_bridge] unsupported steering_calibration_model=%s; "
+          "fall back to ackermann",
+          steering_calibration_model_.c_str());
+      steering_calibration_model_ = "ackermann";
+    }
+    if (steering_calibration_model_ == "empirical_odd_polynomial" &&
+        (!std::isfinite(normalized_to_tire_linear_) ||
+         !std::isfinite(normalized_to_tire_cubic_) ||
+         !std::isfinite(normalized_to_tire_quintic_) ||
+         !std::isfinite(tire_to_normalized_linear_) ||
+         !std::isfinite(tire_to_normalized_cubic_) ||
+         !std::isfinite(tire_to_normalized_quintic_))) {
+      ROS_WARN(
+          "[lite_bridge] non-finite empirical steering coefficients; "
+          "fall back to ackermann");
+      steering_calibration_model_ = "ackermann";
+      max_normalized_steer_ = 1.0;
+    }
+    if (steering_calibration_model_ == "empirical_odd_polynomial") {
+      const double command = max_normalized_steer_;
+      const double command_squared = command * command;
+      const double calibrated_angle_at_limit =
+          normalized_to_tire_linear_ * command +
+          normalized_to_tire_cubic_ * command * command_squared +
+          normalized_to_tire_quintic_ * command * command_squared *
+              command_squared;
+      const double angle = max_front_tire_angle_rad_;
+      const double angle_squared = angle * angle;
+      const double calibrated_command_at_limit =
+          tire_to_normalized_linear_ * angle +
+          tire_to_normalized_cubic_ * angle * angle_squared +
+          tire_to_normalized_quintic_ * angle * angle_squared *
+              angle_squared;
+      if (calibrated_angle_at_limit <= 1.0e-3 ||
+          calibrated_command_at_limit <= 1.0e-3) {
+        ROS_WARN(
+            "[lite_bridge] empirical steering model does not provide a "
+            "positive usable range; fall back to ackermann");
+        steering_calibration_model_ = "ackermann";
+        max_normalized_steer_ = 1.0;
+      }
+    }
+    actor_center_to_rear_axle_m_ =
+        std::max(0.0, actor_center_to_rear_axle_m_);
+    if (!std::isfinite(local_grid_x_shift_to_rear_axle_m_)) {
+      ROS_WARN(
+          "[lite_bridge] invalid local-grid x shift; use actor-to-rear "
+          "offset %.4f m",
+          actor_center_to_rear_axle_m_);
+      local_grid_x_shift_to_rear_axle_m_ = actor_center_to_rear_axle_m_;
+    }
+    if (rear_axle_frame_id_.empty()) {
+      rear_axle_frame_id_ = "rear_axle";
+    }
+    const double carla_max_equivalent_angle =
+        equivalentFrontTireAngleFromNormalizedSteer(1.0);
+    if (max_front_tire_angle_rad_ > carla_max_equivalent_angle) {
+      ROS_WARN(
+          "[lite_bridge] requested tire-angle limit %.2f deg exceeds "
+          "CARLA equivalent maximum %.2f deg; clamp to CARLA maximum",
+          max_front_tire_angle_rad_ * 180.0 / M_PI,
+          carla_max_equivalent_angle * 180.0 / M_PI);
+      max_front_tire_angle_rad_ = carla_max_equivalent_angle;
+    }
     control_publish_rate_ = std::max(1.0, control_publish_rate_);
     control_command_timeout_ = std::max(0.05, control_command_timeout_);
 
@@ -104,7 +204,7 @@ public:
     goal_sub_ = nh_.subscribe(
         "/goal_pose", 10, &LiteParkingBridge::goalCallback, this);
     map_sub_ = nh_.subscribe(
-        "/map", 1, &LiteParkingBridge::mapCallback, this);
+        local_grid_topic_, 1, &LiteParkingBridge::localGridCallback, this);
     trajectory_sub_ = nh_.subscribe(
         "trajectory", 1, &LiteParkingBridge::trajectoryCallback, this);
     if (enable_vehicle_control_) {
@@ -126,12 +226,106 @@ public:
     }
 
     ROS_INFO(
-        "[lite_bridge] ready: vehicle_id=%d, map_crop_margin=%.1f m, control=%s",
-        vehicle_id_, map_crop_margin_,
-        enable_vehicle_control_ ? "enabled" : "disabled");
+        "[lite_bridge] ready: vehicle_id=%d, local_grid_topic=%s, control=%s, "
+        "steering_model=%s, equivalent_steer_limit=%.2f deg, "
+        "CARLA_command_limit=%.4f, "
+        "actor_center_to_rear_axle=%.4f m, local_grid_x_shift=%.4f m, "
+        "planner_frame=%s",
+        vehicle_id_, local_grid_topic_.c_str(),
+        enable_vehicle_control_ ? "enabled" : "disabled",
+        steering_calibration_model_.c_str(),
+        max_front_tire_angle_rad_ * 180.0 / M_PI,
+        std::fabs(normalizedSteerFromEquivalentFrontTireAngle(
+            max_front_tire_angle_rad_)),
+        actor_center_to_rear_axle_m_, local_grid_x_shift_to_rear_axle_m_,
+        rear_axle_frame_id_.c_str());
   }
 
 private:
+  void actorCenterToRearAxle(
+      const double actor_x, const double actor_y, const double yaw,
+      double *rear_x, double *rear_y) const
+  {
+    *rear_x = actor_x - actor_center_to_rear_axle_m_ * std::cos(yaw);
+    *rear_y = actor_y - actor_center_to_rear_axle_m_ * std::sin(yaw);
+  }
+
+  void rearAxleToActorCenter(
+      const double rear_x, const double rear_y, const double yaw,
+      double *actor_x, double *actor_y) const
+  {
+    *actor_x = rear_x + actor_center_to_rear_axle_m_ * std::cos(yaw);
+    *actor_y = rear_y + actor_center_to_rear_axle_m_ * std::sin(yaw);
+  }
+
+  bool usesEmpiricalSteeringCalibration() const
+  {
+    return steering_calibration_model_ == "empirical_odd_polynomial";
+  }
+
+  // 规划控制器始终使用等效自行车前轮角。Cybertruck默认使用低速定圆
+  // 实测奇次多项式；Ackermann名义模型只作为其他车型和异常配置的回退。
+  double equivalentFrontTireAngleFromNormalizedSteer(
+      const double normalized_steer) const
+  {
+    const double command = clamp(
+        normalized_steer, -max_normalized_steer_, max_normalized_steer_);
+    if (std::fabs(command) <= 1.0e-9) {
+      return 0.0;
+    }
+    if (usesEmpiricalSteeringCalibration()) {
+      const double command_squared = command * command;
+      const double command_cubed = command * command_squared;
+      const double command_quintic =
+          command_cubed * command_squared;
+      return clamp(
+          normalized_to_tire_linear_ * command +
+              normalized_to_tire_cubic_ * command_cubed +
+              normalized_to_tire_quintic_ * command_quintic,
+          -max_front_tire_angle_rad_, max_front_tire_angle_rad_);
+    }
+    const double inner_wheel_angle =
+        std::fabs(command) * carla_max_inner_wheel_angle_rad_;
+    const double inner_wheel_radius =
+        carla_wheel_base_m_ / std::tan(inner_wheel_angle);
+    const double center_radius =
+        inner_wheel_radius + 0.5 * carla_front_track_m_;
+    return std::copysign(
+        std::atan2(carla_wheel_base_m_, center_radius), command);
+  }
+
+  double normalizedSteerFromEquivalentFrontTireAngle(
+      const double equivalent_angle) const
+  {
+    const double limited_angle = clamp(
+        equivalent_angle, -max_front_tire_angle_rad_,
+        max_front_tire_angle_rad_);
+    if (std::fabs(limited_angle) <= 1.0e-9) {
+      return 0.0;
+    }
+    if (usesEmpiricalSteeringCalibration()) {
+      const double angle_squared = limited_angle * limited_angle;
+      const double angle_cubed = limited_angle * angle_squared;
+      const double angle_quintic = angle_cubed * angle_squared;
+      return clamp(
+          tire_to_normalized_linear_ * limited_angle +
+              tire_to_normalized_cubic_ * angle_cubed +
+              tire_to_normalized_quintic_ * angle_quintic,
+          -max_normalized_steer_, max_normalized_steer_);
+    }
+    const double center_radius =
+        carla_wheel_base_m_ / std::tan(std::fabs(limited_angle));
+    const double inner_wheel_radius = std::max(
+        1.0e-6, center_radius - 0.5 * carla_front_track_m_);
+    const double inner_wheel_angle =
+        std::atan2(carla_wheel_base_m_, inner_wheel_radius);
+    return clamp(std::copysign(
+        clamp(
+            inner_wheel_angle / carla_max_inner_wheel_angle_rad_,
+            0.0, 1.0),
+        limited_angle), -max_normalized_steer_, max_normalized_steer_);
+  }
+
   void chatterCallback(const std_msgs::Float64MultiArray::ConstPtr &message)
   {
     if (message->data.size() % kChatterFieldCount != 0) {
@@ -155,30 +349,37 @@ private:
       }
 
       // Lite 历史协议按 y、x 排列；转换后恢复为规划器使用的 x、y。
-      vehicle_x_ = message->data[offset + 2];
-      vehicle_y_ = message->data[offset + 1];
+      const double vehicle_x = message->data[offset + 2];
+      const double vehicle_y = message->data[offset + 1];
       const double vehicle_z = message->data[offset + 3];
       const double yaw = message->data[offset + 7];
-      vehicle_yaw_ = yaw;
       const double velocity_x = message->data[offset + 9];
       const double velocity_y = message->data[offset + 10];
-      const double normalized_steer =
+      const double raw_normalized_steer =
           clamp(message->data[offset + 13], -1.0, 1.0);
+      if (std::fabs(raw_normalized_steer) > max_normalized_steer_ + 1.0e-3) {
+        ROS_WARN_THROTTLE(
+            1.0,
+            "[lite_bridge] measured normalized steer %.4f exceeds calibrated "
+            "limit %.4f; clamp feedback to the valid calibration range",
+            raw_normalized_steer, max_normalized_steer_);
+      }
+      const double normalized_steer = clamp(
+          raw_normalized_steer,
+          -max_normalized_steer_, max_normalized_steer_);
       actual_normalized_steer_ = normalized_steer;
       const bool reverse = message->data[offset + 15] >= 0.5 ||
                            message->data[offset + 17] < 0.0;
       const int gear = static_cast<int>(std::lround(message->data[offset + 17]));
-      const bool first_vehicle_state = !has_vehicle_state_;
-      has_vehicle_state_ = true;
 
-      publishLocalization(vehicle_x_, vehicle_y_, vehicle_z, yaw);
+      double rear_axle_x = 0.0;
+      double rear_axle_y = 0.0;
+      actorCenterToRearAxle(
+          vehicle_x, vehicle_y, yaw, &rear_axle_x, &rear_axle_y);
+      publishLocalization(rear_axle_x, rear_axle_y, vehicle_z, yaw);
       publishChassis(
           std::hypot(velocity_x, velocity_y), normalized_steer, reverse, gear,
           message->data[offset + 12], message->data[offset + 14]);
-      // 兼容桥接节点晚于已锁存目标启动的情况，首帧状态到达后补发规划地图。
-      if (first_vehicle_state) {
-        publishPlanningMap();
-      }
       return;
     }
 
@@ -216,9 +417,9 @@ private:
         (has_applied_gear_command_ && applied_gear_ == 1 ? 1 :
         (gear > 0 ? 1 : 0));
 
-    // Lite 发布归一化前轮转角；现有规划器从方向盘角和转向比还原前轮角。
+    // Lite发布CARLA归一化转向；换算成自行车模型使用的等效前轮角反馈。
     const double front_tire_angle =
-        normalized_steer * max_front_tire_angle_rad_;
+        equivalentFrontTireAngleFromNormalizedSteer(normalized_steer);
     chassis.front_wheel_angle = front_tire_angle * 180.0 / M_PI;
     chassis.steering_wheel_angle =
         chassis.front_wheel_angle * steering_ratio_;
@@ -243,29 +444,33 @@ private:
       return;
     }
 
-    goal_x_ = message->data[1];
-    goal_y_ = message->data[2];
     has_goal_ = true;
     motion_started_for_goal_ = false;
 
-    // 目标改变时先更新局部规划地图，再提交目标，避免沿用上一任务的裁剪区域。
-    publishPlanningMap();
+    const double goal_yaw = message->data[4];
+    double rear_axle_goal_x = 0.0;
+    double rear_axle_goal_y = 0.0;
+    actorCenterToRearAxle(
+        message->data[1], message->data[2], goal_yaw,
+        &rear_axle_goal_x, &rear_axle_goal_y);
 
     geometry_msgs::PoseStamped goal;
     goal.header.stamp = ros::Time::now();
     goal.header.frame_id = "map";
-    goal.pose.position.x = goal_x_;
-    goal.pose.position.y = goal_y_;
+    goal.pose.position.x = rear_axle_goal_x;
+    goal.pose.position.y = rear_axle_goal_y;
     goal.pose.position.z = message->data[3];
-    goal.pose.orientation = quaternionFromYaw(message->data[4]);
+    goal.pose.orientation = quaternionFromYaw(goal_yaw);
     planner_goal_pub_.publish(goal);
 
     ROS_INFO(
-        "[lite_bridge] goal: vehicle=%d, x=%.3f, y=%.3f, yaw=%.3f rad",
-        vehicle_id_, goal_x_, goal_y_, message->data[4]);
+        "[lite_bridge] goal actor=(%.3f, %.3f), rear_axle=(%.3f, %.3f), "
+        "yaw=%.3f rad, vehicle=%d",
+        message->data[1], message->data[2], rear_axle_goal_x,
+        rear_axle_goal_y, goal_yaw, vehicle_id_);
   }
 
-  void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &message)
+  void localGridCallback(const nav_msgs::OccupancyGrid::ConstPtr &message)
   {
     if (message->info.resolution <= 0.0 || message->info.width == 0 ||
         message->info.height == 0 ||
@@ -275,111 +480,48 @@ private:
       ROS_WARN_THROTTLE(1.0, "[lite_bridge] ignore invalid occupancy grid");
       return;
     }
-    latest_map_ = *message;
-    has_map_ = true;
-    publishPlanningMap();
-  }
-
-  void publishPlanningMap()
-  {
-    if (!has_map_ || !has_vehicle_state_ || !has_goal_) {
+    const geometry_msgs::Quaternion &orientation =
+        message->info.origin.orientation;
+    const double orientation_norm = std::sqrt(
+        orientation.x * orientation.x + orientation.y * orientation.y +
+        orientation.z * orientation.z + orientation.w * orientation.w);
+    const bool orientation_unset = orientation_norm < 1.0e-6;
+    const bool orientation_identity =
+        std::fabs(orientation.x) < 1.0e-6 &&
+        std::fabs(orientation.y) < 1.0e-6 &&
+        std::fabs(orientation.z) < 1.0e-6 &&
+        std::fabs(std::fabs(orientation.w) - 1.0) < 1.0e-6;
+    if (!orientation_unset && !orientation_identity) {
+      // OpenSpacePlanner 当前忽略 OccupancyGrid 的 origin.orientation。
+      // 拒绝旋转栅格比静默生成错误的碰撞关系更安全。
+      ROS_ERROR_THROTTLE(
+          2.0,
+          "[lite_bridge] reject rotated local grid: planner only supports "
+          "axis-aligned grids in the vehicle frame");
       return;
     }
 
-    const double resolution = latest_map_.info.resolution;
-    const double margin = std::max(0.0, map_crop_margin_);
-    const double cos_vehicle_yaw = std::cos(vehicle_yaw_);
-    const double sin_vehicle_yaw = std::sin(vehicle_yaw_);
-    const double goal_dx = goal_x_ - vehicle_x_;
-    const double goal_dy = goal_y_ - vehicle_y_;
-    const double goal_local_x =
-        cos_vehicle_yaw * goal_dx + sin_vehicle_yaw * goal_dy;
-    const double goal_local_y =
-        -sin_vehicle_yaw * goal_dx + cos_vehicle_yaw * goal_dy;
-
-    // 规划器始终以当前车辆后轴中心为(0,0,0)，因此输出地图范围也必须使用
-    // 车辆局部坐标，不能沿用Lite全局地图中的原点。
-    const double local_min_x =
-        std::floor((std::min(0.0, goal_local_x) - margin) / resolution) *
-        resolution;
-    const double local_max_x =
-        std::ceil((std::max(0.0, goal_local_x) + margin) / resolution) *
-        resolution;
-    const double local_min_y =
-        std::floor((std::min(0.0, goal_local_y) - margin) / resolution) *
-        resolution;
-    const double local_max_y =
-        std::ceil((std::max(0.0, goal_local_y) + margin) / resolution) *
-        resolution;
-
-    nav_msgs::OccupancyGrid planning_map;
-    planning_map.header.stamp = ros::Time::now();
-    planning_map.header.frame_id = "base_link";
-    planning_map.info.map_load_time = planning_map.header.stamp;
-    planning_map.info.resolution = resolution;
-    planning_map.info.width = static_cast<unsigned int>(
-        std::ceil((local_max_x - local_min_x) / resolution));
-    planning_map.info.height = static_cast<unsigned int>(
-        std::ceil((local_max_y - local_min_y) / resolution));
-    planning_map.info.origin.position.x = local_min_x;
-    planning_map.info.origin.position.y = local_min_y;
-    planning_map.info.origin.orientation.w = 1.0;
-    planning_map.data.resize(
-        static_cast<std::size_t>(planning_map.info.width) *
-        planning_map.info.height, -1);
-
-    const double source_origin_x = latest_map_.info.origin.position.x;
-    const double source_origin_y = latest_map_.info.origin.position.y;
-    const double source_origin_yaw =
-        yawFromQuaternion(latest_map_.info.origin.orientation);
-    const double cos_source_yaw = std::cos(source_origin_yaw);
-    const double sin_source_yaw = std::sin(source_origin_yaw);
-
-    // 对每个局部格中心反投影到Lite全局地图。规划器采用“仅值25可通行”
-    // 的安全语义，因此源地图之外、未知格和占用格都不会被误判为自由区。
-    for (unsigned int row = 0; row < planning_map.info.height; ++row) {
-      for (unsigned int column = 0; column < planning_map.info.width; ++column) {
-        const double local_x =
-            local_min_x + (static_cast<double>(column) + 0.5) * resolution;
-        const double local_y =
-            local_min_y + (static_cast<double>(row) + 0.5) * resolution;
-        const double world_x =
-            vehicle_x_ + cos_vehicle_yaw * local_x -
-            sin_vehicle_yaw * local_y;
-        const double world_y =
-            vehicle_y_ + sin_vehicle_yaw * local_x +
-            cos_vehicle_yaw * local_y;
-        const double source_dx = world_x - source_origin_x;
-        const double source_dy = world_y - source_origin_y;
-        const long source_column = static_cast<long>(std::floor(
-            (cos_source_yaw * source_dx + sin_source_yaw * source_dy) /
-            resolution));
-        const long source_row = static_cast<long>(std::floor(
-            (-sin_source_yaw * source_dx + cos_source_yaw * source_dy) /
-            resolution));
-        if (source_column < 0 || source_row < 0 ||
-            source_column >= static_cast<long>(latest_map_.info.width) ||
-            source_row >= static_cast<long>(latest_map_.info.height)) {
-          continue;
-        }
-
-        const std::size_t source_index =
-            static_cast<std::size_t>(source_row) * latest_map_.info.width +
-            static_cast<std::size_t>(source_column);
-        const std::size_t target_index =
-            static_cast<std::size_t>(row) * planning_map.info.width + column;
-        const int8_t source_value = latest_map_.data[source_index];
-        planning_map.data[target_index] =
-            source_value == 0 ? kPlannerFreeCell : source_value;
-      }
+    // 同一物理栅格由 actor 中心坐标改写为后轴中心坐标：
+    // p_rear = p_actor + (actor_center_to_rear_axle, 0)。无需重采样数据。
+    nav_msgs::OccupancyGrid planner_map = *message;
+    planner_map.header.frame_id = rear_axle_frame_id_;
+    planner_map.info.origin.position.x +=
+        local_grid_x_shift_to_rear_axle_m_;
+    if (orientation_unset) {
+      planner_map.info.origin.orientation.x = 0.0;
+      planner_map.info.origin.orientation.y = 0.0;
+      planner_map.info.origin.orientation.z = 0.0;
+      planner_map.info.origin.orientation.w = 1.0;
     }
-    planner_map_pub_.publish(planning_map);
-
-    ROS_INFO(
-        "[lite_bridge] local planning map: %u x %u cells, "
-        "goal=(%.2f, %.2f), resolution=%.2f m",
-        planning_map.info.width, planning_map.info.height,
-        goal_local_x, goal_local_y, resolution);
+    planner_map_pub_.publish(planner_map);
+    ROS_INFO_THROTTLE(
+        2.0,
+        "[lite_bridge] local grid converted: source_frame=%s, "
+        "planner_frame=%s, origin_x %.3f -> %.3f m, %u x %u cells, "
+        "resolution=%.2f m",
+        message->header.frame_id.c_str(), planner_map.header.frame_id.c_str(),
+        message->info.origin.position.x, planner_map.info.origin.position.x,
+        message->info.width, message->info.height, message->info.resolution);
   }
 
   void trajectoryCallback(
@@ -389,8 +531,12 @@ private:
     lite_trajectory.data.reserve(1 + 4 * message->points.size());
     lite_trajectory.data.push_back(static_cast<double>(vehicle_id_));
     for (const auto &point : message->points) {
-      lite_trajectory.data.push_back(point.x);
-      lite_trajectory.data.push_back(point.y);
+      double actor_center_x = 0.0;
+      double actor_center_y = 0.0;
+      rearAxleToActorCenter(
+          point.x, point.y, point.theta, &actor_center_x, &actor_center_y);
+      lite_trajectory.data.push_back(actor_center_x);
+      lite_trajectory.data.push_back(actor_center_y);
       lite_trajectory.data.push_back(point.z);
       lite_trajectory.data.push_back(point.theta);
     }
@@ -417,13 +563,14 @@ private:
       ROS_WARN_THROTTLE(1.0, "[lite_bridge] ignore non-finite steering command");
       return;
     }
-    // 现有控制话题使用方向盘角度；先除转向比得到前轮角，再归一化到Lite的[-1,1]。
+    // 先从方向盘角恢复规划器的等效前轮角，再换算为CARLA内侧轮归一化命令。
+    // 换算函数内部将等效转角严格限制在配置的正负35度内。
     const double safe_steering_ratio =
         std::max(1.0e-3, std::fabs(steering_ratio_));
     const double front_tire_angle =
         message->steering_wheel_angle / safe_steering_ratio * M_PI / 180.0;
     steering_command_ =
-        clamp(front_tire_angle / max_front_tire_angle_rad_, -1.0, 1.0);
+        normalizedSteerFromEquivalentFrontTireAngle(front_tire_angle);
     last_steering_command_time_ = ros::Time::now();
     has_steering_command_ = true;
   }
@@ -489,7 +636,10 @@ private:
     }
     // 转向命令超时后保持当前实测角，避免安全制动时突然回轮。
     command.data[2] =
-        steering_command_fresh ? steering_command_ : actual_normalized_steer_;
+        steering_command_fresh ? steering_command_ :
+        normalizedSteerFromEquivalentFrontTireAngle(
+            equivalentFrontTireAngleFromNormalizedSteer(
+                actual_normalized_steer_));
 
     if (has_requested_gear_command_) {
       applied_gear_ = requested_gear_;
@@ -521,16 +671,24 @@ private:
   ros::Timer control_timer_;
 
   int vehicle_id_{0};
-  double map_crop_margin_{20.0};
-  double max_front_tire_angle_rad_{32.0 * M_PI / 180.0};
+  std::string local_grid_topic_;
+  std::string steering_calibration_model_{"ackermann"};
+  double max_front_tire_angle_rad_{35.0 * M_PI / 180.0};
+  double carla_max_inner_wheel_angle_rad_{70.0 * M_PI / 180.0};
+  double carla_wheel_base_m_{4.0752487613};
+  double carla_front_track_m_{1.9454631016};
+  double max_normalized_steer_{1.0};
+  double normalized_to_tire_linear_{0.0};
+  double normalized_to_tire_cubic_{0.0};
+  double normalized_to_tire_quintic_{0.0};
+  double tire_to_normalized_linear_{0.0};
+  double tire_to_normalized_cubic_{0.0};
+  double tire_to_normalized_quintic_{0.0};
+  double actor_center_to_rear_axle_m_{0.0};
+  double local_grid_x_shift_to_rear_axle_m_{0.0};
   double steering_ratio_{1.0};
   double control_publish_rate_{50.0};
   double control_command_timeout_{0.5};
-  double vehicle_x_{0.0};
-  double vehicle_y_{0.0};
-  double vehicle_yaw_{0.0};
-  double goal_x_{0.0};
-  double goal_y_{0.0};
   double actual_normalized_steer_{0.0};
   double steering_command_{0.0};
   double throttle_command_{0.0};
@@ -539,18 +697,16 @@ private:
   uint8_t applied_gear_{0};
   bool enable_vehicle_control_{true};
   bool auto_motion_start_{true};
-  bool has_vehicle_state_{false};
   bool has_goal_{false};
-  bool has_map_{false};
   bool has_steering_command_{false};
   bool has_drive_command_{false};
   bool has_requested_gear_command_{false};
   bool has_applied_gear_command_{false};
   bool hand_brake_command_{false};
   bool motion_started_for_goal_{false};
+  std::string rear_axle_frame_id_{"rear_axle"};
   ros::Time last_steering_command_time_;
   ros::Time last_drive_command_time_;
-  nav_msgs::OccupancyGrid latest_map_;
 };
 
 int main(int argc, char **argv)

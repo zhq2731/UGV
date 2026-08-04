@@ -1,0 +1,58 @@
+# CARLA Cybertruck泊车专用控制覆盖参数。
+open_space_execution_mode: true
+open_space_longitudinal_control_mode: "carla_pedal"
+open_lat_controller: true
+open_lon_controller: true
+enable_control_log: false
+
+heading_compensation_degree: -90.0
+
+open_space_steering_prepare_tolerance: 0.03
+open_space_stop_speed_tolerance: 0.05
+open_space_hold_deceleration: 1.0
+open_space_hold_brake_pedal: 2.0
+open_space_steering_prepare_stable_cycles: 3
+open_space_gear_confirm_stable_cycles: 3
+open_space_segment_end_remaining_distance: 0.20
+open_space_segment_end_stable_duration: 1.0
+
+open_space_lookahead_distance: 0.5
+open_space_forward_speed_kp: 1.5
+open_space_forward_speed_ki: 0.0
+open_space_reverse_speed_kp: 1.5
+open_space_reverse_speed_ki: 0.0
+open_space_speed_integral_limit: 0.5
+open_space_max_acceleration: 0.5
+open_space_max_deceleration: 0.65
+open_space_max_jerk: 2.0
+open_space_longitudinal_control_period: 0.02
+
+# 2026-08-03 Town06/CARLA Cybertruck低速阶跃标定结果。
+# 前进: a=6.39005*T-0.199742 (R^2=0.9968)
+# 倒车: a=13.9301*T-2.24219 (有效区T>=0.16, R^2=0.9877)
+open_space_carla_forward_throttle_acceleration_gain: 6.3900493986
+open_space_carla_reverse_throttle_acceleration_gain: 13.9301003409
+open_space_carla_forward_throttle_offset: 0.1997415547
+open_space_carla_reverse_throttle_offset: 2.2421886213
+
+# 前进制动: D=13.44596*B-0.04205 (R^2=0.9682)。
+# 倒车非零制动存在约1.9 m/s^2跳变，线性拟合仅作为保护分支；正常泊车
+# 通过0.65 m/s^2减速度限幅使用约0.726 m/s^2的倒挡自然滑行减速。
+open_space_carla_forward_brake_deceleration_gain: 13.4459561024
+open_space_carla_reverse_brake_deceleration_gain: 3.0771218730
+open_space_carla_forward_brake_offset: -0.0420474050
+open_space_carla_reverse_brake_offset: 1.9286224048
+open_space_carla_acceleration_deadband: 0.02
+open_space_carla_stop_brake_pedal: 2.0
+
+traj_resample_dist: 0.05
+mpc_prediction_horizon: 50
+mpc_prediction_dt: 0.1
+mpc_weight_lat_error: 4.5
+mpc_weight_heading_error: 0.3
+mpc_weight_steering_input: 1.0
+mpc_weight_terminal_lat_error: 2.0
+mpc_weight_terminal_heading_error: 0.5
+input_delay: 0.0
+vehicle_model_steer_tau: 0.005
+steering_lpf_cutoff_hz: 2.0

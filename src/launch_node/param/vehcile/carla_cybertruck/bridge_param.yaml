@@ -1,0 +1,29 @@
+# 规划控制器使用等效自行车前轮角，CARLA使用归一化转向命令。
+max_front_tire_angle_rad: 0.6108652382
+
+# 2026-08-03 Town06、0.8 m/s低速定圆实测奇次模型。
+# 正向：delta(rad) = a1*u + a3*u^3 + a5*u^5
+# 逆向：u = b1*delta + b3*delta^3 + b5*delta^5
+steering_calibration_model: "empirical_odd_polynomial"
+max_normalized_steer: 0.623
+normalized_to_tire_linear: 1.1459251656
+normalized_to_tire_cubic: -0.5963685634
+normalized_to_tire_quintic: 0.4447353112
+tire_to_normalized_linear: 0.8679916046
+tire_to_normalized_cubic: 0.4247793295
+tire_to_normalized_quintic: -0.0527114978
+
+# CARLA名义Ackermann参数保留为回退模型和诊断基准。
+carla_max_inner_wheel_angle_rad: 1.2217304764
+carla_wheel_base_m: 4.0752487613
+carla_front_track_m: 1.9454631016
+steering_ratio: 1.0
+
+# CARLA actor 位姿位于车身包围盒中心；规划和控制统一使用后轴中心。
+# 6.2735533714 / 2 - 1.2298751500 = 1.9069015357 m。
+actor_center_to_rear_axle_m: 1.9069015357
+
+# 输入局部栅格以 actor 中心为 (0,0)。转换到后轴坐标后，同一栅格数据的
+# origin.x 需要增加此偏移；栅格无需重采样。
+local_grid_x_shift_to_rear_axle_m: 1.9069015357
+rear_axle_frame_id: "rear_axle"

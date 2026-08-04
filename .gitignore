@@ -83,3 +83,7 @@ __pycache__/
 # Codex local session metadata
 .agents/
 .codex/
+
+# Local runtime artifacts (not for upload)
+/calibration_results/
+/.local-deps/

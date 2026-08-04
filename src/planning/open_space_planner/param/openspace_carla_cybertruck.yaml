@@ -1,0 +1,32 @@
+# 当前CARLA Cybertruck开放空间规划参数，位姿参考点为后轴中心。
+car_length: 6.2735533714
+car_width: 2.3895740509
+rear_overhang: 1.2298751500
+wheel_base: 4.0752487613
+steering_angle: 35.0
+
+# 轨迹几何与速度约束。
+trajectory_resample_resolution: 0.2
+forward_speed: 1.0
+reverse_speed: 0.5
+max_acceleration: 0.5
+max_deceleration: 0.65
+max_lateral_acceleration: 0.5
+max_front_tire_steering_rate: 0.23
+reverse_brake: -1.0
+
+# Hybrid A* 搜索代价与解析连接参数。
+steering_angle_discrete_num: 6
+segment_length: 2.0
+segment_length_discrete_num: 5
+steering_penalty: 25.0
+steering_change_penalty: 10.0
+reversing_penalty: 25.0
+shot_distance: 25.0
+
+# 单段结束与最终目标判定阈值。
+segment_end_position_tolerance: 0.20
+segment_end_heading_tolerance: 0.15
+stop_speed_tolerance: 0.05
+goal_position_tolerance: 0.25
+goal_heading_tolerance: 0.0873

@@ -88,15 +88,43 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     "open_space_max_jerk", max_jerk_, 2.0);
   node.param<double>(
     "open_space_longitudinal_control_period", nominal_control_period_, 0.02);
+  // 先读取旧的共用参数作为兼容默认值，再允许车型配置按方向覆盖。
+  double legacy_throttle_gain = 3.0;
+  double legacy_brake_gain = 6.0;
+  double legacy_rolling_resistance = 0.15;
   node.param<double>(
     "open_space_carla_throttle_acceleration_gain",
-    carla_throttle_acceleration_gain_, 3.0);
+    legacy_throttle_gain, legacy_throttle_gain);
   node.param<double>(
     "open_space_carla_brake_deceleration_gain",
-    carla_brake_deceleration_gain_, 6.0);
+    legacy_brake_gain, legacy_brake_gain);
   node.param<double>(
     "open_space_carla_rolling_resistance",
-    carla_rolling_resistance_, 0.15);
+    legacy_rolling_resistance, legacy_rolling_resistance);
+  node.param<double>(
+    "open_space_carla_forward_throttle_acceleration_gain",
+    carla_forward_throttle_acceleration_gain_, legacy_throttle_gain);
+  node.param<double>(
+    "open_space_carla_reverse_throttle_acceleration_gain",
+    carla_reverse_throttle_acceleration_gain_, legacy_throttle_gain);
+  node.param<double>(
+    "open_space_carla_forward_throttle_offset",
+    carla_forward_throttle_offset_, legacy_rolling_resistance);
+  node.param<double>(
+    "open_space_carla_reverse_throttle_offset",
+    carla_reverse_throttle_offset_, legacy_rolling_resistance);
+  node.param<double>(
+    "open_space_carla_forward_brake_deceleration_gain",
+    carla_forward_brake_deceleration_gain_, legacy_brake_gain);
+  node.param<double>(
+    "open_space_carla_reverse_brake_deceleration_gain",
+    carla_reverse_brake_deceleration_gain_, legacy_brake_gain);
+  node.param<double>(
+    "open_space_carla_forward_brake_offset",
+    carla_forward_brake_offset_, legacy_rolling_resistance);
+  node.param<double>(
+    "open_space_carla_reverse_brake_offset",
+    carla_reverse_brake_offset_, legacy_rolling_resistance);
   node.param<double>(
     "open_space_carla_acceleration_deadband",
     carla_acceleration_deadband_, 0.02);
@@ -112,11 +140,18 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   max_deceleration_ = std::max(1.0e-3, max_deceleration_);
   max_jerk_ = std::max(0.0, max_jerk_);
   nominal_control_period_ = std::max(1.0e-3, nominal_control_period_);
-  carla_throttle_acceleration_gain_ =
-    std::max(1.0e-3, carla_throttle_acceleration_gain_);
-  carla_brake_deceleration_gain_ =
-    std::max(1.0e-3, carla_brake_deceleration_gain_);
-  carla_rolling_resistance_ = std::max(0.0, carla_rolling_resistance_);
+  carla_forward_throttle_acceleration_gain_ =
+    std::max(1.0e-3, carla_forward_throttle_acceleration_gain_);
+  carla_reverse_throttle_acceleration_gain_ =
+    std::max(1.0e-3, carla_reverse_throttle_acceleration_gain_);
+  carla_forward_throttle_offset_ =
+    std::max(0.0, carla_forward_throttle_offset_);
+  carla_reverse_throttle_offset_ =
+    std::max(0.0, carla_reverse_throttle_offset_);
+  carla_forward_brake_deceleration_gain_ =
+    std::max(1.0e-3, carla_forward_brake_deceleration_gain_);
+  carla_reverse_brake_deceleration_gain_ =
+    std::max(1.0e-3, carla_reverse_brake_deceleration_gain_);
   carla_acceleration_deadband_ = std::max(0.0, carla_acceleration_deadband_);
   carla_stop_brake_pedal_ =
     clampValue(carla_stop_brake_pedal_, 0.0, 100.0);
@@ -156,6 +191,7 @@ void OpenSpaceLongitudinalController::Reset()
   progress_index_ = 0;
   speed_error_integral_ = 0.0;
   previous_acceleration_command_ = 0.0;
+  reverse_terminal_coast_active_ = false;
   previous_compute_time_ = ros::Time(0);
 }
 
@@ -202,6 +238,36 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   // 因此踏板选择不能简单使用a_cmd正负号。
   const double drive_direction_acceleration =
     direction * acceleration_command;
+  const bool is_forward = input.trajectory_data.is_forward_shift;
+  const double throttle_gain = is_forward ?
+    carla_forward_throttle_acceleration_gain_ :
+    carla_reverse_throttle_acceleration_gain_;
+  const double throttle_offset = is_forward ?
+    carla_forward_throttle_offset_ : carla_reverse_throttle_offset_;
+  const double brake_gain = is_forward ?
+    carla_forward_brake_deceleration_gain_ :
+    carla_reverse_brake_deceleration_gain_;
+  const double brake_offset = is_forward ?
+    carla_forward_brake_offset_ : carla_reverse_brake_offset_;
+
+  // 倒车油门标定仅覆盖有效驱动区，使用仿射模型反算出的低油门无法
+  // 可靠地产生期望减速度。停车距离达到剩余弧长后锁存为松油门滑行，
+  // 直到本段停稳；这样不会在末端仍下发未标定的小油门。
+  if (!is_forward && reference.requests_stop &&
+    std::fabs(current_velocity) > 1.0e-3 &&
+    !reverse_terminal_coast_active_)
+  {
+    const double required_stopping_distance = jerkLimitedStoppingDistance(
+      current_velocity, max_deceleration_, max_jerk_);
+    if (required_stopping_distance >= reference.remaining_distance) {
+      reverse_terminal_coast_active_ = true;
+      speed_error_integral_ = 0.0;
+      ROS_INFO_STREAM("[open_space_lon] enter reverse terminal coast: remaining="
+        << reference.remaining_distance << " m, stopping_distance="
+        << required_stopping_distance << " m, speed="
+        << current_velocity << " mps");
+    }
+  }
 
   double throttle = 0.0;
   double brake = 0.0;
@@ -212,24 +278,30 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   if (target_stopped && vehicle_stopped) {
     // 末端停稳后维持行车制动，下一周期控制状态机会转入SEGMENT_END_HOLD。
     brake = carla_stop_brake_pedal_ / 100.0;
-  } else if (drive_direction_acceleration >
-    carla_acceleration_deadband_ && !target_stopped)
+  } else if (!is_forward && reverse_terminal_coast_active_) {
+    // 倒车末端行驶中不使用跳变明显的低开度制动，仅完全松开油门，
+    // 利用已标定的自然滑行减速度停车；停稳后由上面的分支施加保持制动。
+    throttle = 0.0;
+    brake = 0.0;
+  } else if (!target_stopped && drive_direction_acceleration >
+    -throttle_offset + carla_acceleration_deadband_)
   {
-    // 驱动时补偿滚动阻力，减少低速匀速阶段的稳态误差。
+    // 踏板模型a=G*T-offset也覆盖轻微减速区；继续施加少量油门可避免
+    // Cybertruck倒挡松油门时约0.73 m/s^2的突兀发动机制动。
     throttle = clampValue(
-      (drive_direction_acceleration + carla_rolling_resistance_) /
-      carla_throttle_acceleration_gain_, 0.0, 1.0);
+      (drive_direction_acceleration + throttle_offset) /
+      throttle_gain, 0.0, 1.0);
   } else if (drive_direction_acceleration <
     -carla_acceleration_deadband_)
   {
-    // 滚动阻力本身参与减速，只由制动器补足剩余减速度。
+    // 制动模型D=G*B+offset；offset可与油门侧阻力补偿独立标定。
     brake = clampValue(
-      (-drive_direction_acceleration - carla_rolling_resistance_) /
-      carla_brake_deceleration_gain_, 0.0, 1.0);
+      (-drive_direction_acceleration - brake_offset) /
+      brake_gain, 0.0, 1.0);
   } else if (!target_stopped) {
-    // a_cmd接近零但仍要求行驶时，仅补偿滚动阻力以维持低速。
+    // a_cmd接近零但仍要求行驶时，使用标定的零加速度油门。
     throttle = clampValue(
-      carla_rolling_resistance_ / carla_throttle_acceleration_gain_,
+      throttle_offset / throttle_gain,
       0.0, 1.0);
   }
 

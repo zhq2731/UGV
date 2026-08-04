@@ -20,7 +20,12 @@ bool  getPlatformParam(std::string fileName,PlatformParam &param)
 {
 	std::string homedir ;
 	getHomeDir(homedir);
-	std::string filePath = homedir + std::string("/")+fileName;
+	// 历史配置传入相对HOME的路径；roslaunch的$(find ...)会生成绝对路径。
+	// 同时支持两者，车型档案即可保存在工作空间内而无需复制到HOME固定目录。
+	std::string filePath = fileName;
+	if (fileName.empty() || fileName.front() != '/') {
+		filePath = homedir + std::string("/") + fileName;
+	}
 	YAML::Node platform_config;
 	platform_config = YAML::LoadFile(filePath);
 	

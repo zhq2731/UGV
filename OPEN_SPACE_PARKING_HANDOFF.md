@@ -108,14 +108,14 @@ trajectory_follower
 ### 4.2 比赛 Lite 平台
 
 ```text
-Lite: /chatter + /goal_pose + /map
+Lite: /chatter + /goal_pose + /segmenter/points_freeGridMap
                 │
                 ▼
 lite_parking_bridge
-        ├── odomData
+        ├── odomData（后轴中心）
         ├── chassis
-        ├── /move_base_simple/goal
-        └── /free_space_map（以车辆为原点的局部地图）
+        ├── /move_base_simple/goal（后轴中心）
+        └── /free_space_map（以后轴中心为原点的局部地图）
                 │
                 ▼
 planner -> trajectory -> trajectory_follower
@@ -232,31 +232,38 @@ parking_obstacle_length: 5.0
 parking_obstacle_width: 2.5
 ```
 
-### 6.3 Lite 全局地图到局部地图
+### 6.3 Lite/CARLA 局部地图参考点转换
 
-比赛 Lite 发布 `/map`，其坐标是全局 `map` 坐标。当前核心规划器仍按照“车辆局部栅格”工作，因此转换放在桥接节点，不修改 Hybrid A* 核心坐标约定。
+当前 Lite/CARLA 直接发布 `/segmenter/points_freeGridMap` 车体局部栅格，
+不再由桥接节点进行全局地图裁切。CARLA 状态和目标以 actor 中心为参考点，
+规划器、控制器及 Hybrid A* 车辆包络以后轴中心为参考点，因此参考点转换统一
+放在桥接节点完成。
 
 代码：
 
 ```text
 src/plug/lite_parking_bridge/src/lite_parking_bridge_node.cpp
-LiteParkingBridge::publishPlanningMap()
+LiteParkingBridge::chatterCallback()
+LiteParkingBridge::goalCallback()
+LiteParkingBridge::localGridCallback()
+LiteParkingBridge::trajectoryCallback()
 ```
 
 处理流程：
 
-1. 使用当前车辆全局位姿作为局部坐标原点。
-2. 把目标变换到车辆局部坐标系。
-3. 使用车辆、目标以及四周 `map_crop_margin` 生成局部矩形范围。
-4. 对局部地图的每个格中心反投影到 Lite 全局地图。
-5. Lite 源地图值 0 转成规划器自由值 25。
-6. 占用格、未知格和全局地图范围外保持不可通行。
-7. 发布 frame 为 `base_link` 的 `/free_space_map`。
+1. Cybertruck actor 中心到后轴中心的纵向距离为 `1.9069015357 m`。
+2. 当前位姿和目标位姿沿各自车头反方向平移该距离。
+3. 输入局部栅格坐标由 actor 中心改写为后轴中心，`origin.x` 增加该距离，
+   栅格数据不重采样，并发布为 `rear_axle` frame。
+4. 规划器轨迹保持后轴中心语义；仅在发布 `/SIM_trajectory` 给 Lite 展示时
+   沿轨迹航向加回该距离，恢复 actor 中心轨迹。
+5. 输入栅格必须与车辆局部轴对齐；旋转栅格会被桥接节点拒绝，因为当前
+   OpenSpacePlanner 不处理 `OccupancyGrid.info.origin.orientation`。
 
-默认裁切余量：
+具体偏移参数位于：
 
 ```text
-20 m
+src/launch_node/param/vehcile/carla_cybertruck/bridge_param.yaml
 ```
 
 ## 7. Hybrid A* 当前实现
@@ -289,14 +296,14 @@ kinodynamic_astar_searcher_ptr_->Init(..., 1.0, map_resolution_, ...);
 
 这里的 `1.0 m` 是 Hybrid A* 状态去重栅格的 XY 分辨率，不是碰撞地图分辨率。碰撞检查仍使用输入地图的 `map_resolution_`，例如 0.2 m；运动原语内部也有更细的离散点。但 1 m 状态去重确实偏粗，可能影响狭窄车位搜索质量。后续可以参数化为 0.5 m 或更细，但必须评估三维状态数组内存和搜索耗时，不能直接无条件改成 0.2 m。
 
-当前 Lite 车辆主要几何参数：
+当前 Lite/CARLA Cybertruck 主要几何参数：
 
 ```yaml
-car_length: 5.7
-car_width: 2.2
-rear_overhang: 1.1
-wheel_base: 3.6
-steering_angle: 32.0
+car_length: 6.2735533714
+car_width: 2.3895740509
+rear_overhang: 1.2298751500
+wheel_base: 4.0752487613
+steering_angle: 35.0
 ```
 
 ## 8. 轨迹几何检查与速度规划
@@ -536,6 +543,20 @@ src/controller/trajectory_follower/src/open_space_mpc_lateral_controller.cpp
 - 不会把车辆真实前轮角清零。
 
 当前 MPC 已有前进/倒车方向符号处理，并使用运动学模型，但倒车控制效果仍需专门回归和参数标定。目前不能认为已经达到实车泊车质量。
+
+Cybertruck 转向执行器映射放在 `lite_parking_bridge`，不放进 MPC：
+
+- MPC 指令和反馈统一使用等效自行车前轮角，并限制在 ±35°；
+- 桥接使用 2026-08-03 低速定圆实测奇次多项式完成双向转换；
+- 35°对应 CARLA 归一化转向约 0.62257，归一化边界为 ±0.623；
+- `/chatter` 归一化反馈通过正向实测模型转换为 `chassis.front_wheel_angle`；
+- 70°名义内侧轮 Ackermann 模型仅作为配置回退。
+
+标定报告位于：
+
+```text
+calibration_results/CARLA_CYBERTRUCK_STEERING_20260803.md
+```
 
 OSQP 判定已经修正：
 
