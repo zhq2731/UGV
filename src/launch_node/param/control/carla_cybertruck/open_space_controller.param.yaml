@@ -60,6 +60,10 @@ open_space_carla_stop_brake_pedal: 2.0
 # 用于倒车停车距离估算（第1项修正），替代 max_deceleration=0.65。
 open_space_carla_reverse_coast_deceleration: 1.8
 
+# 前进实际停车减速度（刹车标定 B=0.08 时 D≈1.1~1.2，取 1.1）。
+# 用于前进停车距离估算与制动包络，避免"刹停过早→距终点仍有余量→再启动"。
+open_space_carla_forward_stop_deceleration: 1.1
+
 traj_resample_dist: 0.05
 mpc_prediction_horizon: 50
 mpc_prediction_dt: 0.1

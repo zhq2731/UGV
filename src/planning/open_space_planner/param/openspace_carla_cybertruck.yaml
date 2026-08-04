@@ -10,7 +10,9 @@ trajectory_resample_resolution: 0.2
 forward_speed: 1.0
 reverse_speed: 0.5
 max_acceleration: 0.5
-max_deceleration: 0.65
+# 2026-08-04 提高到1.1匹配实际制动(刹车+滑行~1.1)：
+# 之前0.65使轨迹末端减速斜坡过长，车辆实际制动更快→提前到零速点→停不到终点再启动。
+max_deceleration: 1.1
 max_lateral_acceleration: 0.5
 # 2026-08-04 提高转向速率到1.5 rad/s：与控制器 steer_rate_lim_dps=86°/s 一致，
 # 避免方向盘大范围扫动时速度被压到接近0。

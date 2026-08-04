@@ -155,6 +155,9 @@ private:
   // 倒车自然滑行减速度（2026-08-04 重新标定实测 1.4~2.0 m/s²，取 1.8）。
   // 倒车停车距离估算用该值而非 max_deceleration，避免滑行提前触发导致停在换挡点前。
   double reverse_coast_deceleration_{1.8};
+  // 前进实际停车减速度（刹车标定 B=0.08 时 D≈1.1~1.2，取 1.1）。
+  // 用于前进停车距离估算与制动包络，避免"刹停过早→停不到终点→再启动"。
+  double forward_stop_deceleration_{1.1};
   // 2D 油门标定表（2026-08-04）：T_hold(v) + a/G。
   std::vector<double> forward_throttle_speed_table_;
   std::vector<double> forward_throttle_hold_table_;

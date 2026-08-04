@@ -136,6 +136,9 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   node.param<double>(
     "open_space_carla_reverse_coast_deceleration",
     reverse_coast_deceleration_, 1.8);
+  node.param<double>(
+    "open_space_carla_forward_stop_deceleration",
+    forward_stop_deceleration_, 1.1);
   // 2D 油门标定表：T(v,a)=T_hold(v)+a/G。读取失败或尺寸不一致时回退仿射模型。
   node.getParam(
     "open_space_carla_forward_throttle_speed_table",
@@ -189,6 +192,7 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     clampValue(carla_stop_brake_pedal_, 0.0, 100.0);
   stop_speed_tolerance_ = std::max(0.0, stop_speed_tolerance_);
   reverse_coast_deceleration_ = std::max(0.1, reverse_coast_deceleration_);
+  forward_stop_deceleration_ = std::max(0.1, forward_stop_deceleration_);
 
   ROS_INFO_STREAM("[open_space_lon] output mode: "
     << outputModeName(output_mode_));
@@ -429,8 +433,13 @@ bool OpenSpaceLongitudinalController::computeMotionReference(
     direction * std::fabs(points[speed_reference_index].v);
   if (requests_stop) {
     // 随剩余距离收紧目标速度，并在末端小范围内明确下发零速。
+    // 减速能力用实测停车减速度（前进=刹车+滑行~0.8），使目标速度包络
+    // 与实际制动能力一致，避免"刹停过早→距终点仍有余量→再启动"。
+    const double stop_deceleration =
+      trajectory.is_forward_shift ? forward_stop_deceleration_ :
+                                    max_deceleration_;
     const double braking_limit = std::sqrt(
-      std::max(0.0, 2.0 * max_deceleration_ * remaining_distance));
+      std::max(0.0, 2.0 * stop_deceleration * remaining_distance));
     target_velocity = std::copysign(
       std::min(std::fabs(target_velocity), braking_limit), direction);
     if (remaining_distance <= 0.05) {
@@ -482,12 +491,12 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
 
   if (requests_stop && std::fabs(current_velocity) > 1.0e-3) {
     // 比较实际所需停车距离与剩余弧长，必要时优先制动并清除速度积分。
-    // 倒车用实测滑行减速度的常量减速距离，前进沿用 jerk 受限估算。
-    const double required_stopping_distance = reverse ?
+    // 前进/倒车都用"实测停车减速度"的常量减速距离：
+    // 前进用刹车+滑行(~0.8)，倒车用自然滑行(~1.8)，避免刹停过早/停不到终点。
+    const double required_stopping_distance =
       current_velocity * current_velocity /
-          (2.0 * reverse_coast_deceleration_) :
-      jerkLimitedStoppingDistance(
-          current_velocity, max_deceleration_, max_jerk_);
+          (2.0 * (reverse ? reverse_coast_deceleration_ :
+                            forward_stop_deceleration_));
     if (required_stopping_distance >= remaining_distance) {
       acceleration_command =
         -std::copysign(max_deceleration_, current_velocity);
