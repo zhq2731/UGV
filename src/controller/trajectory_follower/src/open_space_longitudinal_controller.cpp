@@ -136,6 +136,35 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   node.param<double>(
     "open_space_carla_reverse_coast_deceleration",
     reverse_coast_deceleration_, 1.8);
+  // 2D 油门标定表：T(v,a)=T_hold(v)+a/G。读取失败或尺寸不一致时回退仿射模型。
+  node.getParam(
+    "open_space_carla_forward_throttle_speed_table",
+    forward_throttle_speed_table_);
+  node.getParam(
+    "open_space_carla_forward_throttle_hold_table",
+    forward_throttle_hold_table_);
+  node.getParam(
+    "open_space_carla_reverse_throttle_speed_table",
+    reverse_throttle_speed_table_);
+  node.getParam(
+    "open_space_carla_reverse_throttle_hold_table",
+    reverse_throttle_hold_table_);
+  node.param<double>(
+    "open_space_carla_forward_throttle_gain",
+    forward_throttle_gain_, 8.0);
+  node.param<double>(
+    "open_space_carla_reverse_throttle_gain",
+    reverse_throttle_gain_, 5.75);
+  if (forward_throttle_speed_table_.size() != forward_throttle_hold_table_.size() ||
+      forward_throttle_speed_table_.empty()) {
+    forward_throttle_speed_table_.clear();
+    forward_throttle_hold_table_.clear();
+  }
+  if (reverse_throttle_speed_table_.size() != reverse_throttle_hold_table_.size() ||
+      reverse_throttle_speed_table_.empty()) {
+    reverse_throttle_speed_table_.clear();
+    reverse_throttle_hold_table_.clear();
+  }
 
   lookahead_distance_ = std::max(0.0, lookahead_distance_);
   speed_integral_limit_ = std::max(0.0, speed_integral_limit_);
@@ -242,11 +271,6 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
   const double drive_direction_acceleration =
     direction * acceleration_command;
   const bool is_forward = input.trajectory_data.is_forward_shift;
-  const double throttle_gain = is_forward ?
-    carla_forward_throttle_acceleration_gain_ :
-    carla_reverse_throttle_acceleration_gain_;
-  const double throttle_offset = is_forward ?
-    carla_forward_throttle_offset_ : carla_reverse_throttle_offset_;
   const double brake_gain = is_forward ?
     carla_forward_brake_deceleration_gain_ :
     carla_reverse_brake_deceleration_gain_;
@@ -276,11 +300,11 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
       brake = std::max(brake, 0.05);
     }
   } else if (!target_stopped) {
-    // 加速或保持速度 → 油门。a_cmd 接近零但仍要求行驶时，
-    // 用标定的零加速度油门（即 offset/gain）。
-    throttle = clampValue(
-      (drive_direction_acceleration + throttle_offset) /
-      throttle_gain, 0.0, 1.0);
+    // 加速或保持速度 → 2D 油门查表 T(v,a)=T_hold(v)+a/G。
+    // T_hold(v) 随速度变化，避免一维仿射模型在巡航时的油门猎振。
+    throttle = throttle2D(
+      is_forward, std::fabs(current_velocity),
+      drive_direction_acceleration);
   } else {
     // 目标停车且车辆仍在缓慢移动、减速命令落在死区内时，
     // 直接施加最小制动力，确保停稳而不是滑行。
@@ -490,6 +514,47 @@ double OpenSpaceLongitudinalController::currentSignedVelocity(
   const double direction =
     input.trajectory_data.is_forward_shift ? 1.0 : -1.0;
   return direction * std::fabs(input.chassis_data.current_velocity);
+}
+
+double OpenSpaceLongitudinalController::throttle2D(
+  const bool is_forward, const double speed, const double drive_accel) const
+{
+  const std::vector<double> &speed_table =
+    is_forward ? forward_throttle_speed_table_ : reverse_throttle_speed_table_;
+  const std::vector<double> &hold_table =
+    is_forward ? forward_throttle_hold_table_ : reverse_throttle_hold_table_;
+  const double gain = is_forward ? forward_throttle_gain_ : reverse_throttle_gain_;
+
+  // 标定表缺失或损坏时回退到旧的仿射模型 (a = G*T - offset)。
+  if (speed_table.size() < 2 || speed_table.size() != hold_table.size()) {
+    const double offset =
+      is_forward ? carla_forward_throttle_offset_ : carla_reverse_throttle_offset_;
+    const double g = is_forward ?
+      carla_forward_throttle_acceleration_gain_ :
+      carla_reverse_throttle_acceleration_gain_;
+    return clampValue((drive_accel + offset) / std::max(1.0e-3, g), 0.0, 1.0);
+  }
+
+  // 分段线性插值 T_hold(v)，速度区间外线性外推。
+  double t_hold = 0.0;
+  if (speed <= speed_table.front()) {
+    t_hold = hold_table.front();
+  } else if (speed >= speed_table.back()) {
+    t_hold = hold_table.back();
+  } else {
+    for (std::size_t i = 0; i + 1 < speed_table.size(); ++i) {
+      if (speed >= speed_table[i] && speed <= speed_table[i + 1]) {
+        const double denom = speed_table[i + 1] - speed_table[i];
+        const double ratio = denom > 1.0e-9 ?
+          (speed - speed_table[i]) / denom : 0.0;
+        t_hold = hold_table[i] +
+          ratio * (hold_table[i + 1] - hold_table[i]);
+        break;
+      }
+    }
+  }
+  return clampValue(
+    t_hold + drive_accel / std::max(0.1, gain), 0.0, 1.0);
 }
 
 double OpenSpaceLongitudinalController::controlPeriod()

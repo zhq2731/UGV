@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include <ros/ros.h>
 
@@ -110,6 +111,14 @@ private:
     double dt);
   /** @brief 根据当前轨迹方向把底盘速度绝对值恢复成控制器使用的有符号速度。 */
   double currentSignedVelocity(const car::control::InputData &input) const;
+  /**
+   * @brief 2D 油门查表：T(v,a) = T_hold(v) + a/G
+   *
+   * T_hold(v) 由速度保持标定插值得到，随速度变化；G 为常数增益。
+   * 用于消除一维仿射模型在高/低速巡航时的油门猎振。表缺失时回退仿射模型。
+   */
+  double throttle2D(
+    bool is_forward, double speed, double drive_accel) const;
   /** @brief 获取本周期实际时间间隔；异常间隔回退到配置的标称控制周期。 */
   double controlPeriod();
   /** @brief 解析纵控后端名称；未知名称回退到尚未实现的安全实车接口。 */
@@ -146,6 +155,13 @@ private:
   // 倒车自然滑行减速度（2026-08-04 重新标定实测 1.4~2.0 m/s²，取 1.8）。
   // 倒车停车距离估算用该值而非 max_deceleration，避免滑行提前触发导致停在换挡点前。
   double reverse_coast_deceleration_{1.8};
+  // 2D 油门标定表（2026-08-04）：T_hold(v) + a/G。
+  std::vector<double> forward_throttle_speed_table_;
+  std::vector<double> forward_throttle_hold_table_;
+  std::vector<double> reverse_throttle_speed_table_;
+  std::vector<double> reverse_throttle_hold_table_;
+  double forward_throttle_gain_{8.0};
+  double reverse_throttle_gain_{5.75};
 
   // 以下状态只属于当前已激活轨迹段，切换轨迹段时由Reset统一清除。
   std::size_t progress_index_{0};

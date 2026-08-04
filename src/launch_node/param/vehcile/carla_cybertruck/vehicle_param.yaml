@@ -26,5 +26,7 @@ s2w_constant_term_coeff: 0.0
 long_expansion_distance_m: 0.0
 lat_expansion_distance_m: 0.0
 
-steer_rate_lim_dps: 13.18
+# 2026-08-04 提高转向速率到1.5 rad/s(86°/s)：原13.18°/s过保守，
+# 导致planner在方向盘大范围扫动时把车速压到接近0。
+steer_rate_lim_dps: 86.0
 max_steer_angle_rad: 0.6108652382

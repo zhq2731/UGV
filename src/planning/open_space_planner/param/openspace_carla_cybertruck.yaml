@@ -12,7 +12,9 @@ reverse_speed: 0.5
 max_acceleration: 0.5
 max_deceleration: 0.65
 max_lateral_acceleration: 0.5
-max_front_tire_steering_rate: 0.23
+# 2026-08-04 提高转向速率到1.5 rad/s：与控制器 steer_rate_lim_dps=86°/s 一致，
+# 避免方向盘大范围扫动时速度被压到接近0。
+max_front_tire_steering_rate: 1.5
 reverse_brake: -1.0
 
 # Hybrid A* 搜索代价与解析连接参数。
