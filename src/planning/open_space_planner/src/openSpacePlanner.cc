@@ -1175,6 +1175,30 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::Velocity_Profile_output_os
         speed[i - 1] = std::min(speed[i - 1], stoppable_speed);
     }
 
+    // 2026-08-05 转向低谷减速斜坡平滑：
+    // 曲率/转向限速会把轨迹中部的速度压成"尖谷"，controller 跟踪目标速度
+    // 时用刹车急跟，叠加转向阻力后车速掉过头（接近 0 再爬升），表现为同档位
+    // 内速度多次升降。这里用较缓的减速度(maximum_acceleration)把转向低谷
+    // 两侧的降速扩成平缓斜坡，controller 无需急刹。段末停车斜坡已由上面
+    // max_deceleration 后向扫描生成，本平滑跳过该区域以免影响停车精度。
+    size_t terminal_start = point_count - 1;
+    while (terminal_start > 0 &&
+           speed[terminal_start] < speed[terminal_start - 1] - 1.0e-9) {
+        --terminal_start;
+    }
+    const double gentle_deceleration =
+        std::max(1.0e-3, maximum_acceleration);
+    for (size_t i = terminal_start; i > 0; --i) {
+        const double ds =
+            trajectory.points[i].s - trajectory.points[i - 1].s;
+        if (speed[i] < speed[i - 1] - 1.0e-9) {
+            const double gentle_limit = std::sqrt(
+                speed[i] * speed[i] +
+                2.0 * gentle_deceleration * ds);
+            speed[i - 1] = std::min(speed[i - 1], gentle_limit);
+        }
+    }
+
     for (size_t i = 0; i < point_count; ++i) {
         trajectory.points[i].v = direction * speed[i];
         trajectory.points[i].a = 0.0;

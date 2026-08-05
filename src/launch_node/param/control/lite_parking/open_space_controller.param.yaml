@@ -30,10 +30,16 @@ open_space_max_deceleration: 1.0
 open_space_max_jerk: 2.0
 open_space_longitudinal_control_period: 0.02
 
-# 比赛Lite默认动力学：归一化油门/制动分别对应3.0/6.0 m/s²，滚阻0.15 m/s²。
-open_space_carla_throttle_acceleration_gain: 3.0
-open_space_carla_brake_deceleration_gain: 6.0
-open_space_carla_rolling_resistance: 0.15
+# 比赛Lite默认动力学：归一化油门/制动对应3.0/6.0 m/s²，offset 0.15。
+# 2026-08-05 由旧共用参数改为方向独立参数（与纵向控制器读取一致）。
+open_space_carla_forward_throttle_acceleration_gain: 3.0
+open_space_carla_reverse_throttle_acceleration_gain: 3.0
+open_space_carla_forward_throttle_offset: 0.15
+open_space_carla_reverse_throttle_offset: 0.15
+open_space_carla_forward_brake_deceleration_gain: 6.0
+open_space_carla_reverse_brake_deceleration_gain: 6.0
+open_space_carla_forward_brake_offset: 0.15
+open_space_carla_reverse_brake_offset: 0.15
 open_space_carla_acceleration_deadband: 0.02
 open_space_carla_stop_brake_pedal: 20.0
 

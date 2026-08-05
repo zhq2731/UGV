@@ -17,10 +17,16 @@ open_space_segment_end_remaining_distance: 0.20
 open_space_segment_end_stable_duration: 1.0
 
 open_space_lookahead_distance: 0.5
-open_space_forward_speed_kp: 1.5
-open_space_forward_speed_ki: 0.3
-open_space_reverse_speed_kp: 1.5
-open_space_reverse_speed_ki: 0.3
+# 油门低通滤波截止频率(Hz)：平滑油门输出，抑制倒车大转向时实际速度v的
+# 物理波动经速度环放大导致的油门高频波动。5Hz滤掉vt阶梯(~7Hz)等高频、
+# 保留低频趋势；0=禁用。调低更平滑但响应更慢。
+open_space_throttle_lpf_cutoff_hz: 5.0
+# 速度环 PI（前进/倒车一致）：kp=1.8（补偿低通滤波响应滞后）、ki=0.25（防超调）。
+# 稳态巡航由 2D 表 T_hold 保证，PI 只处理残差。
+open_space_forward_speed_kp: 1.8
+open_space_forward_speed_ki: 0.25
+open_space_reverse_speed_kp: 1.8
+open_space_reverse_speed_ki: 0.25
 open_space_speed_integral_limit: 0.5
 open_space_max_acceleration: 0.5
 # 2026-08-05 从0.65改为1.1与规划器轨迹末端减速斜坡一致（planner max_deceleration=1.1）。
@@ -29,9 +35,8 @@ open_space_max_deceleration: 1.1
 open_space_max_jerk: 2.0
 open_space_longitudinal_control_period: 0.02
 
-# 2026-08-03 Town06/CARLA Cybertruck低速阶跃标定结果。
-# 前进: a=6.39005*T-0.199742 (R^2=0.9968)
-# 倒车: a=13.9301*T-2.24219 (有效区T>=0.16, R^2=0.9877)
+# 仿射油门回退模型（2026-08-03 旧标定）。仅当 2D 油门表缺失/尺寸不匹配时
+# 由 throttle2D 回退使用（T=(a+offset)/G）。主用是下面的 2D 表。
 open_space_carla_forward_throttle_acceleration_gain: 6.3900493986
 open_space_carla_reverse_throttle_acceleration_gain: 13.9301003409
 open_space_carla_forward_throttle_offset: 0.1997415547
@@ -52,7 +57,7 @@ open_space_carla_reverse_throttle_gain: 5.75
 # 2026-08-04 重新标定（当前 --ros-control 环境，Town06 平直路）。
 # 前进制动增益 ~8.0、倒车制动增益 ~5.3（m/s² 每单位踏板）。
 # offset 取 0：刹车直接提供请求减速度，不依赖滑行基线（滑行随位置漂移
-# ~0.1~1.9 m/s² 不可靠）。减速命令（>死区）一律走刹车分支。
+# ~0.1~1.9 m/s² 不可靠）。减速需求由错开 blend 的"后半段"进入刹车分支。
 open_space_carla_forward_brake_deceleration_gain: 8.0
 open_space_carla_reverse_brake_deceleration_gain: 5.3
 open_space_carla_forward_brake_offset: 0.0
@@ -60,15 +65,17 @@ open_space_carla_reverse_brake_offset: 0.0
 # 2026-08-04 死区从0.02加宽到0.06：段末减速时a_cmd在死区边界抖动会导致
 # 油门↔刹车分支瞬时切换，油门突降1帧。加宽后轻微减速由油门分支平滑处理。
 open_space_carla_acceleration_deadband: 0.06
-# 2026-08-04 油门↔刹车混合区宽度：a越过死区(-0.06)后的一段区间内油门渐隐、
-# 刹车渐入，消除"1帧油门突降"的分支硬切换。设为0则退化为纯硬切换（旧行为）。
-# 2026-08-05 从0.15扩到0.25：5km/h减速时a_cmd抖动至±0.23，0.15覆盖不够导致
-# 混合区外油门/刹车跳变；0.25覆盖 -0.06~-0.31 更平滑。
-open_space_carla_throttle_brake_blend: 0.25
+# 油门↔刹车混合区宽度（"错开"逻辑）：a越过死区(-0.06)后，减速需求在
+# [死区, 死区+0.5*blend] 内只松油门（油门渐隐、刹车=0），在
+# [死区+0.5*blend, 死区+blend] 内油门已归0、刹车渐入——模拟"先松油门、
+# 不够再刹车"的驾驶习惯，油门刹车分时输出。宽度0.4=松油门区到0.26、
+# 刹车区到0.46。设为0退化为纯硬切换。
+open_space_carla_throttle_brake_blend: 0.4
 open_space_carla_stop_brake_pedal: 2.0
 
 # 倒车自然滑行减速度（重新标定实测 1.4~2.0 m/s²，取 1.8）。
-# 用于倒车停车距离估算（第1项修正），替代 max_deceleration=0.65。
+# 用于倒车停车距离估算：required = v²/(2*1.8)。倒车滑行比前进强，若用
+# 前进停车减速(1.1)估算会过早触发停车包络，导致停在换挡点前。
 open_space_carla_reverse_coast_deceleration: 1.8
 
 # 前进实际停车减速度（刹车标定 B=0.08 时 D≈1.1~1.2，取 1.1）。

@@ -71,6 +71,8 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   node.param<double>(
     "open_space_lookahead_distance", lookahead_distance_, 0.5);
   node.param<double>(
+    "open_space_throttle_lpf_cutoff_hz", throttle_lpf_cutoff_hz_, 5.0);
+  node.param<double>(
     "open_space_forward_speed_kp", forward_speed_kp_, 1.5);
   node.param<double>(
     "open_space_forward_speed_ki", forward_speed_ki_, 0.0);
@@ -88,43 +90,33 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     "open_space_max_jerk", max_jerk_, 2.0);
   node.param<double>(
     "open_space_longitudinal_control_period", nominal_control_period_, 0.02);
-  // 先读取旧的共用参数作为兼容默认值，再允许车型配置按方向覆盖。
-  double legacy_throttle_gain = 3.0;
-  double legacy_brake_gain = 6.0;
-  double legacy_rolling_resistance = 0.15;
-  node.param<double>(
-    "open_space_carla_throttle_acceleration_gain",
-    legacy_throttle_gain, legacy_throttle_gain);
-  node.param<double>(
-    "open_space_carla_brake_deceleration_gain",
-    legacy_brake_gain, legacy_brake_gain);
-  node.param<double>(
-    "open_space_carla_rolling_resistance",
-    legacy_rolling_resistance, legacy_rolling_resistance);
+  // 前进/倒车独立的执行器标定模型（2026-08 精简：移除旧共用参数兼容读取）。
+  // 油门：T(v,a)=T_hold(v)+a/G，2D 表优先，表缺失回退仿射模型；
+  // 刹车：D=G_b*B-offset。前进倒车传动差异大，故独立标定。
   node.param<double>(
     "open_space_carla_forward_throttle_acceleration_gain",
-    carla_forward_throttle_acceleration_gain_, legacy_throttle_gain);
+    carla_forward_throttle_acceleration_gain_, 3.0);
   node.param<double>(
     "open_space_carla_reverse_throttle_acceleration_gain",
-    carla_reverse_throttle_acceleration_gain_, legacy_throttle_gain);
+    carla_reverse_throttle_acceleration_gain_, 3.0);
   node.param<double>(
     "open_space_carla_forward_throttle_offset",
-    carla_forward_throttle_offset_, legacy_rolling_resistance);
+    carla_forward_throttle_offset_, 0.15);
   node.param<double>(
     "open_space_carla_reverse_throttle_offset",
-    carla_reverse_throttle_offset_, legacy_rolling_resistance);
+    carla_reverse_throttle_offset_, 0.15);
   node.param<double>(
     "open_space_carla_forward_brake_deceleration_gain",
-    carla_forward_brake_deceleration_gain_, legacy_brake_gain);
+    carla_forward_brake_deceleration_gain_, 6.0);
   node.param<double>(
     "open_space_carla_reverse_brake_deceleration_gain",
-    carla_reverse_brake_deceleration_gain_, legacy_brake_gain);
+    carla_reverse_brake_deceleration_gain_, 6.0);
   node.param<double>(
     "open_space_carla_forward_brake_offset",
-    carla_forward_brake_offset_, legacy_rolling_resistance);
+    carla_forward_brake_offset_, 0.15);
   node.param<double>(
     "open_space_carla_reverse_brake_offset",
-    carla_reverse_brake_offset_, legacy_rolling_resistance);
+    carla_reverse_brake_offset_, 0.15);
   node.param<double>(
     "open_space_carla_acceleration_deadband",
     carla_acceleration_deadband_, 0.02);
@@ -235,6 +227,7 @@ void OpenSpaceLongitudinalController::Reset()
   speed_error_integral_ = 0.0;
   previous_acceleration_command_ = 0.0;
   previous_compute_time_ = ros::Time(0);
+  throttle_lpf_valid_ = false;
 }
 
 bool OpenSpaceLongitudinalController::computeIdealAccelerationCommand(
@@ -303,19 +296,26 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
     // 制动模型给出请求减速度之上的附加制动力；offset 取较小值（弱滑行
     // 基线），使制动在弱滑行区域也能可靠起作用。
     //
-    // 混合区：a 越过死区后的一段区间内，油门按2D表渐隐、刹车渐入
-    // (blend 0→1)。避免"油门分支↔刹车分支"在死区边界硬切换导致
-    // 油门瞬时归零1帧或几帧。深减速(blend=1)时退化为纯制动，与旧行为一致。
-    const double blend = clampValue(
-      (-drive_direction_acceleration - carla_acceleration_deadband_) /
-      std::max(1.0e-3, carla_throttle_brake_blend_),
+    // 错开混合区（2026-08-05）：模拟"先松油门、不够再刹车"的驾驶习惯，
+    // 油门和刹车分时输出（不共存）。混合区宽度 carla_throttle_brake_blend_
+    // 被劈成两半：
+    //   前半 [deadband, deadband+half]：只松油门（throttle 渐隐，brake=0）
+    //   后半 [deadband+half, deadband+width]：油门已归0，刹车渐入
+    // 避免对称混合区"油门刹车同时输出"的违和感，同时保留渐隐/渐入的
+    // 平滑过渡（无硬切换的油门瞬时归零）。
+    const double d = -drive_direction_acceleration;  // 减速需求（>0）
+    const double half_blend =
+      std::max(1.0e-3, 0.5 * carla_throttle_brake_blend_);
+    const double throttle_fade = clampValue(
+      (d - carla_acceleration_deadband_) / half_blend, 0.0, 1.0);
+    const double brake_fade = clampValue(
+      (d - carla_acceleration_deadband_ - half_blend) / half_blend,
       0.0, 1.0);
     brake = clampValue(
-      (-drive_direction_acceleration - brake_offset) /
-      brake_gain, 0.0, 1.0) * blend;
+      (d - brake_offset) / brake_gain, 0.0, 1.0) * brake_fade;
     throttle = throttle2D(
       is_forward, std::fabs(current_velocity),
-      drive_direction_acceleration) * (1.0 - blend);
+      drive_direction_acceleration) * (1.0 - throttle_fade);
     // 停车阶段保证最小制动力，避免接近零速时滑行溜车。
     if (target_stopped) {
       brake = std::max(brake, 0.05);
@@ -330,6 +330,22 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
     // 目标停车且车辆仍在缓慢移动、减速命令落在死区内时，
     // 直接施加最小制动力，确保停稳而不是滑行。
     brake = 0.05;
+  }
+
+  // 油门低通滤波（2026-08-05）：一阶低通平滑油门输出。倒车大转向时实际
+  // 速度 v 被轮胎阻力拖着高频波动，速度环跟随放大到油门。低通滤掉高频分量，
+  // 只保留低频趋势。截止频率 throttle_lpf_cutoff_hz_（默认 5Hz）。
+  if (throttle_lpf_cutoff_hz_ > 0.0) {
+    if (throttle_lpf_valid_) {
+      const double tau =
+        1.0 / (2.0 * 3.141592653589793 * throttle_lpf_cutoff_hz_);
+      const double dt = controlPeriod();
+      const double alpha = dt / (tau + dt);
+      throttle = alpha * throttle + (1.0 - alpha) * throttle_lpf_value_;
+    } else {
+      throttle_lpf_valid_ = true;
+    }
+    throttle_lpf_value_ = throttle;
   }
 
   command->velocity_target = reference.target_velocity;
@@ -450,8 +466,9 @@ bool OpenSpaceLongitudinalController::computeMotionReference(
     direction * std::fabs(points[speed_reference_index].v);
   if (requests_stop) {
     // 随剩余距离收紧目标速度，并在末端小范围内明确下发零速。
-    // 减速能力用实测停车减速度（前进=刹车+滑行~0.8），使目标速度包络
-    // 与实际制动能力一致，避免"刹停过早→距终点仍有余量→再启动"。
+    // 减速能力用实测停车减速度（前进=forward_stop_deceleration 1.1，
+    // 倒车=max_deceleration 1.1），使目标速度包络与实际制动能力一致，
+    // 避免"刹停过早→距终点仍有余量→再启动"。
     const double stop_deceleration =
       trajectory.is_forward_shift ? forward_stop_deceleration_ :
                                     max_deceleration_;
@@ -508,8 +525,9 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
 
   if (requests_stop && std::fabs(current_velocity) > 1.0e-3) {
     // 比较实际所需停车距离与剩余弧长，必要时优先制动并清除速度积分。
-    // 前进/倒车都用"实测停车减速度"的常量减速距离：
-    // 前进用刹车+滑行(~0.8)，倒车用自然滑行(~1.8)，避免刹停过早/停不到终点。
+    // 用"实测停车减速度"的常量减速距离：前进=forward_stop_deceleration(1.1，
+    // 刹车+滑行)，倒车=reverse_coast_deceleration(1.8，倒车自然滑行强)。
+    // 避免刹停过早/停不到终点。
     const double required_stopping_distance =
       current_velocity * current_velocity /
           (2.0 * (reverse ? reverse_coast_deceleration_ :

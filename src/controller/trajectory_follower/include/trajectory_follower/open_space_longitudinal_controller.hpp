@@ -149,10 +149,14 @@ private:
   double carla_reverse_brake_deceleration_gain_{6.0};
   double carla_forward_brake_offset_{0.15};
   double carla_reverse_brake_offset_{0.15};
-  double carla_acceleration_deadband_{0.02};
-  // 油门↔刹车混合区宽度 (m/s²)：a 越过死区后油门渐隐/刹车渐入的区间，
-  // 消除分支硬切换造成的油门瞬时突降。0 表示禁用（退化为纯硬切换）。
-  double carla_throttle_brake_blend_{0.15};
+  double carla_acceleration_deadband_{0.06};
+  // 油门↔刹车混合区宽度 (m/s²)，"错开"逻辑：减速需求在死区后前半段只
+  // 松油门（油门渐隐、刹车=0），后半段油门已归0、刹车渐入——油门刹车
+  // 分时输出，模拟"先松油门、不够再刹车"。0 表示退化为纯硬切换。
+  double carla_throttle_brake_blend_{0.4};
+  // 油门低通滤波截止频率 (Hz)：平滑油门输出，抑制倒车大转向时实际速度 v
+  // 的物理波动经速度环放大导致的油门高频波动。0 表示禁用。
+  double throttle_lpf_cutoff_hz_{5.0};
   double carla_stop_brake_pedal_{20.0};
   double stop_speed_tolerance_{0.05};
   // 倒车自然滑行减速度（2026-08-04 重新标定实测 1.4~2.0 m/s²，取 1.8）。
@@ -174,6 +178,9 @@ private:
   double speed_error_integral_{0.0};
   double previous_acceleration_command_{0.0};
   ros::Time previous_compute_time_;
+  // 油门低通滤波状态：上一帧滤波值和是否有效（段首/Reset 后无效）。
+  double throttle_lpf_value_{0.0};
+  bool throttle_lpf_valid_{false};
 };
 
 }  // namespace trajectory_follower
