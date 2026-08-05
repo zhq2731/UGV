@@ -7,8 +7,9 @@ steering_angle: 35.0
 
 # 轨迹几何与速度约束。
 trajectory_resample_resolution: 0.2
-forward_speed: 1.0
-reverse_speed: 0.5
+# 2026-08-05 整体泊车速度统一为 5 km/h (=1.39 m/s)，前进倒车一致。
+forward_speed: 1.39
+reverse_speed: 1.39
 max_acceleration: 0.5
 # 2026-08-04 提高到1.1匹配实际制动(刹车+滑行~1.1)：
 # 之前0.65使轨迹末端减速斜坡过长，车辆实际制动更快→提前到零速点→停不到终点再启动。

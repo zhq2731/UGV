@@ -23,7 +23,9 @@ open_space_reverse_speed_kp: 1.5
 open_space_reverse_speed_ki: 0.3
 open_space_speed_integral_limit: 0.5
 open_space_max_acceleration: 0.5
-open_space_max_deceleration: 0.65
+# 2026-08-05 从0.65改为1.1与规划器轨迹末端减速斜坡一致（planner max_deceleration=1.1）。
+# 之前不一致：停车覆盖命令被限幅0.65，跟不上规划要求的1.1减速。
+open_space_max_deceleration: 1.1
 open_space_max_jerk: 2.0
 open_space_longitudinal_control_period: 0.02
 
@@ -38,11 +40,13 @@ open_space_carla_reverse_throttle_offset: 2.2421886213
 # 2026-08-04 2D 油门标定：T(v,a) = T_hold(v) + a/G
 # T_hold(v) 为速度保持实测稳态油门；G 取之前干净标定的常数增益。
 # 优先用 2D 表；表缺失时回退到上面的仿射模型。
-open_space_carla_forward_throttle_speed_table: [0.2, 0.4, 0.6, 0.8, 1.0]
-open_space_carla_forward_throttle_hold_table: [0.024, 0.020, 0.031, 0.035, 0.045]
+# 2026-08-05 5km/h(=1.39 m/s)标定：速度表扩展至1.4。
+# 前进 T_hold(1.39)=0.0663、倒车 T_hold(1.39)=0.2481（速度保持法实测）。
+open_space_carla_forward_throttle_speed_table: [0.2, 0.4, 0.6, 0.8, 1.0, 1.4]
+open_space_carla_forward_throttle_hold_table: [0.024, 0.020, 0.031, 0.035, 0.045, 0.0663]
 open_space_carla_forward_throttle_gain: 8.0
-open_space_carla_reverse_throttle_speed_table: [0.2, 0.4, 0.6, 0.8, 1.0]
-open_space_carla_reverse_throttle_hold_table: [0.105, 0.112, 0.146, 0.184, 0.190]
+open_space_carla_reverse_throttle_speed_table: [0.2, 0.4, 0.6, 0.8, 1.0, 1.4]
+open_space_carla_reverse_throttle_hold_table: [0.105, 0.112, 0.146, 0.184, 0.190, 0.2481]
 open_space_carla_reverse_throttle_gain: 5.75
 
 # 2026-08-04 重新标定（当前 --ros-control 环境，Town06 平直路）。
@@ -53,7 +57,14 @@ open_space_carla_forward_brake_deceleration_gain: 8.0
 open_space_carla_reverse_brake_deceleration_gain: 5.3
 open_space_carla_forward_brake_offset: 0.0
 open_space_carla_reverse_brake_offset: 0.0
-open_space_carla_acceleration_deadband: 0.02
+# 2026-08-04 死区从0.02加宽到0.06：段末减速时a_cmd在死区边界抖动会导致
+# 油门↔刹车分支瞬时切换，油门突降1帧。加宽后轻微减速由油门分支平滑处理。
+open_space_carla_acceleration_deadband: 0.06
+# 2026-08-04 油门↔刹车混合区宽度：a越过死区(-0.06)后的一段区间内油门渐隐、
+# 刹车渐入，消除"1帧油门突降"的分支硬切换。设为0则退化为纯硬切换（旧行为）。
+# 2026-08-05 从0.15扩到0.25：5km/h减速时a_cmd抖动至±0.23，0.15覆盖不够导致
+# 混合区外油门/刹车跳变；0.25覆盖 -0.06~-0.31 更平滑。
+open_space_carla_throttle_brake_blend: 0.25
 open_space_carla_stop_brake_pedal: 2.0
 
 # 倒车自然滑行减速度（重新标定实测 1.4~2.0 m/s²，取 1.8）。

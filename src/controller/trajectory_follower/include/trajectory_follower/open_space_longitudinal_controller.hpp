@@ -150,6 +150,9 @@ private:
   double carla_forward_brake_offset_{0.15};
   double carla_reverse_brake_offset_{0.15};
   double carla_acceleration_deadband_{0.02};
+  // 油门↔刹车混合区宽度 (m/s²)：a 越过死区后油门渐隐/刹车渐入的区间，
+  // 消除分支硬切换造成的油门瞬时突降。0 表示禁用（退化为纯硬切换）。
+  double carla_throttle_brake_blend_{0.15};
   double carla_stop_brake_pedal_{20.0};
   double stop_speed_tolerance_{0.05};
   // 倒车自然滑行减速度（2026-08-04 重新标定实测 1.4~2.0 m/s²，取 1.8）。

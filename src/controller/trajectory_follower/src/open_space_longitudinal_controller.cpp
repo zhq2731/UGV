@@ -128,6 +128,11 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   node.param<double>(
     "open_space_carla_acceleration_deadband",
     carla_acceleration_deadband_, 0.02);
+  // 油门↔刹车混合区宽度：a 越过死区后的一段区间内油门渐隐、刹车渐入，
+  // 消除"1帧油门突降"的分支硬切换。设为 0 则退化为纯硬切换行为。
+  node.param<double>(
+    "open_space_carla_throttle_brake_blend",
+    carla_throttle_brake_blend_, 0.15);
   node.param<double>(
     "open_space_carla_stop_brake_pedal",
     carla_stop_brake_pedal_, 20.0);
@@ -188,6 +193,7 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   carla_reverse_brake_deceleration_gain_ =
     std::max(1.0e-3, carla_reverse_brake_deceleration_gain_);
   carla_acceleration_deadband_ = std::max(0.0, carla_acceleration_deadband_);
+  carla_throttle_brake_blend_ = std::max(0.0, carla_throttle_brake_blend_);
   carla_stop_brake_pedal_ =
     clampValue(carla_stop_brake_pedal_, 0.0, 100.0);
   stop_speed_tolerance_ = std::max(0.0, stop_speed_tolerance_);
@@ -296,9 +302,20 @@ bool OpenSpaceLongitudinalController::computeCarlaPedalCommand(
     // 需要沿行驶方向减速 → 使用制动分支（主要停车手段，不再依赖滑行）。
     // 制动模型给出请求减速度之上的附加制动力；offset 取较小值（弱滑行
     // 基线），使制动在弱滑行区域也能可靠起作用。
+    //
+    // 混合区：a 越过死区后的一段区间内，油门按2D表渐隐、刹车渐入
+    // (blend 0→1)。避免"油门分支↔刹车分支"在死区边界硬切换导致
+    // 油门瞬时归零1帧或几帧。深减速(blend=1)时退化为纯制动，与旧行为一致。
+    const double blend = clampValue(
+      (-drive_direction_acceleration - carla_acceleration_deadband_) /
+      std::max(1.0e-3, carla_throttle_brake_blend_),
+      0.0, 1.0);
     brake = clampValue(
       (-drive_direction_acceleration - brake_offset) /
-      brake_gain, 0.0, 1.0);
+      brake_gain, 0.0, 1.0) * blend;
+    throttle = throttle2D(
+      is_forward, std::fabs(current_velocity),
+      drive_direction_acceleration) * (1.0 - blend);
     // 停车阶段保证最小制动力，避免接近零速时滑行溜车。
     if (target_stopped) {
       brake = std::max(brake, 0.05);
