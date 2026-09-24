@@ -23,6 +23,7 @@
   <arg name="publish_repeat_count" default="5"/>
   <arg name="publish_repeat_interval_sec" default="3.0"/>
   <arg name="use_osm_direction" default="true"/>
+  <arg name="marker_color_scheme" default="legacy_two_vehicle"/>
 
   <node pkg="task_scheduler" type="task_scheduler_node" name="task_scheduler" output="screen">
     <param name="map_file" value="$(arg map_file)"/>
@@ -49,5 +50,6 @@
     <param name="publish_repeat_count" value="$(arg publish_repeat_count)"/>
     <param name="publish_repeat_interval_sec" value="$(arg publish_repeat_interval_sec)"/>
     <param name="use_osm_direction" value="$(arg use_osm_direction)"/>
+    <param name="marker_color_scheme" value="$(arg marker_color_scheme)"/>
   </node>
 </launch>

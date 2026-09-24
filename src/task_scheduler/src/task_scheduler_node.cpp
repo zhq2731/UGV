@@ -24,6 +24,7 @@
 #include <route_msgs/MultiPoint.h>
 #include <std_msgs/ColorRGBA.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Float64.h>
 #include <tf/transform_datatypes.h>
 #include <utm/UTM.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -63,6 +64,7 @@ struct Vehicle {
     double start_yaw = 0.0;
     std::string multi_point_topic;
     std::string init_point_topic;
+    std::string planning_done_topic;
 };
 
 struct Task {
@@ -102,6 +104,18 @@ std::string trim(const std::string& value) {
     }
     const auto end = value.find_last_not_of(" \t\r\n");
     return value.substr(begin, end - begin + 1);
+}
+
+std::string sibling_topic(const std::string& source_topic, const std::string& sibling_name) {
+    std::string topic = source_topic;
+    while (topic.size() > 1 && topic.back() == '/') {
+        topic.pop_back();
+    }
+    const auto separator = topic.find_last_of('/');
+    if (separator == std::string::npos) {
+        return sibling_name;
+    }
+    return topic.substr(0, separator + 1) + sibling_name;
 }
 
 std::vector<std::string> split_csv_line(const std::string& line) {
@@ -569,6 +583,10 @@ std::vector<Vehicle> read_vehicles(const std::string& path,
         }
         vehicle.multi_point_topic = get_string(row, "multi_point_topic", "/vehicle_" + std::to_string(vehicle.id) + "/multi_point_planning");
         vehicle.init_point_topic = get_string(row, "init_point_topic", "/vehicle_" + std::to_string(vehicle.id) + "/init_point");
+        vehicle.planning_done_topic = get_string(
+            row,
+            "planning_done_topic",
+            sibling_topic(vehicle.multi_point_topic, "global_route_planning_done"));
         vehicles.push_back(vehicle);
     }
     return vehicles;
@@ -845,10 +863,119 @@ private:
     ros::Subscriber subscriber_;
 };
 
-std_msgs::ColorRGBA vehicle_color(int vehicle_id, double alpha) {
+class PlanningTimingTracker {
+public:
+    PlanningTimingTracker(ros::NodeHandle& nh,
+                          const std::vector<Vehicle>& vehicles,
+                          double allocation_start_wall_sec,
+                          double allocation_finished_wall_sec)
+        : vehicles_(vehicles),
+          allocation_start_wall_sec_(allocation_start_wall_sec),
+          allocation_finished_wall_sec_(allocation_finished_wall_sec),
+          completed_(vehicles.size(), false),
+          completion_wall_sec_(vehicles.size(), 0.0) {
+        subscribers_.reserve(vehicles_.size());
+        for (std::size_t index = 0; index < vehicles_.size(); ++index) {
+            subscribers_.push_back(nh.subscribe<std_msgs::Float64>(
+                vehicles_[index].planning_done_topic,
+                10,
+                [this, index](const std_msgs::Float64::ConstPtr& msg) {
+                    completionCallback(msg, index);
+                }));
+        }
+    }
+
+private:
+    void completionCallback(const std_msgs::Float64::ConstPtr& msg, std::size_t vehicle_index) {
+        if (summary_printed_ || completed_[vehicle_index]) {
+            return;
+        }
+
+        const double completion_wall_sec = msg->data;
+        if (!std::isfinite(completion_wall_sec) ||
+            completion_wall_sec < allocation_finished_wall_sec_) {
+            return;
+        }
+
+        completed_[vehicle_index] = true;
+        completion_wall_sec_[vehicle_index] = completion_wall_sec;
+        const auto completed_count = static_cast<std::size_t>(
+            std::count(completed_.begin(), completed_.end(), true));
+        const double vehicle_planning_sec = completion_wall_sec - allocation_finished_wall_sec_;
+        ROS_INFO_STREAM(std::fixed << std::setprecision(3)
+                        << "[Timing] vehicle_" << vehicles_[vehicle_index].id
+                        << " global route completed: " << vehicle_planning_sec << " s"
+                        << " (" << completed_count << "/" << vehicles_.size() << ")");
+
+        if (completed_count != vehicles_.size()) {
+            return;
+        }
+
+        summary_printed_ = true;
+        const double all_routes_finished_wall_sec =
+            *std::max_element(completion_wall_sec_.begin(), completion_wall_sec_.end());
+        const double allocation_sec =
+            allocation_finished_wall_sec_ - allocation_start_wall_sec_;
+        const double global_planning_sec =
+            all_routes_finished_wall_sec - allocation_finished_wall_sec_;
+        const double total_sec =
+            all_routes_finished_wall_sec - allocation_start_wall_sec_;
+
+        ROS_INFO_STREAM(std::fixed << std::setprecision(3)
+                        << "\n================ TASK TIMING SUMMARY ================\n"
+                        << "[Timing] 1. Task allocation (start -> assignments ready): "
+                        << allocation_sec << " s (" << allocation_sec * 1000.0 << " ms)\n"
+                        << "[Timing] 2. " << vehicles_.size()
+                        << " vehicle global routes (assignments ready -> all routes ready): "
+                        << global_planning_sec << " s (" << global_planning_sec * 1000.0 << " ms)\n"
+                        << "[Timing] 3. Total (start -> all routes ready): "
+                        << total_sec << " s (" << total_sec * 1000.0 << " ms)\n"
+                        << "=====================================================");
+    }
+
+    const std::vector<Vehicle>& vehicles_;
+    double allocation_start_wall_sec_ = 0.0;
+    double allocation_finished_wall_sec_ = 0.0;
+    std::vector<bool> completed_;
+    std::vector<double> completion_wall_sec_;
+    std::vector<ros::Subscriber> subscribers_;
+    bool summary_printed_ = false;
+};
+
+void sleepWithCallbacks(double duration_sec) {
+    if (duration_sec <= 0.0) {
+        ros::spinOnce();
+        return;
+    }
+    const ros::WallTime deadline = ros::WallTime::now() + ros::WallDuration(duration_sec);
+    ros::WallRate rate(50.0);
+    while (ros::ok() && ros::WallTime::now() < deadline) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+    ros::spinOnce();
+}
+
+std_msgs::ColorRGBA vehicle_color(int vehicle_id,
+                                 double alpha,
+                                 const std::string& color_scheme) {
     std_msgs::ColorRGBA color;
     color.a = alpha;
-    if (vehicle_id == 2) {
+    if (color_scheme == "blue_yellow_red") {
+        if (vehicle_id == 2) {
+            color.r = 1.0;
+            color.g = 0.82;
+            color.b = 0.05;
+        } else if (vehicle_id == 3) {
+            color.r = 1.0;
+            color.g = 0.15;
+            color.b = 0.12;
+        } else {
+            color.r = 0.05;
+            color.g = 0.35;
+            color.b = 1.0;
+        }
+    } else if (vehicle_id == 2) {
         color.r = 1.0;
         color.g = 0.18;
         color.b = 0.12;
@@ -873,7 +1000,8 @@ visualization_msgs::Marker make_marker_base(const std::string& ns, int id, int t
 }
 
 visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution,
-                                                        const std::vector<Vehicle>& vehicles) {
+                                                        const std::vector<Vehicle>& vehicles,
+                                                        const std::string& color_scheme) {
     visualization_msgs::MarkerArray markers;
 
     visualization_msgs::Marker clear;
@@ -884,7 +1012,7 @@ visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution
     for (std::size_t vehicle_index = 0; vehicle_index < solution.routes.size(); ++vehicle_index) {
         const int vehicle_id = vehicles[vehicle_index].id;
         const std::string vehicle_ns = "/task_scheduler/vehicle_" + std::to_string(vehicle_id);
-        const auto color = vehicle_color(vehicle_id, 0.95);
+        const auto color = vehicle_color(vehicle_id, 0.95, color_scheme);
 
         for (std::size_t sequence = 0; sequence < solution.routes[vehicle_index].size(); ++sequence) {
             const auto& item = solution.routes[vehicle_index][sequence];
@@ -980,6 +1108,7 @@ bool wait_for_start_command(ros::NodeHandle& nh,
 SolutionPublishers publish_solution(ros::NodeHandle& nh,
                                     const Solution& solution,
                                     const std::vector<Vehicle>& vehicles,
+                                    const std::string& marker_color_scheme,
                                     double wait_for_subscribers_sec,
                                     double initial_delay_sec,
                                     int repeat_count,
@@ -995,6 +1124,7 @@ SolutionPublishers publish_solution(ros::NodeHandle& nh,
     const ros::Time start = ros::Time::now();
     ros::Rate wait_rate(20.0);
     while (ros::ok()) {
+        ros::spinOnce();
         bool all_connected = true;
         for (std::size_t i = 0; i < vehicles.size(); ++i) {
             all_connected = all_connected &&
@@ -1012,12 +1142,13 @@ SolutionPublishers publish_solution(ros::NodeHandle& nh,
     }
 
     if (initial_delay_sec > 0.0) {
-        ros::Duration(initial_delay_sec).sleep();
+        sleepWithCallbacks(initial_delay_sec);
     }
 
     const int actual_repeat_count = std::max(1, repeat_count);
     for (int repeat = 0; repeat < actual_repeat_count && ros::ok(); ++repeat) {
-        publishers.task_marker_publisher.publish(build_task_marker_array(solution, vehicles));
+        publishers.task_marker_publisher.publish(
+            build_task_marker_array(solution, vehicles, marker_color_scheme));
         for (std::size_t vehicle_index = 0; vehicle_index < vehicles.size(); ++vehicle_index) {
             const auto& vehicle = vehicles[vehicle_index];
 
@@ -1037,8 +1168,9 @@ SolutionPublishers publish_solution(ros::NodeHandle& nh,
             ROS_INFO_STREAM("published " << task_msg.poses.size() << " tasks to " << vehicle.multi_point_topic
                                           << " (" << repeat + 1 << "/" << actual_repeat_count << ")");
         }
+        ros::spinOnce();
         if (repeat + 1 < actual_repeat_count && repeat_interval_sec > 0.0) {
-            ros::Duration(repeat_interval_sec).sleep();
+            sleepWithCallbacks(repeat_interval_sec);
         }
     }
     return publishers;
@@ -1059,6 +1191,7 @@ int main(int argc, char** argv) {
         std::string offline_points_file;
         std::string output_file;
         std::string distance_table_file;
+        std::string marker_color_scheme = "legacy_two_vehicle";
         int offline_point_count = 50;
         int offline_point_seed = 20260622;
         int population = 120;
@@ -1084,6 +1217,7 @@ int main(int argc, char** argv) {
         private_nh.param<std::string>("offline_points_file", offline_points_file, ros::package::getPath("task_scheduler") + "/config/offline_points_50.csv");
         private_nh.param<std::string>("output_file", output_file, "/tmp/ugv_schedule_solution.csv");
         private_nh.param<std::string>("distance_table_file", distance_table_file, ros::package::getPath("task_scheduler") + "/config/offline_distance_table_50.csv");
+        private_nh.param<std::string>("marker_color_scheme", marker_color_scheme, marker_color_scheme);
         private_nh.param("offline_point_count", offline_point_count, offline_point_count);
         private_nh.param("offline_point_seed", offline_point_seed, offline_point_seed);
         private_nh.param("population", population, population);
@@ -1134,8 +1268,14 @@ int main(int argc, char** argv) {
             task_marker_publisher.publish(build_pending_task_marker_array(tasks));
         }
 
+        const double allocation_start_wall_sec = ros::WallTime::now().toSec();
         GeneticScheduler scheduler(vehicles, tasks, distance_table, population, generations, static_cast<unsigned int>(seed));
         const Solution solution = scheduler.solve();
+        const double allocation_finished_wall_sec = ros::WallTime::now().toSec();
+        const double allocation_sec = allocation_finished_wall_sec - allocation_start_wall_sec;
+        ROS_INFO_STREAM(std::fixed << std::setprecision(3)
+                        << "[Timing] task allocation completed: " << allocation_sec
+                        << " s (" << allocation_sec * 1000.0 << " ms)");
         save_solution(output_file, solution, vehicles);
 
         ROS_INFO_STREAM("task scheduler solution saved: " << output_file);
@@ -1145,9 +1285,14 @@ int main(int argc, char** argv) {
 
         SolutionPublishers publishers;
         if (publish_result) {
+            PlanningTimingTracker timing_tracker(nh,
+                                                  vehicles,
+                                                  allocation_start_wall_sec,
+                                                  allocation_finished_wall_sec);
             publishers = publish_solution(nh,
                                           solution,
                                           vehicles,
+                                          marker_color_scheme,
                                           publish_wait_for_subscribers_sec,
                                           publish_initial_delay_sec,
                                           publish_repeat_count,

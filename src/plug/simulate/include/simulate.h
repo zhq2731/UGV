@@ -170,6 +170,7 @@ public:
 	bool lat_timer_inited;
 	// 以下执行器模型仅在开放空间泊车仿真中启用，不改变原道路仿真行为。
 	bool open_space_execution_mode_{false};
+	bool publish_sim_tf_{false};
 	// 实际前轮角每秒允许变化的最大弧度，用于模拟转向执行器动态。
 	double open_space_front_tire_steering_rate_limit_radps_{0.25};
 	// 开启后，档位命令不会立即生效，而是在停稳并等待配置延迟后更新底盘反馈。

@@ -22,6 +22,7 @@ Simulate::Simulate(ros::NodeHandle &nh) : nh_(nh), private_nh_("~")
 	private_nh_.param<bool>("reverse_path", param.reverse_path, true);
 	private_nh_.param<bool>("open_simulate_platoon", param.open_simulate_platoon, false);
 	private_nh_.param<bool>("open_space_execution_mode", open_space_execution_mode_, false);
+	private_nh_.param<bool>("publish_sim_tf", publish_sim_tf_, open_space_execution_mode_);
 
 	geometry_msgs::Point origin;
 	private_nh_.param<double>("latitude", origin.x, 0.0);
@@ -618,12 +619,16 @@ void Simulate::publishGpsdata()
 	gpsposemsgs.location.pose.pose.orientation = amathutils::getQuaternionFromYaw(theta_out);
 	pub_odometry_.publish(gpsposemsgs);
 
-	tf::Transform map_to_base;
-	map_to_base.setOrigin(tf::Vector3(pos.x, pos.y, pos.z));
-	tf::Quaternion map_to_base_q;
-	map_to_base_q.setRPY(0.0, 0.0, theta);
-	map_to_base.setRotation(map_to_base_q);
-	tf_broadcaster_.sendTransform(tf::StampedTransform(map_to_base, ros::Time::now(), "map", "base_link"));
+	if (publish_sim_tf_)
+	{
+		tf::Transform map_to_base;
+		map_to_base.setOrigin(tf::Vector3(pos.x, pos.y, pos.z));
+		tf::Quaternion map_to_base_q;
+		map_to_base_q.setRPY(0.0, 0.0, theta);
+		map_to_base.setRotation(map_to_base_q);
+		tf_broadcaster_.sendTransform(
+			tf::StampedTransform(map_to_base, ros::Time::now(), "map", "base_link"));
+	}
 }
 
 void Simulate::publishChassis()

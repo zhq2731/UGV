@@ -1,0 +1,4 @@
+id,start_point_id,multi_point_topic,init_point_topic,planning_done_topic
+1,P001,/vehicle_1/multi_point_planning,/vehicle_1/init_point,/vehicle_1/global_route_planning_done
+2,P002,/vehicle_2/multi_point_planning,/vehicle_2/init_point,/vehicle_2/global_route_planning_done
+3,P016,/vehicle_3/multi_point_planning,/vehicle_3/init_point,/vehicle_3/global_route_planning_done

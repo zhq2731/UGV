@@ -19,6 +19,7 @@
 #include "float.h"
 #include <std_msgs/UInt8.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Float64.h>
 #include <limits>
 #include <geometry_msgs/Quaternion.h>
 
@@ -60,6 +61,7 @@ class Route {
 	ros::Publisher  route_pub_;
 	ros::Publisher  cloud_display_pub_;
 	ros::Publisher  map_request_pub_;
+	ros::Publisher  global_route_planning_done_pub_;
 	ros::Subscriber initialPose_sub_;
 	ros::Subscriber goal_sub_;
 	ros::Subscriber multi_point_sub_;
@@ -116,6 +118,10 @@ class Route {
 	File *file;		
 	std::thread display_thread_;
 	VehiclePositionInfo vehicleInfo;
+	bool task_route_color_override_{false};
+	double task_route_color_r_{0.05};
+	double task_route_color_g_{0.35};
+	double task_route_color_b_{1.0};
 	std::vector<UtmPoint> obsInfoVec;
 	bool s_flag = true;
 	bool e_flag = true;

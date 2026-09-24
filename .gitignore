@@ -62,6 +62,8 @@ __pycache__/
 *.log
 *.pcd
 *.csv
+!src/task_scheduler/config/vehicles_3.csv
+!src/task_scheduler/config/tasks_13.csv
 *.zip
 *.tar
 *.tar.gz

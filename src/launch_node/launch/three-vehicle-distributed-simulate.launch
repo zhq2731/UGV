@@ -1,0 +1,116 @@
+<launch>
+  <!-- Three independent road-planning/control stacks for task scheduling. -->
+  <arg name="vehicle_type" default="tank500"/>
+  <arg name="vehicle_1_ns" default="vehicle_1"/>
+  <arg name="vehicle_2_ns" default="vehicle_2"/>
+  <arg name="vehicle_3_ns" default="vehicle_3"/>
+  <arg name="vehicle_1_platform_file" default="UGV/platform_files/vehicle_platform-tank-1.yaml"/>
+  <arg name="vehicle_2_platform_file" default="UGV/platform_files/vehicle_platform-tank-2.yaml"/>
+  <arg name="vehicle_3_platform_file" default="UGV/platform_files/vehicle_platform-tank-3.yaml"/>
+
+  <!-- Reuse the existing two stacks, but disable conflict resolution for this task-only scene. -->
+  <include file="$(find launch_node)/launch/two-vehicle-distributed-simulate.launch">
+    <arg name="vehicle_type" value="$(arg vehicle_type)"/>
+    <arg name="vehicle_1_ns" value="$(arg vehicle_1_ns)"/>
+    <arg name="vehicle_2_ns" value="$(arg vehicle_2_ns)"/>
+    <arg name="vehicle_1_platform_file" value="$(arg vehicle_1_platform_file)"/>
+    <arg name="vehicle_2_platform_file" value="$(arg vehicle_2_platform_file)"/>
+    <arg name="conflict_observer" value="false"/>
+    <arg name="rviz" value="false"/>
+    <arg name="vehicle_1_path_r" value="0.05"/>
+    <arg name="vehicle_1_path_g" value="0.35"/>
+    <arg name="vehicle_1_path_b" value="1.0"/>
+    <arg name="vehicle_2_path_r" value="1.0"/>
+    <arg name="vehicle_2_path_g" value="0.82"/>
+    <arg name="vehicle_2_path_b" value="0.05"/>
+  </include>
+
+  <group ns="$(arg vehicle_3_ns)">
+    <node pkg="route" type="route" name="route" output="screen">
+      <rosparam file="$(find launch_node)/param/route/route.yaml"/>
+      <param name="task_route_color_r" value="1.0"/>
+      <param name="task_route_color_g" value="0.15"/>
+      <param name="task_route_color_b" value="0.12"/>
+      <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
+      <remap from="/clicked_point" to="clicked_point"/>
+      <remap from="/chassis" to="chassis"/>
+      <remap from="/route_display" to="route_display"/>
+      <remap from="/route_result" to="route_result"/>
+      <remap from="/replan" to="replan"/>
+      <remap from="/multi_point_planning" to="multi_point_planning"/>
+      <remap from="/init_point" to="init_point"/>
+      <remap from="/mapSign" to="mapSign"/>
+      <remap from="/cloud_route_display" to="cloud_route_display"/>
+      <remap from="/request_new_map" to="request_new_map"/>
+    </node>
+
+    <node pkg="simulate" type="simulate" name="simulate" output="screen">
+      <rosparam file="$(find launch_node)/param/reference_line/reference_line.yaml"/>
+      <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+      <param name="vehicle_platform_file" value="$(arg vehicle_3_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
+      <param name="publish_sim_tf" value="false"/>
+      <remap from="/initialpose" to="initialpose"/>
+      <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
+      <remap from="/clicked_point" to="clicked_point"/>
+      <remap from="/multi_point_planning" to="multi_point_planning"/>
+      <remap from="/chassis_motion_start_cmd" to="chassis_motion_start_cmd"/>
+      <remap from="/init_point" to="init_point"/>
+      <remap from="/mapSign" to="mapSign"/>
+      <remap from="/PlatoonMember" to="PlatoonMember"/>
+      <remap from="/PlatoonMission" to="PlatoonMission"/>
+      <remap from="/PlatoonConfig" to="PlatoonConfig"/>
+    </node>
+
+    <node pkg="reference_line_node" type="reference_line_node" name="reference_line_node" output="screen">
+      <rosparam file="$(find launch_node)/param/reference_line/reference_line.yaml"/>
+      <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+      <rosparam file="$(find launch_node)/param/reference_line/smooth_config_file.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+      <param name="vehicle_platform_file" value="$(arg vehicle_3_platform_file)"/>
+      <remap from="/route_result" to="route_result"/>
+      <remap from="/PlatoonMember" to="PlatoonMember"/>
+      <remap from="/PlatoonMission" to="PlatoonMission"/>
+      <remap from="/PlatoonConfig" to="PlatoonConfig"/>
+    </node>
+
+    <node pkg="planner" type="planner" name="planner" output="screen">
+      <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+      <rosparam file="$(find launch_node)/param/planning/planning.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
+      <param name="vehicle_platform_file" value="$(arg vehicle_3_platform_file)"/>
+      <param name="enable_open_space_planner" value="false"/>
+      <param name="enable_conflict_constraint" value="false"/>
+      <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
+      <remap from="/initialpose" to="initialpose"/>
+      <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>
+      <remap from="/multi_point_planning" to="multi_point_planning"/>
+      <remap from="/replan" to="replan"/>
+      <remap from="/known_points_cloud" to="known_points_cloud"/>
+      <remap from="/PlatoonMember" to="PlatoonMember"/>
+      <remap from="/PlatoonMission" to="PlatoonMission"/>
+      <remap from="/PlatoonConfig" to="PlatoonConfig"/>
+    </node>
+
+    <node pkg="trajectory_follower" type="trajectory_follower" name="trajectory_follower" output="screen">
+      <rosparam file="$(find launch_node)/param/control/$(arg vehicle_type)/lateral_controller_defaults.param.yaml"/>
+      <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
+      <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
+      <param name="vehicle_platform_file" value="$(arg vehicle_3_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
+      <remap from="/steering_offset_estimator" to="steering_offset_estimator"/>
+      <remap from="/PlatoonMission" to="PlatoonMission"/>
+    </node>
+
+    <node pkg="launch_node" type="marker_color_filter.py" name="reference_marker_color_filter"
+          args="reference_vehcile_route_marker rviz/reference_marker 1.0 0.15 0.12 1.0"
+          output="screen"/>
+    <node pkg="launch_node" type="marker_color_filter.py" name="planning_marker_color_filter"
+          args="planning_marker rviz/planning_marker 1.0 0.15 0.12 1.0"
+          output="screen"/>
+  </group>
+</launch>

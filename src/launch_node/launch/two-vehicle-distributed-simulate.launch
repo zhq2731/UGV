@@ -20,6 +20,12 @@
   <arg name="vehicle_2_platform_file" default="UGV/platform_files/vehicle_platform-tank-2.yaml"/>
   <arg name="conflict_observer" default="true"/>
   <arg name="rviz" default="true"/>
+  <arg name="vehicle_1_path_r" default="0.05"/>
+  <arg name="vehicle_1_path_g" default="0.35"/>
+  <arg name="vehicle_1_path_b" default="1.0"/>
+  <arg name="vehicle_2_path_r" default="1.0"/>
+  <arg name="vehicle_2_path_g" default="0.15"/>
+  <arg name="vehicle_2_path_b" default="0.12"/>
 
   <group if="$(arg conflict_observer)">
     <rosparam file="$(find conflict_prediction_resolution)/config/conflict_prediction.yaml"/>
@@ -41,6 +47,9 @@
 
     <node pkg="route" type="route" name="route" output="screen">
       <rosparam file="$(find launch_node)/param/route/route.yaml"/>
+      <param name="task_route_color_r" value="$(arg vehicle_1_path_r)"/>
+      <param name="task_route_color_g" value="$(arg vehicle_1_path_g)"/>
+      <param name="task_route_color_b" value="$(arg vehicle_1_path_b)"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/clicked_point" to="clicked_point"/>
       <remap from="/chassis" to="chassis"/>
@@ -60,6 +69,8 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_1_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
+      <param name="publish_sim_tf" value="false"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/clicked_point" to="clicked_point"/>
@@ -92,6 +103,8 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_1_platform_file)"/>
+      <param name="enable_open_space_planner" value="false"/>
+      <param name="enable_conflict_constraint" value="$(arg conflict_observer)"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>
@@ -108,15 +121,16 @@
       <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_1_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
       <remap from="/steering_offset_estimator" to="steering_offset_estimator"/>
       <remap from="/PlatoonMission" to="PlatoonMission"/>
     </node>
 
     <node pkg="launch_node" type="marker_color_filter.py" name="reference_marker_color_filter"
-          args="reference_vehcile_route_marker rviz/reference_marker 0.05 0.35 1.0 1.0"
+          args="reference_vehcile_route_marker rviz/reference_marker $(arg vehicle_1_path_r) $(arg vehicle_1_path_g) $(arg vehicle_1_path_b) 1.0"
           output="screen"/>
     <node pkg="launch_node" type="marker_color_filter.py" name="planning_marker_color_filter"
-          args="planning_marker rviz/planning_marker 0.05 0.35 1.0 1.0"
+          args="planning_marker rviz/planning_marker $(arg vehicle_1_path_r) $(arg vehicle_1_path_g) $(arg vehicle_1_path_b) 1.0"
           output="screen"/>
   </group>
 
@@ -130,6 +144,9 @@
 
     <node pkg="route" type="route" name="route" output="screen">
       <rosparam file="$(find launch_node)/param/route/route.yaml"/>
+      <param name="task_route_color_r" value="$(arg vehicle_2_path_r)"/>
+      <param name="task_route_color_g" value="$(arg vehicle_2_path_g)"/>
+      <param name="task_route_color_b" value="$(arg vehicle_2_path_b)"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/clicked_point" to="clicked_point"/>
       <remap from="/chassis" to="chassis"/>
@@ -149,6 +166,8 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_2_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
+      <param name="publish_sim_tf" value="false"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/clicked_point" to="clicked_point"/>
@@ -181,6 +200,8 @@
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/global_config.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_2_platform_file)"/>
+      <param name="enable_open_space_planner" value="false"/>
+      <param name="enable_conflict_constraint" value="$(arg conflict_observer)"/>
       <remap from="/move_base_simple/goal" to="move_base_simple/goal"/>
       <remap from="/initialpose" to="initialpose"/>
       <remap from="/MultiObjectTracker" to="MultiObjectTracker"/>
@@ -197,15 +218,16 @@
       <rosparam file="$(find launch_node)/param/vehcile/$(arg vehicle_type)/vehicle_param.yaml"/>
       <rosparam file="$(find launch_node)/param/global/debug.simulate.param.yaml"/>
       <param name="vehicle_platform_file" value="$(arg vehicle_2_platform_file)"/>
+      <param name="open_space_execution_mode" value="false"/>
       <remap from="/steering_offset_estimator" to="steering_offset_estimator"/>
       <remap from="/PlatoonMission" to="PlatoonMission"/>
     </node>
 
     <node pkg="launch_node" type="marker_color_filter.py" name="reference_marker_color_filter"
-          args="reference_vehcile_route_marker rviz/reference_marker 1.0 0.15 0.12 1.0"
+          args="reference_vehcile_route_marker rviz/reference_marker $(arg vehicle_2_path_r) $(arg vehicle_2_path_g) $(arg vehicle_2_path_b) 1.0"
           output="screen"/>
     <node pkg="launch_node" type="marker_color_filter.py" name="planning_marker_color_filter"
-          args="planning_marker rviz/planning_marker 1.0 0.15 0.12 1.0"
+          args="planning_marker rviz/planning_marker $(arg vehicle_2_path_r) $(arg vehicle_2_path_g) $(arg vehicle_2_path_b) 1.0"
           output="screen"/>
   </group>
 </launch>

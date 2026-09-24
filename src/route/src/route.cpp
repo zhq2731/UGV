@@ -125,14 +125,20 @@ void Route::publishRouteSegmentMarkers()
 		cfg.scale_z = 0.0;
 		cfg.a = (i == current_index) ? 1.0 : 0.45;
 
-		RgbColor color = pendingRouteColor(nh_);
+		RgbColor color = task_route_color_override_
+			? RgbColor{task_route_color_r_, task_route_color_g_, task_route_color_b_}
+			: pendingRouteColor(nh_);
 		cfg.ns = std::string("/task_route/pending");
 		if (i < current_index) {
-			color = completedRouteColor();
+			color = task_route_color_override_
+				? RgbColor{task_route_color_r_, task_route_color_g_, task_route_color_b_}
+				: completedRouteColor();
 			cfg.ns = std::string("/task_route/completed");
 			cfg.a = 0.35;
 		} else if (i == current_index) {
-			color = currentRouteColor(nh_);
+			color = task_route_color_override_
+				? RgbColor{task_route_color_r_, task_route_color_g_, task_route_color_b_}
+				: currentRouteColor(nh_);
 			cfg.ns = std::string("/task_route/current");
 		}
 
@@ -521,8 +527,10 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
     double plannedLength = 0.0;
     int turnCount = 0;
     auto result = multiPointsPlan(multiPoints, multiUtmResults, plannedLength, MULTI_PLAN, turnCount);
-	if(!result)
+	if(!result) {
 		std::cout << "[MultiPointPlanning] ====== 警告：cloud多目标规划失败 ======" << std::endl;
+		return;
+	}
 	pubUtmResults = multiUtmResults;
 	pubUtmResults_ = pubUtmResults;
 	std::cout << "[MultiPointPlanning] ====== cloud多目标规划结果 ======" << std::endl;
@@ -587,6 +595,9 @@ void Route::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr ms
 	publishRouteSegmentMarkers();
 	lastRouteStatusIndex = pubIndex;
 	std::vector<UtmPoint>().swap(multiPoints);
+	std_msgs::Float64 completion_msg;
+	completion_msg.data = ros::WallTime::now().toSec();
+	global_route_planning_done_pub_.publish(completion_msg);
 }
 
 void Route::callbackReplan(const route_msgs::Replan::ConstPtr &msg)
@@ -1774,7 +1785,16 @@ void Route::calculateMapBoundary() {
 
 Route::Route(ros::NodeHandle &nh):nh_(nh),private_nh_("~")
 {
-	
+	task_route_color_override_ =
+		private_nh_.getParam("task_route_color_r", task_route_color_r_) &&
+		private_nh_.getParam("task_route_color_g", task_route_color_g_) &&
+		private_nh_.getParam("task_route_color_b", task_route_color_b_);
+	if (task_route_color_override_) {
+		ROS_INFO_STREAM("[route] task path color: rgb=("
+			<< task_route_color_r_ << ", " << task_route_color_g_ << ", "
+			<< task_route_color_b_ << ")");
+	}
+
 	std::string pkg_dir = ros::package::getPath("launch_node");
     std::string config_file = pkg_dir + std::string("/param/global/global_config.yaml");
 	YAML::Node doc = YAML::LoadFile(config_file);
@@ -1803,6 +1823,8 @@ Route::Route(ros::NodeHandle &nh):nh_(nh),private_nh_("~")
 	cloud_map_sub_ = nh_.subscribe("/mapSign", 1, &Route::callbackCloudmap, this);
 	cloud_display_pub_ = nh_.advertise<planning_msgs::TrajectoryPointArray>("/cloud_route_display", 1);
 	map_request_pub_ = nh_.advertise<std_msgs::UInt8>("/request_new_map", 1);
+	global_route_planning_done_pub_ =
+		nh_.advertise<std_msgs::Float64>("global_route_planning_done", 1, true);
 
 	display_thread_ = std::thread (&Route::displayLoop,this);
 	display_thread_.detach();
