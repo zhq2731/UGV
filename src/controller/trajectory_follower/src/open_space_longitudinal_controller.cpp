@@ -65,7 +65,7 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   // 仿真/实车输出方式由泊车纵控内部读取，控制节点只负责场景门控。
   std::string output_mode;
   node.param<std::string>(
-    "open_space_longitudinal_control_mode", output_mode, "vehicle");
+    "open_space_longitudinal_control_mode", output_mode, "disabled");
   output_mode_ = parseOutputMode(output_mode);
 
   node.param<double>(
@@ -90,6 +90,9 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
     "open_space_max_jerk", max_jerk_, 2.0);
   node.param<double>(
     "open_space_longitudinal_control_period", nominal_control_period_, 0.02);
+  node.param<double>(
+    "open_space_standstill_deceleration",
+    vehicle_standstill_deceleration_, 0.9);
   // 前进/倒车独立的执行器标定模型（2026-08 精简：移除旧共用参数兼容读取）。
   // 油门：T(v,a)=T_hold(v)+a/G，2D 表优先，表缺失回退仿射模型；
   // 刹车：D=G_b*B-offset。前进倒车传动差异大，故独立标定。
@@ -192,6 +195,13 @@ OpenSpaceLongitudinalController::OpenSpaceLongitudinalController(
   reverse_coast_deceleration_ = std::max(0.1, reverse_coast_deceleration_);
   forward_stop_deceleration_ = std::max(0.1, forward_stop_deceleration_);
 
+  // 公共泊车速度环只生成加速度参考，车型层只负责油门和 XBR 映射。
+  if (output_mode_ == OutputMode::VEHICLE) {
+    vehicle_controller_.reset(new ZhitoParkingLongitudinalController(
+      node, max_deceleration_, vehicle_standstill_deceleration_,
+      stop_speed_tolerance_));
+  }
+
   ROS_INFO_STREAM("[open_space_lon] output mode: "
     << outputModeName(output_mode_));
 }
@@ -216,6 +226,8 @@ bool OpenSpaceLongitudinalController::Compute(
       return computeCarlaPedalCommand(input, command, remaining_distance);
     case OutputMode::VEHICLE:
       return computeVehicleCommand(input, command, remaining_distance);
+    case OutputMode::DISABLED:
+      return false;
   }
   return false;
 }
@@ -228,6 +240,9 @@ void OpenSpaceLongitudinalController::Reset()
   previous_acceleration_command_ = 0.0;
   previous_compute_time_ = ros::Time(0);
   throttle_lpf_valid_ = false;
+  if (vehicle_controller_) {
+    vehicle_controller_->Reset();
+  }
 }
 
 bool OpenSpaceLongitudinalController::computeIdealAccelerationCommand(
@@ -362,13 +377,23 @@ bool OpenSpaceLongitudinalController::computeVehicleCommand(
   driver_msgs::DriveCmd *command,
   double *remaining_distance)
 {
-  // 预留实车执行器映射入口，后续可接现有车型的踏板或扭矩接口。
-  (void)input;
-  (void)command;
-  (void)remaining_distance;
-  ROS_WARN_THROTTLE(
-    2.0, "[open_space_lon] vehicle mode is reserved but not implemented");
-  return false;
+  MotionReference reference;
+  if (!vehicle_controller_ || !computeMotionReference(input, &reference)) {
+    return false;
+  }
+  *remaining_distance = reference.remaining_distance;
+
+  // 倒车公共速度环使用负速度；车型层改用沿行驶方向的正加速、负制动约定。
+  const double dt = controlPeriod();
+  const double signed_acceleration = computeAccelerationCommand(
+    reference.target_velocity, currentSignedVelocity(input),
+    reference.remaining_distance, false, dt);
+  const double direction = input.trajectory_data.is_forward_shift ? 1.0 : -1.0;
+  return vehicle_controller_->Compute(
+    std::fabs(reference.target_velocity),
+    std::fabs(input.chassis_data.current_velocity),
+    input.trajectory_data.is_forward_shift,
+    direction * signed_acceleration, dt, command);
 }
 
 bool OpenSpaceLongitudinalController::computeMotionReference(
@@ -452,7 +477,7 @@ bool OpenSpaceLongitudinalController::computeMotionReference(
 
   const bool requests_stop = std::fabs(points.back().v) <= 1.0e-3;
   std::size_t speed_reference_index = target_index;
-  if (requests_stop) {
+  if (requests_stop || output_mode_ == OutputMode::VEHICLE) {
     // 预瞄命中末端零速点时，回退到最后一个非零速度点；实际减速由停车包络决定。
     while (speed_reference_index > progress_index_ &&
       std::fabs(points[speed_reference_index].v) <= 1.0e-3)
@@ -464,14 +489,15 @@ bool OpenSpaceLongitudinalController::computeMotionReference(
   const double direction = trajectory.is_forward_shift ? 1.0 : -1.0;
   double target_velocity =
     direction * std::fabs(points[speed_reference_index].v);
-  if (requests_stop) {
+  if (requests_stop || output_mode_ == OutputMode::VEHICLE) {
     // 随剩余距离收紧目标速度，并在末端小范围内明确下发零速。
     // 减速能力用实测停车减速度（前进=forward_stop_deceleration 1.1，
     // 倒车=max_deceleration 1.1），使目标速度包络与实际制动能力一致，
     // 避免"刹停过早→距终点仍有余量→再启动"。
-    const double stop_deceleration =
-      trajectory.is_forward_shift ? forward_stop_deceleration_ :
-                                    max_deceleration_;
+    const double stop_deceleration = output_mode_ == OutputMode::VEHICLE ?
+      max_deceleration_ :
+      (trajectory.is_forward_shift ? forward_stop_deceleration_ :
+                                     max_deceleration_);
     const double braking_limit = std::sqrt(
       std::max(0.0, 2.0 * stop_deceleration * remaining_distance));
     target_velocity = std::copysign(
@@ -625,11 +651,12 @@ OpenSpaceLongitudinalController::parseOutputMode(const std::string &mode)
   if (mode == "carla_pedal") {
     return OutputMode::CARLA_PEDAL;
   }
-  if (mode != "vehicle") {
-    ROS_WARN_STREAM("[open_space_lon] unknown output mode '" << mode
-      << "', fallback to safe vehicle interface");
+  if (mode == "vehicle") {
+    return OutputMode::VEHICLE;
   }
-  return OutputMode::VEHICLE;
+  ROS_WARN_STREAM("[open_space_lon] output mode '" << mode
+    << "' is disabled; no longitudinal command will be generated");
+  return OutputMode::DISABLED;
 }
 
 const char *OpenSpaceLongitudinalController::outputModeName(OutputMode mode)
@@ -641,6 +668,8 @@ const char *OpenSpaceLongitudinalController::outputModeName(OutputMode mode)
       return "carla_pedal";
     case OutputMode::VEHICLE:
       return "vehicle";
+    case OutputMode::DISABLED:
+      return "disabled";
   }
   return "unknown";
 }

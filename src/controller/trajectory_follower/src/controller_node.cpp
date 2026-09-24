@@ -43,6 +43,7 @@ namespace
 constexpr uint8_t kGearDrive = 1;
 constexpr uint8_t kGearReverse = 7;
 constexpr uint8_t kGearInvalid = 8;
+constexpr uint8_t kMotionStart = 1;
 }  // namespace
 
 
@@ -374,6 +375,17 @@ void Controller::stageOpenSpaceTrajectory(const planning_msgs::TrajectoryPointAr
 		ROS_WARN("[open_space_control] activate stop segment immediately");
 		return;
 	}
+	if (open_space_longitudinal_controller_ &&
+		open_space_longitudinal_controller_->IsVehicleMode() &&
+		std::fabs(trajectory.points.back().v) > 1.0e-3) {
+		has_pending_open_space_trajectory_ = false;
+		open_space_target_gear_ = kGearInvalid;
+		open_space_longitudinal_controller_->Reset();
+		setOpenSpaceExecutionState(OpenSpaceExecutionState::HOLD_STOP);
+		ROS_ERROR("[open_space_control] reject real-vehicle segment with non-zero end speed");
+		publishOpenSpaceHoldCommand();
+		return;
+	}
 
 	// 运动轨迹先保存在pending缓冲，不能在转角准备完成前暴露给MPC和纵控。
 	pending_open_space_trajectory_ = trajectory;
@@ -396,6 +408,7 @@ void Controller::stageOpenSpaceTrajectory(const planning_msgs::TrajectoryPointAr
 
 void Controller::chassisCallback(const driver_msgs::ChassisReport::ConstPtr &msg)
 {
+	chassis_received_ = true;
 	open_space_actual_gear_ = msg->gear_location;
 	// 档位反馈需连续稳定若干周期，避免单帧跳变提前释放纵向控制。
 	if (open_space_execution_mode &&
@@ -592,6 +605,16 @@ void Controller::lonControl()
 
 void Controller::openSpaceLonControl()
 {
+	// 实车运行中也持续检查运动开始指令；撤销指令时先行车制动，停稳再驻车。
+	if (open_space_longitudinal_controller_ &&
+		open_space_longitudinal_controller_->IsVehicleMode() &&
+		lon_input.motion_start_cmd.motion_start != kMotionStart) {
+		publishOpenSpaceHoldCommand();
+		if (std::fabs(input_data_.vel) <= open_space_stop_speed_tolerance) {
+			publishOpenSpaceParkingBrakeCommand(true);
+		}
+		return;
+	}
 	if (!open_space_longitudinal_controller_) {
 		// 泊车控制器未构造或后端不可用时保持制动，禁止沿用旧纵向命令。
 		publishOpenSpaceHoldCommand();
@@ -612,6 +635,9 @@ void Controller::openSpaceLonControl()
 	mHeader.stamp = ros::Time::now();
 	mHeader.seq++;
 	command.header = mHeader;
+	if (open_space_longitudinal_controller_->IsVehicleMode()) {
+		publishOpenSpaceParkingBrakeCommand(false);
+	}
 	loncmd_pub_.publish(command);
 	controlLog.current_v = input_data_.vel * 3.6;
 	controlLog.deired_v = command.velocity_target * 3.6;
@@ -622,19 +648,37 @@ void Controller::openSpaceLonControl()
 	updateOpenSpaceSegmentEndHold(remaining_distance);
 }
 
+void Controller::publishOpenSpaceParkingBrakeCommand(bool engaged)
+{
+	driver_msgs::ParkingBrakeCmd command;
+	command.header.stamp = ros::Time::now();
+	command.header.seq = mHeader.seq;
+	command.parking_brake = engaged ? 1 : 0;
+	command.pressure_pct = engaged ? 30 : 0;
+	parking_brake_pub_.publish(command);
+}
+
 void Controller::publishOpenSpaceHoldCommand()
 {
+	if (open_space_longitudinal_controller_ &&
+		open_space_longitudinal_controller_->IsVehicleMode() && !chassis_received_) {
+		return;
+	}
 	driver_msgs::DriveCmd hold_cmd;
 	mHeader.stamp = ros::Time::now();
 	mHeader.seq++;
 	hold_cmd.header = mHeader;
 	hold_cmd.velocity_target = 0.0;
 	hold_cmd.throttle_pedal = 0.0;
-	hold_cmd.brake_pedal = std::max(0.0, std::min(100.0,
-		open_space_hold_brake_pedal));
-	// 车辆仍在运动时，减速度方向必须始终与当前速度相反；停稳后通过
-	// brake_pedal 维持行车制动，允许控制器继续完成原地换挡与前轮准备。
-	if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
+	const bool vehicle_mode = open_space_longitudinal_controller_ &&
+		open_space_longitudinal_controller_->IsVehicleMode();
+	hold_cmd.brake_pedal = vehicle_mode ? 0.0 :
+		std::max(0.0, std::min(100.0, open_space_hold_brake_pedal));
+	// 仿真按速度方向制动并用踏板保持，智拓底盘则统一下发负 XBR 减速度。
+	if (vehicle_mode) {
+		// 智拓 XBR 正反档均使用负目标减速度，零速时继续保持制动。
+		hold_cmd.acc_target = -std::max(0.0, open_space_hold_deceleration);
+	} else if (std::fabs(input_data_.vel) > open_space_stop_speed_tolerance) {
 		hold_cmd.acc_target = -std::copysign(
 			std::max(0.0, open_space_hold_deceleration), input_data_.vel);
 	} else {
@@ -1000,11 +1044,24 @@ void Controller::run()
     if (!open_space_execution_mode && inputTrajectoryType != trajectoryType)
 		return;
     sendHeart(2);
+	// 底盘反馈未到时，不用默认零速和默认档位推断车辆已停稳。
+	if (open_space_execution_mode && open_space_longitudinal_controller_ &&
+		open_space_longitudinal_controller_->IsVehicleMode() && !chassis_received_) {
+		ROS_WARN_THROTTLE(2.0, "[open_space_control] waiting for chassis feedback");
+		return;
+	}
 	const bool open_space_hold = open_space_execution_mode &&
 		open_space_execution_state_ != OpenSpaceExecutionState::EXECUTING;
 	if (open_space_hold) {
 		// 不再沿用前一段轨迹的纵向输出；停车、换挡与前轮准备均保持制动。
 		publishOpenSpaceHoldCommand();
+		if (open_space_longitudinal_controller_ &&
+			open_space_longitudinal_controller_->IsVehicleMode() &&
+			std::fabs(input_data_.vel) <= open_space_stop_speed_tolerance &&
+			(open_space_execution_state_ == OpenSpaceExecutionState::STRAIGHTEN_STEERING ||
+			 open_space_execution_state_ == OpenSpaceExecutionState::PARKING_COMPLETE)) {
+			publishOpenSpaceParkingBrakeCommand(true);
+		}
 	} else if (open_space_execution_mode) {
 		// 泊车模式只在EXECUTING阶段调用独立泊车纵控。
 		openSpaceLonControl();

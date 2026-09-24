@@ -1,0 +1,45 @@
+# 单车开放空间泊车专用控制配置；不由原编队 trajectory_follower 加载。
+open_space_execution_mode: true
+open_space_longitudinal_control_mode: "vehicle"
+open_lat_controller: true
+open_lon_controller: true
+enable_control_log: false
+
+# 智拓底盘制动接口接收负的 XBR 目标加速度，倒车时同样如此。
+open_space_hold_deceleration: 0.9
+open_space_standstill_deceleration: 0.9
+open_space_hold_brake_pedal: 0.0
+open_space_stop_speed_tolerance: 0.05
+open_space_steering_prepare_tolerance: 0.03
+open_space_steering_prepare_stable_cycles: 5
+open_space_gear_confirm_stable_cycles: 5
+open_space_segment_end_remaining_distance: 0.25
+open_space_segment_end_stable_duration: 1.0
+
+# 三种后端共用轨迹投影、停车速度包络和控制周期参数。
+open_space_lookahead_distance: 0.5
+# PI输出单位为m/s²；前进和倒车共用同一算法，但允许分别标定增益。
+open_space_forward_speed_kp: 1.5
+open_space_forward_speed_ki: 0.20
+open_space_reverse_speed_kp: 1.5
+open_space_reverse_speed_ki: 0.15
+open_space_speed_integral_limit: 0.5
+open_space_max_acceleration: 0.50
+open_space_max_deceleration: 0.40
+open_space_max_jerk: 1.0
+open_space_longitudinal_control_period: 0.02
+
+# 泊车横向 MPC：保留智拓原参数作为基线，只覆盖低速切段相关项。
+traj_resample_dist: 0.05
+# 低速时原有航向项仅随速度平方增长，接近停车速度时几乎为零；
+# 第一轮仅增加适度固定航向权重，保留通用控制器参数和其余泊车权重不变。
+mpc_weight_heading_error: 0.20
+input_delay: 0.10
+vehicle_model_steer_tau: 0.4
+steering_lpf_cutoff_hz: 2.0
+error_deriv_lpf_cutoff_hz: 5.0
+stop_state_entry_ego_speed: 0.001
+stop_state_entry_target_speed: 0.001
+converged_steer_rad: 0.05
+keep_steer_control_until_converged: true
+new_traj_end_dist: 0.30

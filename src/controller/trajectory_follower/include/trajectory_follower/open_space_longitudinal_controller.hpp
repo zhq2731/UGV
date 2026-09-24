@@ -2,6 +2,7 @@
 #define TRAJECTORY_FOLLOWER__OPEN_SPACE_LONGITUDINAL_CONTROLLER_HPP_
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,7 @@
 
 #include "control/controller/lon_controller.h"
 #include "driver_msgs/DriveCmd.h"
+#include "trajectory_follower/zhito_parking_longitudinal_controller.hpp"
 
 namespace autoware
 {
@@ -46,13 +48,17 @@ public:
   /** @brief 新轨迹段、换挡或任务重置时清除纵控内部历史。 */
   void Reset();
 
+  /** @brief 仅实车模式启用底盘运动开始和驻车制动联锁。 */
+  bool IsVehicleMode() const { return output_mode_ == OutputMode::VEHICLE; }
+
 private:
   // 输出后端由控制器内部选择，控制节点无需区分仿真、CARLA和实车。
   enum class OutputMode
   {
     IDEAL_ACCELERATION,  // 输出目标速度和目标加速度，供当前轻量仿真节点积分。
     CARLA_PEDAL,         // 将期望加速度映射为CARLA/Lite使用的油门、制动百分比。
-    VEHICLE,             // 输出实车执行器命令，暂留具体车型适配接口。
+    VEHICLE,             // 输出智拓底盘油门与 XBR 命令。
+    DISABLED,            // 未配置或配置错误时不输出纵向命令。
   };
 
   /**
@@ -83,7 +89,7 @@ private:
     const car::control::InputData &input,
     driver_msgs::DriveCmd *command,
     double *remaining_distance);
-  /** @brief 实车纵向执行器后端预留入口；后续在此完成车型相关命令映射。 */
+  /** @brief 使用公共速度环及智拓底盘执行器映射输出实车命令。 */
   bool computeVehicleCommand(
     const car::control::InputData &input,
     driver_msgs::DriveCmd *command,
@@ -121,11 +127,13 @@ private:
     bool is_forward, double speed, double drive_accel) const;
   /** @brief 获取本周期实际时间间隔；异常间隔回退到配置的标称控制周期。 */
   double controlPeriod();
-  /** @brief 解析纵控后端名称；未知名称回退到尚未实现的安全实车接口。 */
+  /** @brief 解析纵控后端名称；未知名称保持禁用。 */
   static OutputMode parseOutputMode(const std::string &mode);
   static const char *outputModeName(OutputMode mode);
 
-  OutputMode output_mode_{OutputMode::VEHICLE};
+  OutputMode output_mode_{OutputMode::DISABLED};
+  std::unique_ptr<ZhitoParkingLongitudinalController> vehicle_controller_;
+  double vehicle_standstill_deceleration_{0.9};
   // 轨迹参考生成参数。
   double lookahead_distance_{0.5};
   // 前进、倒车独立速度闭环参数，便于后续针对不同传动特性分别标定。

@@ -49,6 +49,7 @@ link_directories(
 add_executable(trajectory_follower
   src/controller_node.cpp
   src/open_space_longitudinal_controller.cpp
+  src/zhito_parking_longitudinal_controller.cpp
   src/open_space_mpc_lateral_controller.cpp
   src/mpc_lateral_controller.cpp
   src/interpolate.cpp

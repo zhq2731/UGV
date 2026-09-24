@@ -192,6 +192,7 @@ private:
 	double open_space_stop_speed_tolerance;
 	double open_space_hold_deceleration;
 	double open_space_hold_brake_pedal;
+	bool chassis_received_{false};  // 实车泊车收到首帧底盘反馈后才允许输出控制命令。
 	double open_space_segment_end_remaining_distance;
 	double open_space_segment_end_stable_duration;
 	int open_space_steering_prepare_stable_cycles;
@@ -286,6 +287,8 @@ private:
 	 * 该命令覆盖上一段纵向输出：车辆未停稳时按速度反向减速，停稳后继续保持制动踏板。
 	 */
 	void publishOpenSpaceHoldCommand();
+	/** @brief 实车泊车专用驻车制动命令；仿真后端不调用。 */
+	void publishOpenSpaceParkingBrakeCommand(bool engaged);
 	/**
 	 * @brief 周期发布待执行轨迹段要求的档位，直到底盘反馈确认完成
 	 */

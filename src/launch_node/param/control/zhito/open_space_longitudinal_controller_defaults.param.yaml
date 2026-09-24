@@ -1,0 +1,25 @@
+# 智拓单车泊车执行器标定；速度PI和动态约束由open_space_controller统一配置。
+# 速度单位m/s，油门单位%，减速度与XBR命令单位m/s²。
+
+# 目标速度到匀速油门的一维前馈表。表尾分别对应前进6 km/h和倒车5 km/h。
+# 两轮直线实车数据中，前进零加速油门约2.3~2.7%，倒车约4.6~4.8%。
+# 0速点仅是小正目标速度的插值端点；真正的停车目标不会下发油门。
+open_space_vehicle_forward_throttle_speed_table: [0.0, 0.30, 0.60, 1.00, 1.40, 1.67]
+open_space_vehicle_forward_throttle_command_table: [2.3, 2.4, 2.5, 2.6, 2.6, 2.7]
+open_space_vehicle_reverse_throttle_speed_table: [0.0, 0.30, 0.60, 0.90, 1.20, 1.39]
+open_space_vehicle_reverse_throttle_command_table: [4.6, 4.7, 4.8, 4.8, 4.7, 4.6]
+
+# 同一车速附近的实测斜率为0.038~0.041 (m/s²)/%，取其逆映25 %/(m/s²)。
+# 当前控制最大0.50 m/s²加速度下的油门约14.8~17.3%；20%只作执行器安全上限。
+open_space_vehicle_throttle_acceleration_gain_pct_per_mps2: 25.0
+open_space_vehicle_maximum_throttle_pct: 20.0
+open_space_vehicle_throttle_rise_rate_pctps: 20.0
+
+# 期望车辆减速度 -> XBR请求值。已综合前/倒车、两轮响应与自然滑行阻力。
+# 1.2/1.5 m/s²试验用于确认高端响应；其收益下降且冲击较大，日常泊车仍限制0.9。
+open_space_vehicle_brake_deceleration_table: [0.0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90]
+open_space_vehicle_brake_command_table: [0.0, 0.10, 0.22, 0.36, 0.50, 0.68, 0.88]
+
+# 实测自然滑行减速度约0.05~0.15 m/s²，因此先收油至0.08，再渐入XBR至0.16。
+# 该区间内依次完成“渐退油门—滑行—渐入XBR”，油门与制动不重叠。
+open_space_vehicle_throttle_brake_transition_mps2: 0.16
