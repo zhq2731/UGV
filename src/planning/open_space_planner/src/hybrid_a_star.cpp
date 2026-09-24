@@ -31,6 +31,7 @@
 #include "hybrid_a_star/trajectory_optimizer.h"
 //#include <glog/logging.h>
 #include <iostream>
+#include <queue>
 
 HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num, double segment_length,
                          int segment_length_discrete_num, double wheel_base, double steering_penalty,
@@ -79,6 +80,8 @@ void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_
     car_length = car_length_param;
     car_width = car_width_param;
     wheel_base_ = wheel_base_param;
+    // Init 可更新轴距，解析连接使用的转弯半径要同步更新。
+    rs_path_ptr_ = std::make_shared<RSPath>(wheel_base_ / std::tan(steering_radian_));
     // 位姿参考点位于后轴中心，车身后边界应使用后悬而不是轴距。
     SetVehicleShape(car_length, car_width, rear_overhang_param);
 
@@ -181,17 +184,29 @@ inline bool HybridAStar::LineCheck(double x0, double y0, double x1, double y1) {
 
 
 
-bool HybridAStar::CheckCollision(const double &x, const double &y, const double &theta) {
+bool HybridAStar::CheckCollision(const double &x, const double &y, const double &theta,
+                                 double margin) {
     Timer timer;
     HybridAStarType::Mat2d R; //旋转矩阵
     R << std::cos(theta), -std::sin(theta),
             std::sin(theta), std::cos(theta);
 
+    // 搜索外扩车身，执行轨迹复核传入默认零余量。
+    const double rear = vehicle_shape_(0) - margin;
+    const double front = vehicle_shape_(2) + margin;
+    const double right = vehicle_shape_(5) - margin;
+    const double left = vehicle_shape_(1) + margin;
+    HybridAStarType::VecXd collision_shape(8);
+    collision_shape.block<2, 1>(0, 0) = HybridAStarType::Vec2d(rear, left);
+    collision_shape.block<2, 1>(2, 0) = HybridAStarType::Vec2d(front, left);
+    collision_shape.block<2, 1>(4, 0) = HybridAStarType::Vec2d(front, right);
+    collision_shape.block<2, 1>(6, 0) = HybridAStarType::Vec2d(rear, right);
+
     HybridAStarType::MatXd transformed_vehicle_shape;
     transformed_vehicle_shape.resize(8, 1);
     for (unsigned int i = 0; i < 4u; ++i) {
         transformed_vehicle_shape.block<2, 1>(i * 2, 0)
-                = R * vehicle_shape_.block<2, 1>(i * 2, 0) + HybridAStarType::Vec2d(x, y);
+                = R * collision_shape.block<2, 1>(i * 2, 0) + HybridAStarType::Vec2d(x, y);
     }
 
     HybridAStarType::Vec2i transformed_pt_index_0 = Coordinate2MapGridIndex(
@@ -248,6 +263,33 @@ bool HybridAStar::CheckCollision(const double &x, const double &y, const double 
 
     if (!LineCheck(x0, y0, x1, y1)) {
         return false;
+    }
+
+    // 车身四边不能发现完全落在车内的小障碍，补查车身外接框内的占用格。
+    int min_x = transformed_pt_index_0.x(), max_x = min_x;
+    int min_y = transformed_pt_index_0.y(), max_y = min_y;
+    const HybridAStarType::Vec2i corners[] = {
+        transformed_pt_index_1, transformed_pt_index_2, transformed_pt_index_3};
+    for (const auto &corner : corners) {
+        min_x = std::min(min_x, corner.x());
+        max_x = std::max(max_x, corner.x());
+        min_y = std::min(min_y, corner.y());
+        max_y = std::max(max_y, corner.y());
+    }
+    min_x = std::max(0, min_x);
+    max_x = std::min(MAP_GRID_SIZE_X_ - 1, max_x);
+    min_y = std::max(0, min_y);
+    max_y = std::min(MAP_GRID_SIZE_Y_ - 1, max_y);
+    for (int gx = min_x; gx <= max_x; ++gx) {
+        for (int gy = min_y; gy <= max_y; ++gy) {
+            if (!HasObstacle(gx, gy)) continue;
+            const HybridAStarType::Vec2d obstacle =
+                MapGridIndex2Coordinate(HybridAStarType::Vec2i(gx, gy));
+            const HybridAStarType::Vec2d local =
+                R.transpose() * (obstacle - HybridAStarType::Vec2d(x, y));
+            if (local.x() >= rear && local.x() <= front &&
+                local.y() >= right && local.y() <= left) return false;
+        }
     }
 
     check_collision_use_time += timer.End();
@@ -378,7 +420,7 @@ void HybridAStar::GetNeighborNodes(const StateNode::Ptr &curr_node_ptr,
             DynamicModel(move_step_size_, phi, x, y, theta);
             intermediate_state.emplace_back(HybridAStarType::Vec3d(x, y, theta));
 
-            if (!CheckCollision(x, y, theta)) {
+            if (!CheckCollision(x, y, theta, search_collision_margin_)) {
                 has_obstacle = true;
                 break;
             }
@@ -404,7 +446,7 @@ void HybridAStar::GetNeighborNodes(const StateNode::Ptr &curr_node_ptr,
             DynamicModel(-move_step_size_, phi, x, y, theta);
             intermediate_state.emplace_back(HybridAStarType::Vec3d(x, y, theta));
 
-            if (!CheckCollision(x, y, theta)) {
+            if (!CheckCollision(x, y, theta, search_collision_margin_)) {
                 has_obstacle = true;
                 break;
             }
@@ -443,6 +485,51 @@ double HybridAStar::Mod2Pi(const double &x) {
 
 bool HybridAStar::BeyondBoundary(const HybridAStarType::Vec2d &pt) const {
     return pt.x() < map_x_lower_ || pt.x() > map_x_upper_ || pt.y() < map_y_lower_ || pt.y() > map_y_upper_;
+}
+
+void HybridAStar::BuildDistanceField(const HybridAStarType::Vec3d &goal_state) {
+    const int width = MAP_GRID_SIZE_X_;
+    const int height = MAP_GRID_SIZE_Y_;
+    distance_field_.assign(static_cast<size_t>(width) * height, -1.0f);
+    const auto goal = Coordinate2MapGridIndex(goal_state.head(2));
+    if (goal.x() < 0 || goal.x() >= width || goal.y() < 0 || goal.y() >= height) return;
+
+    using Entry = std::pair<float, int>;
+    std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> queue;
+    const int goal_id = goal.y() * width + goal.x();
+    distance_field_[goal_id] = 0.0f;
+    queue.emplace(0.0f, goal_id);
+    while (!queue.empty()) {
+        const Entry current = queue.top();
+        queue.pop();
+        if (current.first > distance_field_[current.second]) continue;
+        const int x = current.second % width;
+        const int y = current.second / width;
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                if (dx == 0 && dy == 0) continue;
+                const int nx = x + dx, ny = y + dy;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height ||
+                    HasObstacle(nx, ny)) continue;
+                const float step = (dx != 0 && dy != 0 ? 1.41421356f : 1.0f) *
+                    static_cast<float>(MAP_GRID_RESOLUTION_);
+                const float candidate = current.first + step;
+                const int next = ny * width + nx;
+                if (distance_field_[next] < 0.0f || candidate < distance_field_[next]) {
+                    distance_field_[next] = candidate;
+                    queue.emplace(candidate, next);
+                }
+            }
+        }
+    }
+}
+
+double HybridAStar::LookupDistanceField(const HybridAStarType::Vec2d &pt) const {
+    if (distance_field_.empty()) return -1.0;
+    const auto index = Coordinate2MapGridIndex(pt);
+    if (index.x() < 0 || index.x() >= MAP_GRID_SIZE_X_ ||
+        index.y() < 0 || index.y() >= MAP_GRID_SIZE_Y_) return -1.0;
+    return distance_field_[static_cast<size_t>(index.y()) * MAP_GRID_SIZE_X_ + index.x()];
 }
 
 double HybridAStar::ComputeH(const StateNode::Ptr &current_node_ptr,
@@ -502,8 +589,11 @@ double HybridAStar::ComputeG(const StateNode::Ptr &current_node_ptr,
 
 bool HybridAStar::Search(
     const HybridAStarType::Vec3d &start_state,
-    const HybridAStarType::Vec3d &goal_state) {
+    const HybridAStarType::Vec3d &goal_state,
+    double collision_margin) {
     Timer search_used_time;
+    search_collision_margin_ = std::max(0.0, collision_margin);
+    BuildDistanceField(goal_state);
 
     double neighbor_time = 0.0, compute_h_time = 0.0, compute_g_time = 0.0;
 
@@ -523,13 +613,15 @@ bool HybridAStar::Search(
     start_node_ptr->intermediate_states_.emplace_back(start_state);
     // f与g的代价
     start_node_ptr->g_cost_ = 0.0;
-    start_node_ptr->f_cost_ = ComputeH(start_node_ptr, goal_node_ptr);
+    const double start_distance = LookupDistanceField(start_state.head(2));
+    start_node_ptr->f_cost_ = start_distance >= 0.0 ?
+        start_distance : ComputeH(start_node_ptr, goal_node_ptr);
 
     state_node_map_[start_grid_index.x()][start_grid_index.y()][start_grid_index.z()] = start_node_ptr;
     state_node_map_[goal_grid_index.x()][goal_grid_index.y()][goal_grid_index.z()] = goal_node_ptr;
 
     openset_.clear();
-    openset_.insert(std::make_pair(0, start_node_ptr));
+    openset_.insert(std::make_pair(start_node_ptr->f_cost_, start_node_ptr));
 
     std::vector<StateNode::Ptr> neighbor_nodes_ptr;
     StateNode::Ptr current_node_ptr;
@@ -583,38 +675,41 @@ bool HybridAStar::Search(
             compute_g_time = compute_g_time + timer_get_neighbor.End();
 
             Timer timer_compute_h;
-            const double current_h = ComputeH(current_node_ptr, goal_node_ptr) * tie_breaker_;
+            const double grid_distance = LookupDistanceField(neighbor_node_ptr->state_.head(2));
+            const double current_h = (grid_distance >= 0.0 ? grid_distance :
+                ComputeH(neighbor_node_ptr, goal_node_ptr)) * tie_breaker_;
             compute_h_time = compute_h_time + timer_compute_h.End();
 
             const HybridAStarType::Vec3i &index = neighbor_node_ptr->grid_index_;
-            if (state_node_map_[index.x()][index.y()][index.z()] == nullptr) {
+            StateNode::Ptr &slot = state_node_map_[index.x()][index.y()][index.z()];
+            if (slot == nullptr) {
                 neighbor_node_ptr->g_cost_ = current_node_ptr->g_cost_ + neighbor_edge_cost;
                 neighbor_node_ptr->parent_node_ = current_node_ptr;
                 neighbor_node_ptr->node_status_ = StateNode::IN_OPENSET;
                 neighbor_node_ptr->f_cost_ = neighbor_node_ptr->g_cost_ + current_h;
                 openset_.insert(std::make_pair(neighbor_node_ptr->f_cost_, neighbor_node_ptr));
-                state_node_map_[index.x()][index.y()][index.z()] = neighbor_node_ptr;
+                slot = neighbor_node_ptr;
                 continue;
-            } else if (state_node_map_[index.x()][index.y()][index.z()]->node_status_ == StateNode::IN_OPENSET) {
-                double g_cost_temp = current_node_ptr->g_cost_ + neighbor_edge_cost;
-
-                if (state_node_map_[index.x()][index.y()][index.z()]->g_cost_ > g_cost_temp) {
-                    neighbor_node_ptr->g_cost_ = g_cost_temp;
-                    neighbor_node_ptr->f_cost_ = g_cost_temp + current_h;
-                    neighbor_node_ptr->parent_node_ = current_node_ptr;
-                    neighbor_node_ptr->node_status_ = StateNode::IN_OPENSET;
-
-                    /// TODO: This will cause a memory leak
-                    // delete state_node_map_[index.x()][index.y()][index.z()];
-                    state_node_map_[index.x()][index.y()][index.z()] = neighbor_node_ptr;
-                } else {
-                    delete neighbor_node_ptr;
-                }
-                continue;
-            } else if (state_node_map_[index.x()][index.y()][index.z()]->node_status_ == StateNode::IN_CLOSESET) {
+            }
+            if (slot->node_status_ != StateNode::IN_OPENSET) {
                 delete neighbor_node_ptr;
                 continue;
             }
+
+            // 改进同一状态格时保留原节点地址，同时更新完整到达机动和集合排序键。
+            const double candidate_g = current_node_ptr->g_cost_ + neighbor_edge_cost;
+            if (candidate_g < slot->g_cost_) {
+                openset_.erase(std::make_pair(slot->f_cost_, slot));
+                slot->g_cost_ = candidate_g;
+                slot->f_cost_ = candidate_g + current_h;
+                slot->parent_node_ = current_node_ptr;
+                slot->state_ = neighbor_node_ptr->state_;
+                slot->steering_grade_ = neighbor_node_ptr->steering_grade_;
+                slot->direction_ = neighbor_node_ptr->direction_;
+                slot->intermediate_states_ = neighbor_node_ptr->intermediate_states_;
+                openset_.insert(std::make_pair(slot->f_cost_, slot));
+            }
+            delete neighbor_node_ptr;
         }
 
         count++;
@@ -756,7 +851,8 @@ bool HybridAStar::AnalyticExpansions(
                                                         move_step_size_, length);
 
     for (const auto &pose: rs_path_poses)
-        if (BeyondBoundary(pose.head(2)) || !CheckCollision(pose.x(), pose.y(), pose.z())) {
+        if (BeyondBoundary(pose.head(2)) ||
+            !CheckCollision(pose.x(), pose.y(), pose.z(), search_collision_margin_)) {
             return false;
         };
 

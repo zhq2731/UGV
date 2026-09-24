@@ -33,8 +33,10 @@
 
 //#include <glog/logging.h>
 #include "planning_msgs/TrajectoryPointArray.h"
-#include <map>
+#include <functional>
 #include <memory>
+#include <set>
+#include <vector>
 //#include "amathutils_lib/geometry.hpp"
 #include "amathutils_lib/geometry_point.hpp"
 
@@ -69,6 +71,8 @@ struct OpenSpace_config
     // 倒车代价
     double reversing_penalty ;
     double shot_distance;
+    // 仅搜索时使用的车身外扩距离；执行期碰撞复核仍按真实车身尺寸。
+    double search_collision_margin = 0.0;
 
     // 已提交段与换挡点状态机的判定阈值。
     double segment_end_position_tolerance;
@@ -152,7 +156,8 @@ public:
      */
     bool Search(
         const HybridAStarType::Vec3d &start_state,
-        const HybridAStarType::Vec3d &goal_state);
+        const HybridAStarType::Vec3d &goal_state,
+        double collision_margin = 0.0);
 
     HybridAStarType::VectorVec4d GetSearchedTree();
 
@@ -206,7 +211,8 @@ private:
 
     inline bool HasObstacle(const HybridAStarType::Vec2i &grid_index) const;
 
-    bool CheckCollision(const double &x, const double &y, const double &theta);
+    bool CheckCollision(const double &x, const double &y, const double &theta,
+                        double margin = 0.0);
 
     inline bool LineCheck(double x0, double y0, double x1, double y1);
 
@@ -219,6 +225,10 @@ private:
     inline double ComputeG(const StateNode::Ptr &current_node_ptr, const StateNode::Ptr &neighbor_node_ptr) const;
 
     inline double ComputeH(const StateNode::Ptr &current_node_ptr, const StateNode::Ptr &terminal_node_ptr);
+
+    // 从终点反向铺设障碍感知距离场，每个搜索节点只需按格查询一次。
+    void BuildDistanceField(const HybridAStarType::Vec3d &goal_state);
+    double LookupDistanceField(const HybridAStarType::Vec2d &pt) const;
 
     inline HybridAStarType::Vec3i State2Index(const HybridAStarType::Vec3d &state) const;
 
@@ -251,6 +261,7 @@ private:
     double ANGULAR_RESOLUTION_{};
     int STATE_GRID_SIZE_X_{}, STATE_GRID_SIZE_Y_{}, STATE_GRID_SIZE_PHI_{};
     int MAP_GRID_SIZE_X_{}, MAP_GRID_SIZE_Y_{};
+    std::vector<float> distance_field_;
 
     double map_x_lower_{}, map_x_upper_{}, map_y_lower_{}, map_y_upper_{};
 
@@ -259,7 +270,16 @@ private:
 
     HybridAStarType::VectorVec3d rs_connect_path_;
 
-    std::multimap<double, StateNode::Ptr> openset_;
+    // (f代价, 节点) 能精确删除旧记录，再插入更新后的代价。
+    struct OpenSetCompare {
+        bool operator()(const std::pair<double, StateNode::Ptr> &a,
+                        const std::pair<double, StateNode::Ptr> &b) const {
+            if (a.first < b.first) return true;
+            if (b.first < a.first) return false;
+            return std::less<StateNode::Ptr>()(a.second, b.second);
+        }
+    };
+    std::set<std::pair<double, StateNode::Ptr>, OpenSetCompare> openset_;
 
     double wheel_base_; //The distance between the front and rear axles
     double segment_length_;
@@ -278,6 +298,7 @@ private:
     double path_length_ = 0.0;
     double car_length;
     double car_width;
+    double search_collision_margin_ = 0.0;
 
     std::shared_ptr<RSPath> rs_path_ptr_;
 

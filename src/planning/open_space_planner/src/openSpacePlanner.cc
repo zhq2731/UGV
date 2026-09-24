@@ -451,6 +451,8 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
     openspace_config.steering_change_penalty = config_["steering_change_penalty"].as<double>();
     openspace_config.reversing_penalty = config_["reversing_penalty"].as<double>();
     openspace_config.shot_distance = config_["shot_distance"].as<double>();
+    openspace_config.search_collision_margin = config_["search_collision_margin"] ?
+        config_["search_collision_margin"].as<double>() : 0.0;
     openspace_config.segment_end_position_tolerance =
         config_["segment_end_position_tolerance"].as<double>();
     openspace_config.segment_end_heading_tolerance =
@@ -653,12 +655,18 @@ bool OpenSpacePlanner::isCommittedSegmentCollisionFree() const
 			nearest_index = i;
 		}
 	}
-	return isTrajectoryCollisionFree(committed_segment_, nearest_index);
+	// 运行中只检查可停车的前方弧长，远处地图变化留给后续周期处理。
+	const double speed = std::fabs(current_vehicle_state_ptr_->v);
+	const double deceleration = std::max(
+		1.0e-3, std::fabs(openspace_config.max_deceleration));
+	const double check_distance = speed * speed / (2.0 * deceleration) + 1.0;
+	return isTrajectoryCollisionFree(committed_segment_, nearest_index, check_distance);
 }
 
 bool OpenSpacePlanner::isTrajectoryCollisionFree(
 	const planning_msgs::TrajectoryPointArray &trajectory,
-	size_t start_index) const
+	size_t start_index,
+	double max_check_distance) const
 {
 	if (trajectory.points.empty() || start_index >= trajectory.points.size() ||
 		current_vehicle_state_ptr_ == nullptr) {
@@ -678,6 +686,7 @@ bool OpenSpacePlanner::isTrajectoryCollisionFree(
 
 	// 以不大于一个栅格的间隔检查，避免仅检查 0.5 m 轨迹离散点而漏掉小障碍物。
 	const double sample_step = std::max(0.05, map_resolution_);
+	double checked_distance = 0.0;
 	for (size_t i = start_index; i < trajectory.points.size(); ++i) {
 		if (i > start_index) {
 			const auto &previous = trajectory.points[i - 1];
@@ -686,6 +695,9 @@ bool OpenSpacePlanner::isTrajectoryCollisionFree(
 			const size_t samples = std::max<size_t>(1, static_cast<size_t>(std::ceil(distance / sample_step)));
 			for (size_t sample = 1; sample < samples; ++sample) {
 				const double ratio = static_cast<double>(sample) / static_cast<double>(samples);
+				if (checked_distance + ratio * distance > max_check_distance) {
+					return true;
+				}
 				planning_msgs::TrajectoryPoint interpolated = previous;
 				interpolated.x = previous.x + ratio * (current.x - previous.x);
 				interpolated.y = previous.y + ratio * (current.y - previous.y);
@@ -694,6 +706,10 @@ bool OpenSpacePlanner::isTrajectoryCollisionFree(
 				if (!to_local_and_check(interpolated)) {
 					return false;
 				}
+			}
+			checked_distance += distance;
+			if (checked_distance > max_check_distance) {
+				return true;
 			}
 		}
 		if (!to_local_and_check(trajectory.points[i])) {
@@ -858,7 +874,9 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 					2.0, "[open_space] cusp waits for a valid current map");
 				return false;
 			}
-			if (isTrajectoryCollisionFree(cached_segments_.front(), 0)) {
+			if (isTrajectoryCollisionFree(
+				cached_segments_.front(), 0,
+				std::numeric_limits<double>::infinity())) {
 				return commitNextCachedSegment(cur_time);
 			}
 			ROS_WARN("[open_space] cached next segment conflicts with current map; replan");
@@ -914,7 +932,19 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 		goal_local_x,
 		goal_local_y,
 		Mod2Pi(goal_yaw - start_yaw));
-	if (!kinodynamic_astar_searcher_ptr_->Search(start_state_map, goal_state_map)) {
+	if (!kinodynamic_astar_searcher_ptr_->IsStateCollisionFree(
+		start_state_map.x(), start_state_map.y(), start_state_map.z())) {
+		ROS_WARN_THROTTLE(2.0, "[open_space] start vehicle footprint is not free");
+		return false;
+	}
+	if (!kinodynamic_astar_searcher_ptr_->IsStateCollisionFree(
+		goal_state_map.x(), goal_state_map.y(), goal_state_map.z())) {
+		ROS_WARN_THROTTLE(2.0, "[open_space] goal vehicle footprint is not free");
+		return false;
+	}
+	if (!kinodynamic_astar_searcher_ptr_->Search(
+		start_state_map, goal_state_map,
+		openspace_config.search_collision_margin)) {
 		ROS_WARN_STREAM_THROTTLE(
 			2.0, "[open_space] Hybrid A* search failed from ("
 			<< start_state.x() << ", " << start_state.y() << ", " << start_state.z()

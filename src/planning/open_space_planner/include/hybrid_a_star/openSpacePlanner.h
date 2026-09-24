@@ -92,7 +92,8 @@ private:
 	 */
 	bool isTrajectoryCollisionFree(
 		const planning_msgs::TrajectoryPointArray &trajectory,
-		size_t start_index) const;
+		size_t start_index,
+		double max_check_distance) const;
 	/** @brief 从缓存取出下一同档位段，更新时间戳并提交给控制器。 */
 	bool commitNextCachedSegment(double cur_time);
 	/** @brief 以当前位姿和速度构造原地停车轨迹，用于轨迹失效时覆盖旧轨迹。 */
