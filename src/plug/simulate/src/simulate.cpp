@@ -50,6 +50,11 @@ Simulate::Simulate(ros::NodeHandle &nh) : nh_(nh), private_nh_("~")
 		private_nh_.param<int>("mapParams_width", map_width_, 40);
 		private_nh_.param<int>("mapParams_pointNum", map_point_num_, 360);
 		private_nh_.param<double>("mapParams_resolution", map_resolution_, 0.2);
+		std::string parking_map_mode;
+		private_nh_.param<std::string>(
+			"parking_map_mode", parking_map_mode, "raycast");
+		fixed_parking_map_ = parking_map_mode == "fixed";
+		ROS_INFO_STREAM("[open_space_sim] parking map mode: " << parking_map_mode);
 		private_nh_.param<double>(
 			"parking_obstacle_length", parking_obstacle_length_, 5.0);
 		private_nh_.param<double>(
@@ -196,92 +201,139 @@ void Simulate::callbackTimer2(const ros::TimerEvent &event)
 	publishChassis();
 }
 
+void Simulate::rasterizeParkingObstacles(
+	const nav_msgs::OccupancyGrid &grid, bool world_frame,
+	std::vector<unsigned char> &obstacle_cells) const
+{
+	const double resolution = grid.info.resolution;
+	const int width = grid.info.width;
+	const int height = grid.info.height;
+	const double cos_theta = world_frame ? 1.0 : std::cos(theta);
+	const double sin_theta = world_frame ? 0.0 : std::sin(theta);
+	for (const auto &obstacle : parking_obstacles_) {
+		const double dx = world_frame ? obstacle.x : obstacle.x - pos.x;
+		const double dy = world_frame ? obstacle.y : obstacle.y - pos.y;
+		const double center_x = cos_theta * dx + sin_theta * dy;
+		const double center_y = -sin_theta * dx + cos_theta * dy;
+		const double yaw = obstacle.yaw - (world_frame ? 0.0 : theta);
+		const double half_length = parking_obstacle_length_ * 0.5;
+		const double half_width = parking_obstacle_width_ * 0.5;
+		const double extent_x = std::fabs(std::cos(yaw)) * half_length +
+			std::fabs(std::sin(yaw)) * half_width;
+		const double extent_y = std::fabs(std::sin(yaw)) * half_length +
+			std::fabs(std::cos(yaw)) * half_width;
+		const int min_x = std::max(0, static_cast<int>(std::floor(
+			(center_x - extent_x - grid.info.origin.position.x) / resolution)));
+		const int max_x = std::min(width - 1, static_cast<int>(std::floor(
+			(center_x + extent_x - grid.info.origin.position.x) / resolution)));
+		const int min_y = std::max(0, static_cast<int>(std::floor(
+			(center_y - extent_y - grid.info.origin.position.y) / resolution)));
+		const int max_y = std::min(height - 1, static_cast<int>(std::floor(
+			(center_y + extent_y - grid.info.origin.position.y) / resolution)));
+
+		for (int y = min_y; y <= max_y; ++y) {
+			for (int x = min_x; x <= max_x; ++x) {
+				const double cell_x = grid.info.origin.position.x + (x + 0.5) * resolution;
+				const double cell_y = grid.info.origin.position.y + (y + 0.5) * resolution;
+				const double rel_x = cell_x - center_x;
+				const double rel_y = cell_y - center_y;
+				const double obstacle_x = std::cos(yaw) * rel_x + std::sin(yaw) * rel_y;
+				const double obstacle_y = -std::sin(yaw) * rel_x + std::cos(yaw) * rel_y;
+				if (std::fabs(obstacle_x) <= half_length &&
+					std::fabs(obstacle_y) <= half_width) {
+					obstacle_cells[y * width + x] = 1;
+				}
+			}
+		}
+	}
+}
+
+void Simulate::rebuildFixedParkingMap()
+{
+	if (!fixed_parking_map_) return;
+
+	// 世界图在初始化位姿处锚定，范围为局部窗口的两倍，车辆移动不改变其格值。
+	auto &world = fixed_parking_world_map_;
+	world.header.frame_id = "map";
+	world.header.stamp = ros::Time::now();
+	world.info.resolution = map_resolution_;
+	world.info.width = std::max(1, static_cast<int>(std::round(4.0 * map_length_ / map_resolution_)));
+	world.info.height = std::max(1, static_cast<int>(std::round(4.0 * map_width_ / map_resolution_)));
+	world.info.origin.position.x = pos.x - 2.0 * map_length_;
+	world.info.origin.position.y = pos.y - 2.0 * map_width_;
+	world.info.origin.orientation.w = 1.0;
+	world.data.assign(world.info.width * world.info.height, 25);
+	std::vector<unsigned char> occupied(world.data.size(), 0);
+	rasterizeParkingObstacles(world, true, occupied);
+	for (size_t i = 0; i < occupied.size(); ++i) {
+		if (occupied[i]) world.data[i] = 100;
+	}
+}
+
 void Simulate::parkingGridTimer(const ros::TimerEvent &event)
 {
-	if (!inited || map_resolution_ <= 0.0)
-		return;
+	if (!inited || map_resolution_ <= 0.0) return;
 
-	const int grid_width = std::max(1, static_cast<int>(std::round(2.0 * map_length_ / map_resolution_)));
-	const int grid_height = std::max(1, static_cast<int>(std::round(2.0 * map_width_ / map_resolution_)));
+	const int width = std::max(1, static_cast<int>(std::round(2.0 * map_length_ / map_resolution_)));
+	const int height = std::max(1, static_cast<int>(std::round(2.0 * map_width_ / map_resolution_)));
 	nav_msgs::OccupancyGrid grid;
 	grid.header.stamp = event.current_real;
 	grid.header.frame_id = "base_link";
 	grid.info.resolution = map_resolution_;
-	grid.info.width = grid_width;
-	grid.info.height = grid_height;
+	grid.info.width = width;
+	grid.info.height = height;
 	grid.info.origin.position.x = -map_length_;
 	grid.info.origin.position.y = -map_width_;
 	grid.info.origin.orientation.w = 1.0;
-	// 感知模型：射线扫过的空闲格为25，命中障碍物为100，障碍物后方保持未知。
-	grid.data.assign(grid_width * grid_height, -1);
-	std::vector<unsigned char> obstacle_cells(grid_width * grid_height, 0);
+	grid.data.assign(width * height, -1);
 
-	const double cos_theta = std::cos(theta);
-	const double sin_theta = std::sin(theta);
-	for (const auto &obstacle : parking_obstacles_)
-	{
-		const double dx = obstacle.x - pos.x;
-		const double dy = obstacle.y - pos.y;
-		const double center_x = cos_theta * dx + sin_theta * dy;
-		const double center_y = -sin_theta * dx + cos_theta * dy;
-		const double obstacle_yaw = obstacle.yaw - theta;
-		const double half_length = parking_obstacle_length_ * 0.5;
-		const double half_width = parking_obstacle_width_ * 0.5;
-		const double extent_x = std::fabs(std::cos(obstacle_yaw)) * half_length +
-			std::fabs(std::sin(obstacle_yaw)) * half_width;
-		const double extent_y = std::fabs(std::sin(obstacle_yaw)) * half_length +
-			std::fabs(std::cos(obstacle_yaw)) * half_width;
-		const int min_x = std::max(0, static_cast<int>(std::floor(
-			(center_x - extent_x - grid.info.origin.position.x) / map_resolution_)));
-		const int max_x = std::min(grid_width - 1, static_cast<int>(std::floor(
-			(center_x + extent_x - grid.info.origin.position.x) / map_resolution_)));
-		const int min_y = std::max(0, static_cast<int>(std::floor(
-			(center_y - extent_y - grid.info.origin.position.y) / map_resolution_)));
-		const int max_y = std::min(grid_height - 1, static_cast<int>(std::floor(
-			(center_y + extent_y - grid.info.origin.position.y) / map_resolution_)));
-
-		for (int y = min_y; y <= max_y; ++y)
-		{
-			for (int x = min_x; x <= max_x; ++x)
-			{
+	if (fixed_parking_map_) {
+		// 按当前位姿从固定世界图采样，发布接口仍是原来的自车局部栅格。
+		const auto &world = fixed_parking_world_map_;
+		const double cos_theta = std::cos(theta);
+		const double sin_theta = std::sin(theta);
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
 				const double local_x = grid.info.origin.position.x + (x + 0.5) * map_resolution_;
 				const double local_y = grid.info.origin.position.y + (y + 0.5) * map_resolution_;
-				const double rel_x = local_x - center_x;
-				const double rel_y = local_y - center_y;
-				const double obstacle_x = std::cos(obstacle_yaw) * rel_x + std::sin(obstacle_yaw) * rel_y;
-				const double obstacle_y = -std::sin(obstacle_yaw) * rel_x + std::cos(obstacle_yaw) * rel_y;
-				if (std::abs(obstacle_x) <= half_length && std::abs(obstacle_y) <= half_width)
-					obstacle_cells[y * grid_width + x] = 1;
+				const double world_x = pos.x + cos_theta * local_x - sin_theta * local_y;
+				const double world_y = pos.y + sin_theta * local_x + cos_theta * local_y;
+				const int wx = static_cast<int>(std::floor(
+					(world_x - world.info.origin.position.x) / map_resolution_));
+				const int wy = static_cast<int>(std::floor(
+					(world_y - world.info.origin.position.y) / map_resolution_));
+				if (wx >= 0 && wy >= 0 &&
+					wx < static_cast<int>(world.info.width) &&
+					wy < static_cast<int>(world.info.height)) {
+					grid.data[y * width + x] = world.data[wy * world.info.width + wx];
+				}
 			}
 		}
-	}
+	} else {
+		// 保留原有射线模型：未扫到及被障碍遮挡的格子仍为未知。
+		std::vector<unsigned char> occupied(grid.data.size(), 0);
+		rasterizeParkingObstacles(grid, false, occupied);
+		const int ray_count = std::max(1440, map_point_num_ * 4);
+		const double ray_step = map_resolution_ * 0.5;
+		const double max_range = std::hypot(static_cast<double>(map_length_), static_cast<double>(map_width_));
+		for (int ray = 0; ray < ray_count; ++ray) {
+			const double ray_yaw = -M_PI + 2.0 * M_PI * ray / ray_count;
+			const double cos_ray = std::cos(ray_yaw);
+			const double sin_ray = std::sin(ray_yaw);
+			for (double range = 0.0; range < max_range; range += ray_step) {
+				const double local_x = range * cos_ray;
+				const double local_y = range * sin_ray;
+				const int x = static_cast<int>(std::floor((local_x - grid.info.origin.position.x) / map_resolution_));
+				const int y = static_cast<int>(std::floor((local_y - grid.info.origin.position.y) / map_resolution_));
+				if (x < 0 || x >= width || y < 0 || y >= height) break;
 
-	// 用密集的二维激光射线扫描真值障碍物。每束射线在首次命中障碍物时终止，
-	// 因此遮挡物后方不会被误标成可通行区域。
-	const int ray_count = std::max(1440, map_point_num_ * 4);
-	const double ray_step = map_resolution_ * 0.5;
-	const double max_range = std::hypot(static_cast<double>(map_length_), static_cast<double>(map_width_));
-	for (int ray = 0; ray < ray_count; ++ray)
-	{
-		const double ray_yaw = -M_PI + 2.0 * M_PI * ray / ray_count;
-		const double cos_ray = std::cos(ray_yaw);
-		const double sin_ray = std::sin(ray_yaw);
-		for (double range = 0.0; range < max_range; range += ray_step)
-		{
-			const double local_x = range * cos_ray;
-			const double local_y = range * sin_ray;
-			const int x = static_cast<int>(std::floor((local_x - grid.info.origin.position.x) / map_resolution_));
-			const int y = static_cast<int>(std::floor((local_y - grid.info.origin.position.y) / map_resolution_));
-			if (x < 0 || x >= grid_width || y < 0 || y >= grid_height)
-				break;
-
-			const int index = y * grid_width + x;
-			if (obstacle_cells[index])
-			{
-				grid.data[index] = 100;
-				break;
+				const int index = y * width + x;
+				if (occupied[index]) {
+					grid.data[index] = 100;
+					break;
+				}
+				grid.data[index] = 25;
 			}
-			grid.data[index] = 25;
 		}
 	}
 
@@ -750,6 +802,7 @@ void Simulate::callBackInitPoint(const route_msgs::InitPoint::ConstPtr msg)
 	theta = amathutils::normalizeRadian(amathutils::getPoseYawAngle(msg->pose));
 
 	v = 0.0;
+	if (open_space_execution_mode_) rebuildFixedParkingMap();
 	publishGpsdata();
 	publishChassis();
 	inited = true;
@@ -791,6 +844,7 @@ void Simulate::callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg)
 	obstacle.y = msg->point.y;
 	obstacle.yaw = theta;
 	parking_obstacles_.push_back(obstacle);
+	rebuildFixedParkingMap();
 	ROS_INFO_STREAM("[open_space_sim] obstacle added at ("
 		<< obstacle.x << ", " << obstacle.y << ")");
 }
@@ -829,6 +883,7 @@ void Simulate::initPoseCallBack(
 	lat_timer_inited = false;
 	resetVirtualGearState();
 	parking_obstacles_.clear();
+	rebuildFixedParkingMap();
 	publishGpsdata();
 	publishChassis();
 	inited = true;

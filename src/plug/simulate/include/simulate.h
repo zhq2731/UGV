@@ -132,13 +132,14 @@ public:
 	double normalizeRadian(const double _angle);
 	void callbackTimer(const ros::TimerEvent &event);
 	void callbackTimer2(const ros::TimerEvent &event);
-	/**
-	 * @brief 周期生成以自车为原点的激光射线式局部栅格并发布
-	 *
-	 * 每条射线上障碍物之前的已观测格置为25，命中格置为100，遮挡区保持未知，
-	 * 用于验证“只有已确认可达区域才可规划”的开放空间逻辑。
-	 */
+	/** @brief 发布原尺寸的自车局部栅格，固定模式从世界图中取对应窗口。 */
 	void parkingGridTimer(const ros::TimerEvent &event);
+	/** @brief 将矩形障碍投影到指定栅格，供固定图和射线图共用。 */
+	void rasterizeParkingObstacles(
+		const nav_msgs::OccupancyGrid &grid, bool world_frame,
+		std::vector<unsigned char> &obstacle_cells) const;
+	/** @brief 起点重置或添加障碍后更新固定世界栅格。 */
+	void rebuildFixedParkingMap();
 	/** @brief 发布仿真障碍物、车身与前轮实际转角的 RViz Marker。 */
 	void publishParkingVisualization(const ros::Time &stamp);
 
@@ -213,6 +214,8 @@ private:
 	double map_resolution_;
 	double parking_obstacle_length_;
 	double parking_obstacle_width_;
+	bool fixed_parking_map_{false};
+	nav_msgs::OccupancyGrid fixed_parking_world_map_;
 	std::vector<ParkingObstacle> parking_obstacles_;
 
 	ros::Subscriber cloud_map_sub_;
