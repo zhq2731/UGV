@@ -450,6 +450,7 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
     openspace_config.steering_penalty = config_["steering_penalty"].as<double>();
     openspace_config.steering_change_penalty = config_["steering_change_penalty"].as<double>();
     openspace_config.reversing_penalty = config_["reversing_penalty"].as<double>();
+    openspace_config.gear_switch_penalty = config_["gear_switch_penalty"].as<double>();
     openspace_config.shot_distance = config_["shot_distance"].as<double>();
     openspace_config.search_collision_margin = config_["search_collision_margin"] ?
         config_["search_collision_margin"].as<double>() : 0.0;
@@ -470,6 +471,7 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
         openspace_config.steering_penalty,
         openspace_config.reversing_penalty,
         openspace_config.steering_change_penalty,
+        openspace_config.gear_switch_penalty,
         openspace_config.shot_distance);
 
 }

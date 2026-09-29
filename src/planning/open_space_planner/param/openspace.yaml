@@ -20,9 +20,11 @@ steering_angle_discrete_num: 6
 wheel_base: 2.85
 segment_length: 2.0
 segment_length_discrete_num: 5
-steering_penalty: 25.0
-steering_change_penalty: 10.0
-reversing_penalty: 25.0
+# 距离项为每米代价；转向幅度按最大转角归一化，变化和换挡按事件计价。
+steering_penalty: 0.5
+steering_change_penalty: 1.0
+reversing_penalty: 3.0
+gear_switch_penalty: 5.0
 # 在距目标 shot_distance 内尝试 Reeds-Shepp 直接连接；更远处由 Hybrid A* 展开搜索。
 shot_distance: 25
 # 主仓库泊车仿真的搜索安全余量；执行期复核使用真实车身。

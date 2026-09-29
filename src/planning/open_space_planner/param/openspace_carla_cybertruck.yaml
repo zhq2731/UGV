@@ -24,9 +24,10 @@ reverse_brake: -1.0
 steering_angle_discrete_num: 6
 segment_length: 2.0
 segment_length_discrete_num: 5
-steering_penalty: 25.0
-steering_change_penalty: 10.0
-reversing_penalty: 25.0
+steering_penalty: 0.5
+steering_change_penalty: 1.0
+reversing_penalty: 3.0
+gear_switch_penalty: 5.0
 shot_distance: 25.0
 
 # 单段结束与最终目标判定阈值。

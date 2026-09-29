@@ -70,6 +70,8 @@ struct OpenSpace_config
     double steering_change_penalty ;
     // 倒车代价
     double reversing_penalty ;
+    // 每次实际换挡的固定代价。
+    double gear_switch_penalty ;
     double shot_distance;
     // 仅搜索时使用的车身外扩距离；执行期碰撞复核仍按真实车身尺寸。
     double search_collision_margin = 0.0;
@@ -138,7 +140,8 @@ public:
 
     HybridAStar(double steering_angle, int steering_angle_discrete_num, double segment_length,
                 int segment_length_discrete_num, double wheel_base, double steering_penalty,
-                double reversing_penalty, double steering_change_penalty, double shot_distance,
+                double reversing_penalty, double steering_change_penalty,
+                double gear_switch_penalty, double shot_distance,
                 int grid_size_phi = 72);
 
     ~HybridAStar();
@@ -294,6 +297,7 @@ private:
     double steering_penalty_;
     double reversing_penalty_;
     double steering_change_penalty_;
+    double gear_switch_penalty_;
 
     double path_length_ = 0.0;
     double car_length;

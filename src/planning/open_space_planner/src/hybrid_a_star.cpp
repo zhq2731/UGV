@@ -35,7 +35,8 @@
 
 HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num, double segment_length,
                          int segment_length_discrete_num, double wheel_base, double steering_penalty,
-                         double reversing_penalty, double steering_change_penalty, double shot_distance,
+                         double reversing_penalty, double steering_change_penalty,
+                         double gear_switch_penalty, double shot_distance,
                          int grid_size_phi) {
     wheel_base_ = wheel_base;
     segment_length_ = segment_length;
@@ -47,6 +48,7 @@ HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num,
     steering_penalty_ = steering_penalty;
     steering_change_penalty_ = steering_change_penalty;
     reversing_penalty_ = reversing_penalty;
+    gear_switch_penalty_ = gear_switch_penalty;
     shot_distance_ = shot_distance;
     assert(static_cast<float>(segment_length_discrete_num_ * move_step_size_)==  static_cast<float>(segment_length_));
   //  CHECK_EQ(static_cast<float>(segment_length_discrete_num_ * move_step_size_), static_cast<float>(segment_length_))
@@ -553,38 +555,23 @@ double HybridAStar::ComputeH(const StateNode::Ptr &current_node_ptr,
 
 double HybridAStar::ComputeG(const StateNode::Ptr &current_node_ptr,
                              const StateNode::Ptr &neighbor_node_ptr) const {
-    double g;
-    if (neighbor_node_ptr->direction_ == StateNode::FORWARD) {
-        if (neighbor_node_ptr->steering_grade_ != current_node_ptr->steering_grade_) {
-            if (neighbor_node_ptr->steering_grade_ == 0) {
-                g = segment_length_ * steering_change_penalty_;
-            } else {
-                g = segment_length_ * steering_change_penalty_ * steering_penalty_;
-            }
-        } else {
-            if (neighbor_node_ptr->steering_grade_ == 0) {
-                g = segment_length_;
-            } else {
-                g = segment_length_ * steering_penalty_;
-            }
-        }
-    } else {
-        if (neighbor_node_ptr->steering_grade_ != current_node_ptr->steering_grade_) {
-            if (neighbor_node_ptr->steering_grade_ == 0) {
-                g = segment_length_ * steering_change_penalty_ * reversing_penalty_;
-            } else {
-                g = segment_length_ * steering_change_penalty_ * steering_penalty_ * reversing_penalty_;
-            }
-        } else {
-            if (neighbor_node_ptr->steering_grade_ == 0) {
-                g = segment_length_ * reversing_penalty_;
-            } else {
-                g = segment_length_ * steering_penalty_ * reversing_penalty_;
-            }
-        }
+    // 距离按前进/倒车计费；转角幅度、转角变化和换挡分别叠加，
+    // 避免多个惩罚系数连乘后掩盖路径长度。
+    const double steering_ratio =
+        std::abs(neighbor_node_ptr->steering_grade_) /
+        static_cast<double>(steering_discrete_num_);
+    const double steering_change_ratio =
+        std::abs(neighbor_node_ptr->steering_grade_ - current_node_ptr->steering_grade_) /
+        static_cast<double>(steering_discrete_num_);
+    double cost = segment_length_ *
+        (neighbor_node_ptr->direction_ == StateNode::BACKWARD ? reversing_penalty_ : 1.0);
+    cost += segment_length_ * steering_penalty_ * steering_ratio;
+    cost += steering_change_penalty_ * steering_change_ratio;
+    if (current_node_ptr->direction_ != StateNode::NO &&
+        current_node_ptr->direction_ != neighbor_node_ptr->direction_) {
+        cost += gear_switch_penalty_;
     }
-
-    return g;
+    return cost;
 }
 
 bool HybridAStar::Search(
