@@ -29,6 +29,10 @@ gear_switch_penalty: 5.0
 shot_distance: 25
 # 主仓库泊车仿真的搜索安全余量；执行期复核使用真实车身。
 search_collision_margin: 0.40
+# 编译时需 OPEN_SPACE_BUILD_LIOM=ON；默认关闭，先验证后再用于闭环仿真。
+liom_enabled: true
+# 一次多段优化的墙钟预算；迭代边界协作停止，不是硬实时中断。
+liom_time_budget_ms: 1000.0
 # 泊车仿真地图：fixed 从固定世界图取自车局部窗口，仅障碍投影占用；raycast 为原射线遮挡图。
 parking_map_mode: fixed
 segment_end_position_tolerance: 0.20

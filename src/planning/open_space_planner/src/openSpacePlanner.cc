@@ -1,4 +1,8 @@
 #include "hybrid_a_star/openSpacePlanner.h"
+#ifdef OPEN_SPACE_WITH_LIOM
+#include "hybrid_a_star/liom_grid.h"
+#include "hybrid_a_star/liom_optimizer.h"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -428,6 +432,19 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
     // 加载配置参数
     config_ = YAML::LoadFile(openspace_config_yaml_file);
 
+    // 默认不启用；同名私有参数可由 launch 覆盖，便于仿真逐步验证。
+    private_nh.param("liom_enabled", liom_enabled_, config_["liom_enabled"].as<bool>(false));
+    private_nh.param("liom_time_budget_ms", liom_time_budget_ms_,
+                     config_["liom_time_budget_ms"].as<double>(1000.0));
+#ifndef OPEN_SPACE_WITH_LIOM
+    if (liom_enabled_) {
+        ROS_WARN("[open_space] LIOM requested but not built; using original search-only mode");
+        liom_enabled_ = false;
+    }
+#endif
+    if (liom_enabled_ && (!std::isfinite(liom_time_budget_ms_) || liom_time_budget_ms_ <= 0))
+        throw std::invalid_argument("liom_time_budget_ms must be positive when LIOM is enabled");
+
     openspace_config.car_length = config_["car_length"].as<double>();
     openspace_config.car_width = config_["car_width"].as<double>();
     openspace_config.rear_overhang = config_["rear_overhang"].as<double>();
@@ -774,7 +791,10 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::makeEmergencyStopTrajector
 	stopped_point.relative_time = 1.0;
 	stop_trajectory.points.push_back(stopped_point);
 
-	stop_trajectory.is_forward_shift = committed_segment_.is_forward_shift;
+	// 尚无已提交段时按实际运动方向停车，不使用空轨迹的默认倒车标志。
+	stop_trajectory.is_forward_shift = !has_committed_segment_ &&
+		std::fabs(current_point.v) > openspace_config.stop_speed_tolerance
+		? current_point.v > 0.0 : committed_segment_.is_forward_shift;
 	stop_trajectory.header.stamp = ros::Time(cur_time);
 	stop_trajectory.header.frame_id = "map";
 	return stop_trajectory;
@@ -903,6 +923,10 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 
 	setParkingState(ParkingState::PLANNING);
 
+	// 同步优化只在停车状态运行，避免求解期间仍执行已失效的运动轨迹。
+	if (liom_enabled_ && std::fabs(current_vehicle_state_ptr_->v) > openspace_config.stop_speed_tolerance)
+		return beginEmergencyBraking(cur_time, "LIOM planning waits for standstill");
+
 	if (!initializeCurrentMap()) {
 		ROS_WARN_THROTTLE(
 			2.0, "[open_space] replan waits for a valid current map");
@@ -969,48 +993,47 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 			2.0, "[open_space] Hybrid A* and RS connection is discontinuous");
 		return false;
 	}
-	const auto split_paths = path_split(path);
-	const bool has_invalid_segment = split_paths.empty() ||
-		std::any_of(split_paths.begin(), split_paths.end(),
-			[](const HybridAStarType::VectorVec4d &segment) {
-				return segment.size() < 2;
-			});
-	if (has_invalid_segment) {
-		kinodynamic_astar_searcher_ptr_->Reset();
-		ROS_WARN_THROTTLE(
-			2.0, "[open_space] search result has no executable segment");
-		return false;
-	}
-
 	// 所有分段都基于本次搜索起点转换到 map 坐标，并在正常换挡时依次提交。
 	cached_segments_.clear();
-	for (const auto &split_path : split_paths) {
-		auto segment = GetTraject(split_path, start_state);
-		if (segment.points.size() < 3) {
-			cached_segments_.clear();
-			kinodynamic_astar_searcher_ptr_->Reset();
-			ROS_WARN_THROTTLE(
-				2.0, "[open_space] trajectory resampling produced an invalid segment");
-			return false;
+	auto segments = GenerateSearchSegments(openspace_config, path, start_state);
+	if (segments.empty()) {
+		kinodynamic_astar_searcher_ptr_->Reset();
+		ROS_WARN_THROTTLE(2.0, "[open_space] search trajectory preparation failed");
+		return false;
+	}
+#ifdef OPEN_SPACE_WITH_LIOM
+	if (liom_enabled_) {
+		geometry_msgs::Pose2D grid_pose;
+		grid_pose.x = start_state.x(); grid_pose.y = start_state.y(); grid_pose.theta = start_state.z();
+		for (auto &segment : segments) segment.header.frame_id = "map";
+		open_space::LiomOptions options;
+		options.max_runtime_ms = liom_time_budget_ms_;
+		open_space::LiomReport report;
+		std::vector<planning_msgs::TrajectoryPointArray> optimized;
+		if (open_space::OptimizeLiomParkingSegments(segments, *current_costmap_ptr_, grid_pose,
+			openspace_config, optimized, report, options)) {
+			segments = std::move(optimized);
+			ROS_INFO_STREAM("[open_space] LIOM accepted, elapsed=" << report.elapsed_ms
+				<< " ms, outer=" << report.penalty_iterations);
+		} else {
+			ROS_WARN_STREAM("[open_space] LIOM rejected, timeout=" << report.timed_out
+				<< ", elapsed=" << report.elapsed_ms << " ms, reason=" << report.message);
+			// 回退的是原搜索轨迹，不能因优化失败而省略车身安全余量或点间扫掠。
+			const open_space::LiomGrid grid(*current_costmap_ptr_, grid_pose, openspace_config);
+			const bool safe = grid.valid() && std::all_of(segments.begin(), segments.end(),
+				[&](const planning_msgs::TrajectoryPointArray &segment) {
+					return grid.TrajectoryFree(grid.ToGrid(segment));
+				});
+			if (!safe) {
+				kinodynamic_astar_searcher_ptr_->Reset();
+				return beginEmergencyBraking(cur_time, "LIOM rejected and search fallback is not safe");
+			}
+			ROS_WARN("[open_space] using fully checked search fallback");
 		}
-		caculateAccumulated_s_os(segment);
-		if (!calculateKappaFromHeadingOs(segment)) {
-			cached_segments_.clear();
-			kinodynamic_astar_searcher_ptr_->Reset();
-			ROS_WARN_THROTTLE(
-				2.0, "[open_space] trajectory heading curvature calculation failed");
-			return false;
-		}
-		caculateDkappaos(segment);
-		if (!isTrajectoryGeometryValid(segment, openspace_config)) {
-			cached_segments_.clear();
-			kinodynamic_astar_searcher_ptr_->Reset();
-			ROS_WARN_THROTTLE(
-				2.0, "[open_space] trajectory geometry quality check failed");
-			return false;
-		}
-		cached_segments_.push_back(
-			Velocity_Profile_output_os(openspace_config, std::move(segment)));
+	}
+#endif
+	for (auto &segment : segments) {
+		cached_segments_.push_back(std::move(segment));
 	}
 	kinodynamic_astar_searcher_ptr_->Reset();
 	return commitNextCachedSegment(cur_time);
@@ -1081,7 +1104,29 @@ void  OpenSpacePlanner::getTrajectory(planning_msgs::TrajectoryPointArray &traje
 	return;
 }
 
-planning_msgs::TrajectoryPointArray OpenSpacePlanner::GetTraject(const HybridAStarType::VectorVec4d &path1, const HybridAStarType::Vec3d &start_state)
+std::vector<planning_msgs::TrajectoryPointArray> OpenSpacePlanner::GenerateSearchSegments(
+    const OpenSpace_config &config,
+    const HybridAStarType::VectorVec3d &local_path,
+    const HybridAStarType::Vec3d &world_pose)
+{
+    std::vector<planning_msgs::TrajectoryPointArray> segments;
+    for (const auto &split_path : path_split(local_path)) {
+        if (split_path.size() < 2) return {};
+        auto segment = GetTraject(split_path, world_pose, config);
+        if (segment.points.size() < 3) return {};
+        caculateAccumulated_s_os(segment);
+        if (!calculateKappaFromHeadingOs(segment)) return {};
+        caculateDkappaos(segment);
+        if (!isTrajectoryGeometryValid(segment, config)) return {};
+        segments.push_back(GenerateVelocityProfile(config, std::move(segment)));
+    }
+    return segments;
+}
+
+planning_msgs::TrajectoryPointArray OpenSpacePlanner::GetTraject(
+    const HybridAStarType::VectorVec4d &path1,
+    const HybridAStarType::Vec3d &start_state,
+    const OpenSpace_config &config)
 {
     planning_msgs::TrajectoryPointArray traject_in;
 
@@ -1098,7 +1143,7 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::GetTraject(const HybridASt
     }
 
     if (!resamplePoints(
-        openspace_config.trajectory_resample_resolution, tra_resample))
+        config.trajectory_resample_resolution, tra_resample))
     {
         return traject_in;
     }
@@ -1130,6 +1175,14 @@ planning_msgs::TrajectoryPointArray OpenSpacePlanner::GetTraject(const HybridASt
 
 // 附加速度
 planning_msgs::TrajectoryPointArray OpenSpacePlanner::Velocity_Profile_output_os(
+    const OpenSpace_config &vel_config,
+    planning_msgs::TrajectoryPointArray trajectory)
+{
+    return GenerateVelocityProfile(vel_config, std::move(trajectory));
+}
+
+// 同一实现同时供原规划流程与 LIOM 初值生成使用，不改变原速度规划行为。
+planning_msgs::TrajectoryPointArray OpenSpacePlanner::GenerateVelocityProfile(
     const OpenSpace_config &vel_config,
     planning_msgs::TrajectoryPointArray trajectory)
 {

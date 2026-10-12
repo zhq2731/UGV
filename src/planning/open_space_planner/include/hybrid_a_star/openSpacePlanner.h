@@ -21,6 +21,15 @@ public:
 	void getTrajectory(planning_msgs::TrajectoryPointArray &trajectory_) override;
 	/** @brief 清除上一泊车任务的轨迹、反馈和状态机状态，等待新的规划输入。 */
 	void resetPlanningState();
+	/** @brief 无状态的单段速度规划，也用于生成 LIOM 初值；原规划行为不变。 */
+	static planning_msgs::TrajectoryPointArray GenerateVelocityProfile(
+		const OpenSpace_config &vel_config,
+		planning_msgs::TrajectoryPointArray trajectory);
+	/** @brief 复用正常规划的搜索路径分段、重采样、曲率与速度初值生成。 */
+	static std::vector<planning_msgs::TrajectoryPointArray> GenerateSearchSegments(
+		const OpenSpace_config &config,
+		const HybridAStarType::VectorVec3d &local_path,
+		const HybridAStarType::Vec3d &world_pose);
 private:
 	// 控制器一次只接收一个同档位轨迹段；正常到达换挡点后提交缓存的下一段。
 	enum class ParkingState {
@@ -38,6 +47,8 @@ private:
 	std::shared_ptr<VehicleState> goal_vehicle_state_ptr_;
 
 	OpenSpace_config openspace_config;
+	bool liom_enabled_{false};
+	double liom_time_budget_ms_{1000.0};  // 一次完整多段优化的预算，不是单段预算。
 	double map_resolution_{0.0};
 	planning_msgs::TrajectoryPointArray final_trajectory_;
 	planning_msgs::TrajectoryPointArray committed_segment_;
@@ -56,8 +67,11 @@ private:
 	bool has_execution_status_{false};
 
 	/** @brief 将自车局部坐标系下的搜索路径转换为 map 坐标系轨迹。 */
-	planning_msgs::TrajectoryPointArray GetTraject(const HybridAStarType::VectorVec4d &path, const HybridAStarType::Vec3d &start_state);
-	/** @brief 为当前单档位路径生成低速泊车速度、加速度与时间序列。 */
+	static planning_msgs::TrajectoryPointArray GetTraject(
+		const HybridAStarType::VectorVec4d &path,
+		const HybridAStarType::Vec3d &start_state,
+		const OpenSpace_config &config);
+	/** @brief 保留原接口，内部复用同一段无状态速度规划。 */
 	planning_msgs::TrajectoryPointArray Velocity_Profile_output_os(
 		const OpenSpace_config &vel_config,
 		planning_msgs::TrajectoryPointArray trajectory);

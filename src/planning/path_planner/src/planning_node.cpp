@@ -1717,7 +1717,8 @@ void PlanningNode::planning(PLANNER_TYPE planner_type)
 	}
 	trajectory.task_area = inputData.refArray.task_area;
     trajectory.type = inputData.refArray.type;	
-	trajectory.header.stamp = time;
+    // 泊车搜索/优化在停车时可能耗时较长，从实际交付时刻启动轨迹时间轴。
+    trajectory.header.stamp = planner_type == OPEN_SPACE ? ros::Time::now() : time;
 	if (trajectory.header.frame_id.empty())
 		trajectory.header.frame_id = "map";
 	if (planner_type != OPEN_SPACE) {

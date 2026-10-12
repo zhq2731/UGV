@@ -1,0 +1,14 @@
+<launch>
+  <!-- 手动闭环检查入口；原节点和参数不变，仅本次仿真覆盖 LIOM、地图分辨率及障碍尺寸。 -->
+  <arg name="rviz" default="false"/>
+  <include file="$(find launch_node)/launch/open-space-parking-simulate.launch">
+    <arg name="rviz" value="$(arg rviz)"/>
+    <arg name="vehicle_platform_file"
+         value="$(find launch_node)/../../platform_files/vehicle_platform-tank-1.yaml"/>
+  </include>
+  <param name="/planner/liom_enabled" value="true"/>
+  <param name="/simulate/mapParams_resolution" value="0.1"/>
+  <param name="/simulate/parking_obstacle_length" value="2.0"/>
+  <param name="/simulate/parking_obstacle_width" value="4.0"/>
+  <param name="/trajectory_follower/enable_control_log" value="false"/>
+</launch>

@@ -174,6 +174,8 @@ public:
 	bool publish_sim_tf_{false};
 	// 实际前轮角每秒允许变化的最大弧度，用于模拟转向执行器动态。
 	double open_space_front_tire_steering_rate_limit_radps_{0.25};
+	// 命令仅更新目标角；泊车转向执行器由周期定时器连续积分，避免换挡后跳变。
+	double open_space_target_tire_angle_rad_{0.0};
 	// 开启后，档位命令不会立即生效，而是在停稳并等待配置延迟后更新底盘反馈。
 	bool open_space_virtual_gear_shift_{false};
 	double open_space_virtual_gear_shift_delay_{0.3};

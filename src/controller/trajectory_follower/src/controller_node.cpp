@@ -327,6 +327,7 @@ bool Controller::isOpenSpaceStopTrajectory(
 	const planning_msgs::TrajectoryPointArray &trajectory) const
 {
 	// 少于两个点无法构成可跟踪运动段；其余轨迹只要存在非零速度就视为运动段。
+	// 首点可保留当前实际车速，是否要求运动由后续点的目标速度决定。
 	if (trajectory.points.size() < 2) {
 		return true;
 	}
@@ -891,6 +892,16 @@ void Controller::latControl()
 				<< target_tire_angle << " rad, actual=" << actual_tire_angle
 				<< " rad, error=" << steering_error << " rad");
 		}
+		return;
+	}
+
+	// 原地停车段的弧长为零，不能送入 MPC 的距离重采样，否则插值会收到空点集。
+	// 保持实际前轮角，纵向仍由停车逻辑制动；不沿用上一运动段的横向输出。
+	if (open_space_execution_mode && isOpenSpaceStopTrajectory(sim_trajectory)) {
+		lateral_output_ = boost::none;
+		const double actual_tire_angle = input_data_.current_steering_ptr
+			? input_data_.current_steering_ptr->steering_tire_angle : 0.0;
+		publishOpenSpaceSteeringCommand(actual_tire_angle);
 		return;
 	}
 

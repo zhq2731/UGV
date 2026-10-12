@@ -186,6 +186,19 @@ void Simulate::callbackTimer2(const ros::TimerEvent &event)
 {
 	if (!inited)
 		return;
+	if (open_space_execution_mode_ && motion_start) {
+		// 按周期推进已收到的目标角，不能把换挡等待时间作用于刚收到的新命令。
+		const double dt = event.last_real.isZero() ? 0.0 :
+			std::max(0.0, (event.current_real - event.last_real).toSec());
+		const double previous_angle = steering * M_PI / 180.0 /
+			vehcileInfo->w2s_primary_coeff;
+		const double max_change = open_space_front_tire_steering_rate_limit_radps_ * dt;
+		const double next_angle = previous_angle + std::max(-max_change,
+			std::min(open_space_target_tire_angle_rad_ - previous_angle, max_change));
+		theta += v / vehcileInfo->wheel_base_m *
+			std::tan(0.5 * (previous_angle + next_angle)) * dt;
+		steering = next_angle * 180.0 / M_PI * vehcileInfo->w2s_primary_coeff;
+	}
 	// 模拟真实TCU：只有车辆停稳且换挡执行延迟已经结束，实际档位才改变。
 	// 控制器随后通过周期发布的ChassisReport完成档位反馈握手。
 	if (open_space_virtual_gear_shift_ && gear_shift_pending_ &&
@@ -738,6 +751,8 @@ void Simulate::onGearControlCommand(const driver_msgs::GearCmd::ConstPtr msg)
 void Simulate::resetVirtualGearState()
 {
 	// 新起点或新任务必须从确定的空挡状态开始，不能继承上一任务的换挡计时。
+	open_space_target_tire_angle_rad_ = steering * M_PI / 180.0 /
+		vehcileInfo->w2s_primary_coeff;
 	gear_location_ = 0;
 	pending_gear_location_ = 0;
 	gear_shift_pending_ = false;
@@ -777,6 +792,11 @@ void Simulate::onLonControlCommand(const driver_msgs::DriveCmd::ConstPtr msg)
 			(std::fabs(target_velocity) <= 1.0e-3 && previous_velocity * next_velocity < 0.0))
 		{
 			next_velocity = target_velocity;
+		}
+		// 理想加速度模型没有踏板动力学；零速制动保持时清除停车容差内的残速。
+		if (std::fabs(target_velocity) <= 1.0e-3 && msg->brake_pedal > 0.0 &&
+			std::fabs(previous_velocity) <= 0.05) {
+			next_velocity = 0.0;
 		}
 		const double integration_velocity = 0.5 * (previous_velocity + next_velocity);
 		pos.x = pos.x + integration_velocity * std::cos(theta) * dt;
@@ -899,6 +919,11 @@ void Simulate::onLatControlCommand(const driver_msgs::SteeringWheelCmd::ConstPtr
 
 	if (!motion_start)
 		return;
+	if (open_space_execution_mode_) {
+		open_space_target_tire_angle_rad_ = msg->steering_wheel_angle * M_PI / 180.0 /
+			vehcileInfo->w2s_primary_coeff;
+		return;
+	}
 
 	if (!lat_timer_inited)
 	{
@@ -911,32 +936,10 @@ void Simulate::onLatControlCommand(const driver_msgs::SteeringWheelCmd::ConstPtr
 	double dt = diff.count();
 	const double target_tire_angle = msg->steering_wheel_angle * M_PI / 180.0 /
 		vehcileInfo->w2s_primary_coeff;
-	const double previous_tire_angle = steering * M_PI / 180.0 /
-		vehcileInfo->w2s_primary_coeff;
-	double next_tire_angle = target_tire_angle;
-	if (open_space_execution_mode_)
-	{
-		// 泊车仿真中将前轮转角作为具有变化速度上限的实际状态，模拟真车
-		// 转向执行器；控制器下发的是目标角，底盘反馈发布的是限速后的实际角。
-		const double max_angle_change =
-			open_space_front_tire_steering_rate_limit_radps_ * std::max(0.0, dt);
-		const double angle_error = target_tire_angle - previous_tire_angle;
-		const double limited_angle_change = std::max(-max_angle_change,
-			std::min(angle_error, max_angle_change));
-		next_tire_angle = previous_tire_angle + limited_angle_change;
-		ROS_DEBUG_THROTTLE(0.5,
-			"[open_space_sim] steering actuator: target=%.3f rad, actual=%.3f rad, "
-			"rate_limit=%.3f rad/s",
-			target_tire_angle, next_tire_angle,
-			open_space_front_tire_steering_rate_limit_radps_);
-	}
-
-	// 限速期间用本周期平均转角积分航向，避免把周期末转角作用于整个周期。
-	const double integration_tire_angle = open_space_execution_mode_
-		? 0.5 * (previous_tire_angle + next_tire_angle) : next_tire_angle;
+	// 道路仿真仍沿用原来的指令回调积分，不启用泊车执行器。
 	theta = theta + v / vehcileInfo->wheel_base_m *
-		std::tan(integration_tire_angle) * dt;
-	steering = next_tire_angle * 180.0 / M_PI * vehcileInfo->w2s_primary_coeff;
+		std::tan(target_tire_angle) * dt;
+	steering = target_tire_angle * 180.0 / M_PI * vehcileInfo->w2s_primary_coeff;
 	// publishGpsdata();
 	// publishChassis();
 	lat_last_time = time_now;
