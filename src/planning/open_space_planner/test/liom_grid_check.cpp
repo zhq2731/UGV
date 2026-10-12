@@ -158,6 +158,20 @@ int main(int argc,char **argv) {
   expect(!open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(single) &&
           open_space::LiomGrid(blocked,pose,zero_margin).TrajectoryFree(single),"configured_margin_applied");
 
+  // 障碍距真实车侧约 0.3 m：优化结果的 0.2 m 复核通过，默认搜索余量仍拒绝。
+  blocked = map;
+  Cell(blocked,21,20+vehicle.car_width/2+0.35);
+  auto short_path = single;
+  short_path.points.push_back(start);
+  short_path.points.back().x += 0.2;
+  expect(open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,0.2) &&
+         !open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path),
+         "optimized_margin_override_preserves_search_margin");
+  blocked = map;
+  Cell(blocked,21,20+vehicle.car_width/2+0.15);
+  expect(!open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,0.2),
+         "optimized_margin_still_rejects_near_obstacle");
+
   single.points[0].y = 20.03;
   blocked = map;
   // 占据格中心在车外，但单元边缘与车身重叠，不能按栅格中心漏掉它。

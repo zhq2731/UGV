@@ -22,6 +22,7 @@ constexpr int kStates = 7;  // x, y, 车身航向, 有符号速度, 前轮角, �
 constexpr short kTape = 25101;
 constexpr double kInfinity = 1e19;
 constexpr double kResidualLimit = 1e-3;
+constexpr double kOptimizedCollisionMargin = 0.2;  // 优化结果交付前的基础复核余量，单位 m。
 std::timed_mutex solver_mutex;  // ADOL-C tape 共享；预算也涵盖等待其他求解的时间。
 using Clock = std::chrono::steady_clock;
 
@@ -373,7 +374,8 @@ static bool OptimizeSegment(const planning_msgs::TrajectoryPointArray &seed,
       auto candidate = ToMessage(problem->result,seed,vehicle.wheel_base);
       if (grid) {
         const auto collision_started = Clock::now();
-        const bool safe = grid->TrajectoryFree(candidate);
+        // 仅优化结果复核改为 0.2 m；走廊及搜索回退仍使用搜索余量，并保留点间扫掠。
+        const bool safe = grid->TrajectoryFree(candidate,kOptimizedCollisionMargin);
         report.collision_ms += MillisecondsSince(collision_started);
         if (Clock::now() >= deadline) return timeout();
         if (!safe) return finish(false,"optimized footprint/sweep collides; output unchanged");

@@ -137,23 +137,25 @@ bool LiomGrid::OrientedBoxFree(const LiomBox &box,double x,double y,double theta
   return true;
 }
 
-bool LiomGrid::PoseFree(double x,double y,double theta,double sweep_padding) const {
-  const double margin = vehicle_.search_collision_margin+sweep_padding;
+bool LiomGrid::PoseFree(double x,double y,double theta,double margin) const {
   return OrientedBoxFree({-vehicle_.rear_overhang-margin,-vehicle_.car_width/2-margin,
     vehicle_.car_length-vehicle_.rear_overhang+margin,vehicle_.car_width/2+margin},x,y,theta);
 }
 
 bool LiomGrid::TrajectoryFree(const planning_msgs::TrajectoryPointArray &path) const {
+  return TrajectoryFree(path,vehicle_.search_collision_margin);
+}
+
+bool LiomGrid::TrajectoryFree(const planning_msgs::TrajectoryPointArray &path,double margin) const {
   if (!valid_ || path.points.empty()) return false;
   for (const auto &p : path.points)
     if (!std::isfinite(p.x+p.y+p.theta)) return false;
-  const double margin = vehicle_.search_collision_margin;
   const double radius = std::hypot(std::max(vehicle_.rear_overhang,vehicle_.car_length-vehicle_.rear_overhang)+margin,
                                    vehicle_.car_width/2+margin);
-  if (!PoseFree(path.points.front().x,path.points.front().y,path.points.front().theta,0)) return false;
+  if (!PoseFree(path.points.front().x,path.points.front().y,path.points.front().theta,margin)) return false;
   for (size_t i = 1; i < path.points.size(); ++i) {
     const auto &a = path.points[i-1], &b = path.points[i];
-    if (!PoseFree(b.x,b.y,b.theta,0)) return false;
+    if (!PoseFree(b.x,b.y,b.theta,margin)) return false;
     const double angle = Wrap(b.theta-a.theta);
     const double displacement = std::hypot(b.x-a.x,b.y-a.y)+radius*std::abs(angle);
     const int steps = std::max(1,int(std::ceil(displacement/(0.25*resolution_))));
@@ -161,7 +163,7 @@ bool LiomGrid::TrajectoryFree(const planning_msgs::TrajectoryPointArray &path) c
     const double padding = displacement/(2*steps);
     for (int k = 0; k <= steps; ++k) {
       const double t = double(k)/steps;
-      if (!PoseFree(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),a.theta+t*angle,padding)) return false;
+      if (!PoseFree(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),a.theta+t*angle,margin+padding)) return false;
     }
   }
   return true;

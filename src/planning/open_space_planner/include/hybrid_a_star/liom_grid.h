@@ -20,14 +20,16 @@ public:
   bool valid() const { return valid_; }
   planning_msgs::TrajectoryPointArray ToGrid(const planning_msgs::TrajectoryPointArray &path) const;
   planning_msgs::TrajectoryPointArray ToWorld(const planning_msgs::TrajectoryPointArray &path) const;
+  // 默认沿用搜索余量；优化结果交付时可单独指定复核余量，扫掠补偿仍保留。
   bool TrajectoryFree(const planning_msgs::TrajectoryPointArray &grid_path) const;
+  bool TrajectoryFree(const planning_msgs::TrajectoryPointArray &grid_path,double collision_margin) const;
   bool BuildCorridors(const planning_msgs::TrajectoryPointArray &grid_path,
                       std::vector<LiomCorridor> &corridors) const;
 
 private:
   bool BoxFree(const LiomBox &box) const;
   bool OrientedBoxFree(const LiomBox &box,double x,double y,double theta) const;
-  bool PoseFree(double x,double y,double theta,double sweep_padding) const;
+  bool PoseFree(double x,double y,double theta,double margin) const;
   const nav_msgs::OccupancyGrid &grid_;
   const OpenSpace_config &vehicle_;
   double world_x_ = 0, world_y_ = 0, yaw_ = 0;

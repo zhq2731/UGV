@@ -6,11 +6,14 @@ rear_overhang: 1.35
 reverse_brake: -1.0
 # 开放空间轨迹按弧长重采样后再计算曲率和速度。
 trajectory_resample_resolution: 0.2
-forward_speed: 1.0
-reverse_speed: 0.5
-max_acceleration: 0.5
-max_deceleration: 1.0
-max_lateral_acceleration: 0.5
+# 单位 m/s，分别略低于前进 6 km/h、倒车 4 km/h。
+forward_speed: 1.6666
+reverse_speed: 1.1111
+# 这是优化约束上限，不要求车辆每时刻用满；速度环另受 jerk 限制。
+max_acceleration: 2.0
+max_deceleration: 2.0
+# 与前进最高速度匹配，避免优化器的恒定横向限角小于搜索的 32°。
+max_lateral_acceleration: 0.65
 # 按方向盘250 deg/s和转向传动比18.5折算，单位rad/s。
 max_front_tire_steering_rate: 0.23
 # 略小于控制器实际可用的32.4°前轮转角，给跟踪控制保留余量。

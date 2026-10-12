@@ -64,14 +64,17 @@
     <param name="open_space_execution_mode" value="true"/>
     <!-- 泊车纵控内部选择执行后端；控制节点只负责泊车/参考线场景门控。 -->
     <param name="open_space_longitudinal_control_mode" value="ideal_acceleration"/>
-    <param name="open_space_lookahead_distance" value="0.5"/>
+    <!-- 速度参考仅向前预瞄 0.15 m，避免跳过优化轨迹中的低速调轮区域。 -->
+    <param name="open_space_lookahead_distance" value="0.15"/>
     <param name="open_space_forward_speed_kp" value="1.5"/>
     <param name="open_space_forward_speed_ki" value="0.0"/>
     <param name="open_space_reverse_speed_kp" value="1.5"/>
     <param name="open_space_reverse_speed_ki" value="0.0"/>
     <param name="open_space_speed_integral_limit" value="0.5"/>
-    <param name="open_space_max_acceleration" value="0.5"/>
-    <param name="open_space_max_deceleration" value="1.0"/>
+    <!-- 闭环对照保留这组上限：实际加减速由速度误差决定，并以 2 m/s³ 限制变化。
+         提高速度环增益/jerk，或降低规划加速度，均未稳定改善绕障跟踪。 -->
+    <param name="open_space_max_acceleration" value="2.0"/>
+    <param name="open_space_max_deceleration" value="2.0"/>
     <param name="open_space_max_jerk" value="2.0"/>
     <param name="open_space_longitudinal_control_period" value="0.02"/>
     <param name="open_space_steering_prepare_tolerance" value="0.03"/>
@@ -86,6 +89,9 @@
 
     <!-- 仅对该开放空间 launch 覆盖 MPC 参数，道路场景 YAML 不受影响。 -->
     <param name="traj_resample_dist" value="0.05"/>
+    <!-- 三点曲率使用当前点及前后各 2 个点，保留局部转向变化。 -->
+    <param name="curvature_smoothing_num_traj" value="2"/>
+    <param name="curvature_smoothing_num_ref_steer" value="2"/>
     <param name="mpc_prediction_horizon" value="50"/>
     <param name="mpc_prediction_dt" value="0.1"/>
     <param name="mpc_weight_lat_error" value="4.5"/>
