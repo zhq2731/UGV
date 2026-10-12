@@ -63,8 +63,8 @@ bool Stop(const TrajectoryPointArray &path) {
 
 int main(int argc,char **argv) {
   ros::init(argc,argv,"liom_planner_check");
-  if (argc != 2 || !ros::master::check()) {
-    std::cerr << "requires openspace.yaml and an isolated ROS master\n";
+  if ((argc != 2 && argc != 3) || !ros::master::check()) {
+    std::cerr << "requires openspace.yaml [strict_output_config.yaml] and an isolated ROS master\n";
     return 2;
   }
   ros::NodeHandle nh("~");
@@ -93,10 +93,22 @@ int main(int argc,char **argv) {
   TrajectoryPointArray fallback;
   expect(Run(*timed,straight,fallback) && published == 1 && SamePath(original,fallback),
          "timeout_uses_checked_search_fallback");
-  auto blocked = Planner(true,0.001);
-  TrajectoryPointArray stopped;
-  expect(Run(*blocked,Scenario(true),stopped) && published == 1 && Stop(stopped),
-         "unsafe_search_fallback_publishes_stop");
+  // 该绕障搜索轨迹的 0.4 m 扫掠复核会失败，但 0.2 m 交付复核通过，允许原样回退。
+  auto detour_search = Planner(false,1000);
+  TrajectoryPointArray detour_original,detour_fallback,stopped;
+  const bool detour_searched = Run(*detour_search,Scenario(true),detour_original);
+  auto detour_timed = Planner(true,0.001);
+  expect(detour_searched && Run(*detour_timed,Scenario(true),detour_fallback) && published == 1 &&
+         !Stop(detour_fallback) && SamePath(detour_original,detour_fallback),
+         "timeout_uses_output_margin_for_detour_fallback");
+  if (argc == 3) {
+    // 对照配置只把交付余量改回 0.4 m，确认参数真正生效且拒绝时仍发布停车轨迹。
+    nh.setParam("open_space_config_file",std::string(argv[2]));
+    auto blocked = Planner(true,0.001);
+    expect(Run(*blocked,Scenario(true),stopped) && published == 1 && Stop(stopped),
+           "strict_output_margin_rejects_detour_fallback");
+    nh.setParam("open_space_config_file",std::string(argv[1]));
+  }
 
   // 墙下缘位于 y=1.92 m：0.4 m 余量扫掠安全，但额外 0.025 m 建框缓冲不满足。
   auto near_wall = straight;

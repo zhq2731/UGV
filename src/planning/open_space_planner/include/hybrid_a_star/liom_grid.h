@@ -20,7 +20,7 @@ public:
   bool valid() const { return valid_; }
   planning_msgs::TrajectoryPointArray ToGrid(const planning_msgs::TrajectoryPointArray &path) const;
   planning_msgs::TrajectoryPointArray ToWorld(const planning_msgs::TrajectoryPointArray &path) const;
-  // 默认沿用搜索余量；优化结果交付时可单独指定复核余量，扫掠补偿仍保留。
+  // 默认沿用搜索余量；交付优化或回退轨迹时指定 output_collision_margin，保留扫掠补偿。
   bool TrajectoryFree(const planning_msgs::TrajectoryPointArray &grid_path) const;
   bool TrajectoryFree(const planning_msgs::TrajectoryPointArray &grid_path,double collision_margin) const;
   bool BuildCorridors(const planning_msgs::TrajectoryPointArray &grid_path,

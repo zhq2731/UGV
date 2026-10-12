@@ -164,13 +164,25 @@ int main(int argc,char **argv) {
   auto short_path = single;
   short_path.points.push_back(start);
   short_path.points.back().x += 0.2;
-  expect(open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,0.2) &&
+  expect(open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,vehicle.output_collision_margin) &&
          !open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path),
-         "optimized_margin_override_preserves_search_margin");
+         "output_margin_override_preserves_search_margin");
   blocked = map;
   Cell(blocked,21,20+vehicle.car_width/2+0.15);
-  expect(!open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,0.2),
-         "optimized_margin_still_rejects_near_obstacle");
+  expect(!open_space::LiomGrid(blocked,pose,vehicle).TrajectoryFree(short_path,vehicle.output_collision_margin),
+         "output_margin_still_rejects_near_obstacle");
+
+  // 只调大交付余量，不改变搜索和走廊；优化结果必须使用该参数，而非写死 0.2 m。
+  auto strict_output = vehicle;
+  strict_output.output_collision_margin = 4.0;
+  std::vector<TrajectoryPointArray> rejected_output(1);
+  rejected_output.front().task_area = "unchanged_on_failure";
+  open_space::LiomReport strict_report;
+  expect(!open_space::OptimizeLiomParkingSegments(seeds,map,pose,strict_output,
+           rejected_output,strict_report) &&
+         strict_report.message == "optimized footprint/sweep collides; output unchanged" &&
+         rejected_output.size() == 1 && rejected_output.front().task_area == "unchanged_on_failure",
+         "configured_output_margin_applied_to_optimized_result");
 
   single.points[0].y = 20.03;
   blocked = map;

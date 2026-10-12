@@ -30,8 +30,11 @@ reversing_penalty: 3.0
 gear_switch_penalty: 5.0
 # 在距目标 shot_distance 内尝试 Reeds-Shepp 直接连接；更远处由 Hybrid A* 展开搜索。
 shot_distance: 25
-# 主仓库泊车仿真的搜索安全余量；执行期复核使用真实车身。
+# 计算中的车身外扩距离：Hybrid A* 搜索、LIOM 安全走廊，单位 m。
 search_collision_margin: 0.40
+# 交付前基础复核余量：优化结果和搜索回退轨迹统一使用，仍加扫掠补偿，单位 m。
+output_collision_margin: 0.20
+# 执行期和换段检查仍使用真实车身，不额外外扩。
 # 编译时需 OPEN_SPACE_BUILD_LIOM=ON；默认关闭，先验证后再用于闭环仿真。
 liom_enabled: true
 # 一次多段优化的墙钟预算；迭代边界协作停止，不是硬实时中断。

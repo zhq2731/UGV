@@ -471,6 +471,8 @@ OpenSpacePlanner::OpenSpacePlanner(displayCallback callBack_):BasePlanner(callBa
     openspace_config.shot_distance = config_["shot_distance"].as<double>();
     openspace_config.search_collision_margin = config_["search_collision_margin"] ?
         config_["search_collision_margin"].as<double>() : 0.0;
+    openspace_config.output_collision_margin =
+        config_["output_collision_margin"].as<double>(openspace_config.output_collision_margin);
     openspace_config.segment_end_position_tolerance =
         config_["segment_end_position_tolerance"].as<double>();
     openspace_config.segment_end_heading_tolerance =
@@ -1018,11 +1020,12 @@ bool  OpenSpacePlanner::implement(double cur_time,const DiscretizedTrajectory pr
 		} else {
 			ROS_WARN_STREAM("[open_space] LIOM rejected, timeout=" << report.timed_out
 				<< ", elapsed=" << report.elapsed_ms << " ms, reason=" << report.message);
-			// 回退的是原搜索轨迹，不能因优化失败而省略车身安全余量或点间扫掠。
+			// 原搜索轨迹与优化结果使用同一交付复核余量，仍保留完整车身和点间扫掠。
 			const open_space::LiomGrid grid(*current_costmap_ptr_, grid_pose, openspace_config);
 			const bool safe = grid.valid() && std::all_of(segments.begin(), segments.end(),
 				[&](const planning_msgs::TrajectoryPointArray &segment) {
-					return grid.TrajectoryFree(grid.ToGrid(segment));
+					return grid.TrajectoryFree(grid.ToGrid(segment),
+						openspace_config.output_collision_margin);
 				});
 			if (!safe) {
 				kinodynamic_astar_searcher_ptr_->Reset();

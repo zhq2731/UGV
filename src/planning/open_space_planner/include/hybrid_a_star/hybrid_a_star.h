@@ -73,8 +73,10 @@ struct OpenSpace_config
     // 每次实际换挡的固定代价。
     double gear_switch_penalty ;
     double shot_distance;
-    // 仅搜索时使用的车身外扩距离；执行期碰撞复核仍按真实车身尺寸。
+    // 搜索和优化安全走廊使用的车身外扩距离，单位 m。
     double search_collision_margin = 0.0;
+    // 优化结果、搜索回退轨迹交付前统一使用的基础复核余量，单位 m。
+    double output_collision_margin = 0.2;
 
     // 已提交段与换挡点状态机的判定阈值。
     double segment_end_position_tolerance;

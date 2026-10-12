@@ -46,7 +46,7 @@ bool OptimizeLiomFreeSpaceSegment(
 
 // 输入地图沿用 UGV：仅 25 可通行。grid_pose 为地图发布时的局部系世界位姿。
 // 保留搜索分段、换挡位姿、各段独立时间轴；走廊余量使用 search_collision_margin。
-// 优化结果交付前按 0.2 m 基础余量加扫掠补偿复核，优化失败后的搜索轨迹复核由调用方负责。
+// 交付复核使用 output_collision_margin 加扫掠补偿；调用方按同一余量复核搜索回退轨迹。
 // 全部段完成车身扫掠复核才修改 output；这里只验证一个地图快照，不负责动态避障。
 bool OptimizeLiomParkingSegments(
     const std::vector<planning_msgs::TrajectoryPointArray> &seeds,

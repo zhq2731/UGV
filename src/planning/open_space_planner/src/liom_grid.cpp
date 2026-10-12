@@ -147,7 +147,7 @@ bool LiomGrid::TrajectoryFree(const planning_msgs::TrajectoryPointArray &path) c
 }
 
 bool LiomGrid::TrajectoryFree(const planning_msgs::TrajectoryPointArray &path,double margin) const {
-  if (!valid_ || path.points.empty()) return false;
+  if (!valid_ || path.points.empty() || !std::isfinite(margin) || margin < 0) return false;
   for (const auto &p : path.points)
     if (!std::isfinite(p.x+p.y+p.theta)) return false;
   const double radius = std::hypot(std::max(vehicle_.rear_overhang,vehicle_.car_length-vehicle_.rear_overhang)+margin,

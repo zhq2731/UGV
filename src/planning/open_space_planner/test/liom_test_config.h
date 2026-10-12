@@ -20,6 +20,7 @@ inline OpenSpace_config LoadVehicle(const std::string &path) {
   c.max_lateral_acceleration = node["max_lateral_acceleration"].as<double>();
   c.max_front_tire_steering_rate = node["max_front_tire_steering_rate"].as<double>();
   c.search_collision_margin = node["search_collision_margin"].as<double>();
+  c.output_collision_margin = node["output_collision_margin"].as<double>(c.output_collision_margin);
   c.steering_angle_discrete_num = node["steering_angle_discrete_num"].as<int>();
   c.segment_length = node["segment_length"].as<double>();
   c.segment_length_discrete_num = node["segment_length_discrete_num"].as<int>();
