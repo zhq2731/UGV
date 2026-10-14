@@ -38,19 +38,12 @@ OpenSpaceMpcLateralController::OpenSpaceMpcLateralController(
 : node_(&nh),
   vehicle_info_(vehicle_info_util::VehicleInfoUtil::get_instance())
 {
-  // 泊车控制器拥有自己的 MPC 对象和全部历史状态。当前控制周期与原控制器
-  // 保持一致，先完成无行为变化的代码隔离，后续再单独标定泊车控制周期。
+  // 泊车使用独立内核和历史状态，控制周期仍与现有节点保持一致。
   mpc_.m_ctrl_period = 0.03;
 
   node_->param<bool>("enable_path_smoothing", enable_path_smoothing_, false);
   node_->param<int>(
     "path_filter_moving_ave_num", path_filter_moving_average_num_, 25);
-  node_->param<int>(
-    "curvature_smoothing_num_traj",
-    trajectory_curvature_smoothing_num_, 15);
-  node_->param<int>(
-    "curvature_smoothing_num_ref_steer",
-    reference_steer_curvature_smoothing_num_, 15);
   node_->param<double>(
     "traj_resample_dist", trajectory_resample_distance_, 0.1);
 
@@ -144,7 +137,7 @@ boost::optional<LateralOutput> OpenSpaceMpcLateralController::run()
     previous_control_initialized_ = true;
   }
 
-  MPCData mpc_data;
+  OpenSpaceMPCData mpc_data;
   const bool solved = mpc_.calculateMPC(
     *current_steering_, current_odometry_->twist.twist.linear.x,
     current_odometry_->pose.pose, command, predicted_trajectory, mpc_data);
@@ -210,7 +203,7 @@ void OpenSpaceMpcLateralController::setTrajectory(
     return;
   }
   current_trajectory_ = trajectory;
-  if (!current_odometry_ || trajectory->points.size() < 3 ||
+  if (!current_odometry_ || trajectory->points.size() < 2 ||
     !isValidTrajectory(*trajectory))
   {
     return;
@@ -218,8 +211,7 @@ void OpenSpaceMpcLateralController::setTrajectory(
 
   mpc_.setReferenceTrajectory(
     *trajectory, trajectory_resample_distance_, enable_path_smoothing_,
-    path_filter_moving_average_num_, trajectory_curvature_smoothing_num_,
-    reference_steer_curvature_smoothing_num_);
+    path_filter_moving_average_num_);
 
   trajectory_buffer_.push_back(*trajectory);
 }

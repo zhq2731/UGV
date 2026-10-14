@@ -16,7 +16,7 @@
 #define TRAJECTORY_FOLLOWER__OPEN_SPACE_MPC_LATERAL_CONTROLLER_HPP_
 
 #include "trajectory_follower/lateral_controller_base.hpp"
-#include "trajectory_follower/mpc.hpp"
+#include "trajectory_follower/open_space_mpc.hpp"
 #include "trajectory_follower/visibility_control.hpp"
 
 #include "autoware_msgs/AckermannLateralCommand.h"
@@ -44,8 +44,8 @@ namespace trajectory_follower
  * MpcLateralController。后续泊车的倒车模型、预瞄方式和参数调整均应优先
  * 在本类中实现，避免改变参考线横向控制行为。
  *
- * 当前阶段仍复用通用 MPC 数学模块、车辆模型和 QP 求解器实现；复用的是
- * 无状态算法代码，不会与参考线控制器共享运行时状态。
+ * 底层使用泊车专用 OpenSpaceMPC，不再调用道路 MPC。仅复用车辆模型、
+ * QP 求解器与插值等基础工具，各控制器的运行时状态分别维护。
  */
 class TRAJECTORY_FOLLOWER_PUBLIC OpenSpaceMpcLateralController
   : public LateralControllerBase
@@ -69,8 +69,6 @@ private:
 
   bool enable_path_smoothing_;
   int path_filter_moving_average_num_;
-  int trajectory_curvature_smoothing_num_;
-  int reference_steer_curvature_smoothing_num_;
   double trajectory_resample_distance_;
 
   double stop_state_entry_ego_speed_;
@@ -83,7 +81,7 @@ private:
   double ego_nearest_yaw_threshold_;
 
   std::deque<autoware_msgs::TrajectoryPointArray> trajectory_buffer_;
-  MPC mpc_;
+  OpenSpaceMPC mpc_;
 
   nav_msgs::Odometry::Ptr current_odometry_;
   autoware_msgs::SteeringReport::Ptr current_steering_;

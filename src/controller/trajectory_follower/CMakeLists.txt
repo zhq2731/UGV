@@ -51,6 +51,7 @@ add_executable(trajectory_follower
   src/open_space_longitudinal_controller.cpp
   src/zhito_parking_longitudinal_controller.cpp
   src/open_space_mpc_lateral_controller.cpp
+  src/open_space_mpc.cpp
   src/mpc_lateral_controller.cpp
   src/interpolate.cpp
   src/lowpass_filter.cpp

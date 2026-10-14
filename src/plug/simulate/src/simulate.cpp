@@ -787,6 +787,11 @@ void Simulate::onLonControlCommand(const driver_msgs::DriveCmd::ConstPtr msg)
 		const double target_velocity = msg->velocity_target;
 		acc = msg->acc_target;
 		double next_velocity = previous_velocity + acc * dt;
+		// 制动跨过零速时应停车；不能因目标仍非零，把制动积分成反向行驶。
+		if (previous_velocity * next_velocity < 0.0 ||
+			(std::fabs(previous_velocity) <= 1.0e-6 && target_velocity * next_velocity < 0.0)) {
+			next_velocity = 0.0;
+		}
 		// 防止越过目标速度，或在停车过程中跨越零速度。
 		if ((target_velocity - previous_velocity) * (target_velocity - next_velocity) <= 0.0 ||
 			(std::fabs(target_velocity) <= 1.0e-3 && previous_velocity * next_velocity < 0.0))

@@ -48,6 +48,11 @@ public:
   /** @brief 新轨迹段、换挡或任务重置时清除纵控内部历史。 */
   void Reset();
 
+  /** @brief 段中零速调轮时提供带档位符号的曲率及调轮段末点。 */
+  bool GetStationarySteeringReference(double *curvature, std::size_t *end_index) const;
+  /** @brief 实际前轮角到位后消费本次零速要求，允许沿后续轨迹重新起步。 */
+  void CompleteStationarySteering();
+
   /** @brief 仅实车模式启用底盘运动开始和驻车制动联锁。 */
   bool IsVehicleMode() const { return output_mode_ == OutputMode::VEHICLE; }
 
@@ -70,6 +75,8 @@ private:
   struct MotionReference
   {
     double target_velocity{0.0};
+    double target_acceleration{0.0};
+    bool brake_for_speed_limit{false};
     double remaining_distance{0.0};
     bool requests_stop{true};
   };
@@ -114,7 +121,9 @@ private:
     double current_velocity,
     double remaining_distance,
     bool requests_stop,
-    double dt);
+    double dt,
+    double feedforward_acceleration = 0.0,
+    bool brake_for_speed_limit = false);
   /** @brief 根据当前轨迹方向把底盘速度绝对值恢复成控制器使用的有符号速度。 */
   double currentSignedVelocity(const car::control::InputData &input) const;
   /**
@@ -183,6 +192,10 @@ private:
 
   // 以下状态只属于当前已激活轨迹段，切换轨迹段时由Reset统一清除。
   std::size_t progress_index_{0};
+  bool stationary_steering_active_{false};
+  std::size_t stationary_steering_end_{0};
+  std::size_t completed_stationary_end_{0};
+  double stationary_steering_curvature_{0.0};
   double speed_error_integral_{0.0};
   double previous_acceleration_command_{0.0};
   ros::Time previous_compute_time_;

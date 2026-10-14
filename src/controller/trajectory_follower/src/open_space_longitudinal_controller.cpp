@@ -28,33 +28,35 @@ double pointDistance(
 }
 
 double jerkLimitedStoppingDistance(
-  double speed, double max_deceleration, double max_jerk)
+  double speed, double acceleration, double max_deceleration, double max_jerk,
+  double target_speed = 0.0)
 {
-  // 制动力需要从零按jerk逐步建立：先计算减速度爬升段，再计算恒减速度段。
-  // 该距离用于决定何时开始制动，避免仍按“减速度瞬间达到上限”估算而越过终点。
+  // 从当前加速度开始建立制动，包含减速度爬升和恒减速度两段。
   speed = std::fabs(speed);
-  if (speed <= 1.0e-6) {
+  if (speed <= target_speed + 1.0e-6) {
     return 0.0;
   }
   if (max_jerk <= 1.0e-6) {
-    return speed * speed / (2.0 * max_deceleration);
+    return (speed * speed - target_speed * target_speed) / (2.0 * max_deceleration);
   }
 
-  const double jerk_ramp_time = max_deceleration / max_jerk;
-  const double ramp_velocity_reduction =
-    0.5 * max_jerk * jerk_ramp_time * jerk_ramp_time;
-  if (speed <= ramp_velocity_reduction) {
-    const double stop_time = std::sqrt(2.0 * speed / max_jerk);
-    return speed * stop_time -
+  acceleration = std::max(-max_deceleration, acceleration);
+  const double jerk_ramp_time = (acceleration + max_deceleration) / max_jerk;
+  const double stop_time = (acceleration +
+    std::sqrt(acceleration * acceleration + 2.0 * max_jerk * (speed - target_speed))) / max_jerk;
+  if (stop_time <= jerk_ramp_time) {
+    return speed * stop_time + 0.5 * acceleration * stop_time * stop_time -
       max_jerk * stop_time * stop_time * stop_time / 6.0;
   }
 
-  const double speed_after_ramp = speed - ramp_velocity_reduction;
+  const double speed_after_ramp = speed + acceleration * jerk_ramp_time -
+    0.5 * max_jerk * jerk_ramp_time * jerk_ramp_time;
   const double ramp_distance =
-    speed * jerk_ramp_time -
+    speed * jerk_ramp_time + 0.5 * acceleration * jerk_ramp_time * jerk_ramp_time -
     max_jerk * jerk_ramp_time * jerk_ramp_time * jerk_ramp_time / 6.0;
   return ramp_distance +
-    speed_after_ramp * speed_after_ramp / (2.0 * max_deceleration);
+    (speed_after_ramp * speed_after_ramp - target_speed * target_speed) /
+    (2.0 * max_deceleration);
 }
 
 }  // namespace
@@ -236,6 +238,9 @@ void OpenSpaceLongitudinalController::Reset()
 {
   // 新轨迹不能继承上一段的匹配进度、积分量和加速度历史。
   progress_index_ = 0;
+  stationary_steering_active_ = false;
+  stationary_steering_end_ = 0;
+  completed_stationary_end_ = 0;
   speed_error_integral_ = 0.0;
   previous_acceleration_command_ = 0.0;
   previous_compute_time_ = ros::Time(0);
@@ -243,6 +248,22 @@ void OpenSpaceLongitudinalController::Reset()
   if (vehicle_controller_) {
     vehicle_controller_->Reset();
   }
+}
+
+bool OpenSpaceLongitudinalController::GetStationarySteeringReference(
+  double *curvature, std::size_t *end_index) const
+{
+  if (!stationary_steering_active_) return false;
+  *curvature = stationary_steering_curvature_;
+  *end_index = stationary_steering_end_;
+  return true;
+}
+
+void OpenSpaceLongitudinalController::CompleteStationarySteering()
+{
+  stationary_steering_active_ = false;
+  completed_stationary_end_ = stationary_steering_end_;
+  progress_index_ = std::max(progress_index_, completed_stationary_end_);
 }
 
 bool OpenSpaceLongitudinalController::computeIdealAccelerationCommand(
@@ -257,10 +278,17 @@ bool OpenSpaceLongitudinalController::computeIdealAccelerationCommand(
 
   // 理想仿真直接使用有符号目标速度和加速度；踏板与扭矩保持为零。
   const double current_velocity = currentSignedVelocity(input);
+  const double dt = controlPeriod();
   command->velocity_target = reference.target_velocity;
   command->acc_target = computeAccelerationCommand(
     reference.target_velocity, current_velocity,
-    reference.remaining_distance, reference.requests_stop, controlPeriod());
+    reference.remaining_distance, reference.requests_stop, dt,
+    reference.target_acceleration, reference.brake_for_speed_limit);
+  // 刹停后的制动指令仍需按 jerk 退回零；这一阶段保持零速，不能积分成反向运动。
+  if (std::fabs(current_velocity) <= std::fabs(command->acc_target) * dt &&
+      command->acc_target * reference.target_velocity < 0.0) {
+    command->velocity_target = 0.0;
+  }
   command->throttle_pedal = 0.0;
   command->brake_pedal = 0.0;
   command->engine_torque_target = 0.0;
@@ -489,6 +517,83 @@ bool OpenSpaceLongitudinalController::computeMotionReference(
   const double direction = trajectory.is_forward_shift ? 1.0 : -1.0;
   double target_velocity =
     direction * std::fabs(points[speed_reference_index].v);
+  if (output_mode_ == OutputMode::IDEAL_ACCELERATION) {
+    // 在精确预瞄位置插值，且保留途中最低速度，避免跨过调轮低速区。
+    const double segment_length =
+      pointDistance(points[projection_segment], points[projection_segment + 1]);
+    const double matched_speed_squared =
+      (1.0 - projection_ratio) * points[projection_segment].v * points[projection_segment].v +
+      projection_ratio * points[projection_segment + 1].v * points[projection_segment + 1].v;
+    const std::size_t preview_begin = target_index - 1;
+    const double preview_length = pointDistance(points[preview_begin], points[target_index]);
+    const double preview_ratio = preview_length > 1.0e-9 ? clampValue(
+      1.0 - (accumulated_distance - lookahead_distance_) / preview_length, 0.0, 1.0) : 1.0;
+    double preview_speed = std::sqrt(std::max(0.0,
+      (1.0 - preview_ratio) * points[preview_begin].v * points[preview_begin].v +
+      preview_ratio * points[target_index].v * points[target_index].v));
+    for (std::size_t index = projection_segment + 1; index < target_index; ++index) {
+      preview_speed = std::min(preview_speed, std::fabs(points[index].v));
+    }
+    // 实际仍快于当前位置速度时，先完成减速，不提前追逐后方的加速点。
+    const double matched_speed = std::sqrt(std::max(0.0, matched_speed_squared));
+    // 末点零速由停车距离保护执行；不能因预瞄提前命中末点，就在预瞄距离外停下。
+    if (requests_stop && target_index == last_index) {
+      preview_speed = std::max(preview_speed, matched_speed);
+    }
+    if (std::fabs(currentSignedVelocity(input)) > matched_speed + stop_speed_tolerance_) {
+      preview_speed = std::min(preview_speed, matched_speed);
+    }
+    target_velocity = direction * preview_speed;
+    reference->target_acceleration = segment_length > 1.0e-9 ? direction *
+      (points[projection_segment + 1].v * points[projection_segment + 1].v -
+       points[projection_segment].v * points[projection_segment].v) / (2.0 * segment_length) : 0.0;
+    if (std::fabs(currentSignedVelocity(input)) > matched_speed + stop_speed_tolerance_) {
+      reference->target_acceleration = direction * std::min(
+        direction * reference->target_acceleration, 0.0);
+    }
+    // 对前方低速点也预估 jerk 受限减速距离，不能只在整段终点提前制动。
+    const double speed = std::fabs(currentSignedVelocity(input));
+    double distance = (1.0 - projection_ratio) * segment_length;
+    for (std::size_t index = projection_segment + 1; index <= last_index; ++index) {
+      const double limit = std::fabs(points[index].v);
+      const double braking_distance = jerkLimitedStoppingDistance(
+        speed, direction * previous_acceleration_command_, max_deceleration_, max_jerk_, limit);
+      if (limit < speed && braking_distance + speed * nominal_control_period_ >= distance) {
+        reference->brake_for_speed_limit = true;
+        break;
+      }
+      if (index < last_index) distance += pointDistance(points[index], points[index + 1]);
+    }
+
+    // 优化器可能在段中停车调轮：先停稳，再等待实际转角到位，不能只靠空间预瞄跳过。
+    if (!stationary_steering_active_ && speed <= stop_speed_tolerance_) {
+      for (std::size_t index = completed_stationary_end_ + 1; index < last_index; ++index) {
+        if (std::fabs(points[index].v) > 1.0e-3) continue;
+        std::size_t end = index;
+        while (end + 1 < last_index && std::fabs(points[end + 1].v) <= 1.0e-3 &&
+          pointDistance(points[index], points[end + 1]) <= 0.05) ++end;
+        double distance_to_stop = 0.0;
+        if (index > projection_segment) {
+          distance_to_stop = (1.0 - projection_ratio) * segment_length;
+          for (std::size_t i = projection_segment + 1; i < index; ++i) {
+            distance_to_stop += pointDistance(points[i], points[i + 1]);
+          }
+        }
+        if (projection_segment <= end + 1 &&
+          distance_to_stop <= lookahead_distance_ + 0.05) {
+          stationary_steering_active_ = true;
+          stationary_steering_end_ = end;
+          stationary_steering_curvature_ = direction * points[end].kappa;
+          ROS_INFO_STREAM("[open_space_lon] stationary steering at points " << index << ".." << end);
+        }
+        break;
+      }
+    }
+    if (stationary_steering_active_) {
+      target_velocity = 0.0;
+      reference->target_acceleration = 0.0;
+    }
+  }
   if (requests_stop || output_mode_ == OutputMode::VEHICLE) {
     // 随剩余距离收紧目标速度，并在末端小范围内明确下发零速。
     // 减速能力用实测停车减速度（前进=forward_stop_deceleration 1.1，
@@ -518,7 +623,9 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
   double current_velocity,
   double remaining_distance,
   bool requests_stop,
-  double dt)
+  double dt,
+  double feedforward_acceleration,
+  bool brake_for_speed_limit)
 {
   const bool reverse = target_velocity < -1.0e-3 ||
     (std::fabs(target_velocity) <= 1.0e-3 && current_velocity < 0.0);
@@ -535,7 +642,8 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
   const double candidate_integral = clampValue(
     speed_error_integral_ + speed_error * dt,
     -speed_integral_limit_, speed_integral_limit_);
-  const double candidate_command = kp * speed_error + ki * candidate_integral;
+  const double candidate_command =
+    feedforward_acceleration + kp * speed_error + ki * candidate_integral;
   const bool saturated_high = candidate_command > acceleration_limit;
   const bool saturated_low = candidate_command < -acceleration_limit;
   if ((!saturated_high && !saturated_low) ||
@@ -546,15 +654,29 @@ double OpenSpaceLongitudinalController::computeAccelerationCommand(
   }
 
   double acceleration_command = clampValue(
-    kp * speed_error + ki * speed_error_integral_,
+    feedforward_acceleration + kp * speed_error + ki * speed_error_integral_,
     -acceleration_limit, acceleration_limit);
+
+  if (output_mode_ == OutputMode::IDEAL_ACCELERATION && max_jerk_ > 0.0 && !braking) {
+    // 加速度降到零仍会继续提速：靠近目标速度时按 jerk 提前收油，而不是到达后才收。
+    const double direction = target_velocity >= 0.0 ? 1.0 : -1.0;
+    const double release_limit = std::sqrt(2.0 * max_jerk_ *
+      std::max(0.0, std::fabs(target_velocity) - std::fabs(current_velocity)));
+    acceleration_command = direction * std::min(direction * acceleration_command, release_limit);
+  }
+
+  if (brake_for_speed_limit) {
+    acceleration_command = -std::copysign(max_deceleration_, current_velocity);
+  }
 
   if (requests_stop && std::fabs(current_velocity) > 1.0e-3) {
     // 比较实际所需停车距离与剩余弧长，必要时优先制动并清除速度积分。
-    // 用"实测停车减速度"的常量减速距离：前进=forward_stop_deceleration(1.1，
-    // 刹车+滑行)，倒车=reverse_coast_deceleration(1.8，倒车自然滑行强)。
-    // 避免刹停过早/停不到终点。
-    const double required_stopping_distance =
+    // 理想仿真考虑当前加速度和 jerk；踏板后端保留原实测停车减速度估算。
+    const double direction = current_velocity >= 0.0 ? 1.0 : -1.0;
+    const double required_stopping_distance = output_mode_ == OutputMode::IDEAL_ACCELERATION ?
+      jerkLimitedStoppingDistance(std::fabs(current_velocity),
+        direction * previous_acceleration_command_, max_deceleration_, max_jerk_) +
+        std::fabs(current_velocity) * dt :
       current_velocity * current_velocity /
           (2.0 * (reverse ? reverse_coast_deceleration_ :
                             forward_stop_deceleration_));

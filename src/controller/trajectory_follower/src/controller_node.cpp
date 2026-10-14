@@ -274,6 +274,10 @@ void Controller::activateTrajectory(const planning_msgs::TrajectoryPointArray &t
 		point.pose.orientation.y = 0;
 		point.pose.orientation.x = 0;
 		point.longitudinal_velocity_mps = lat_use_current_velocity_only?input_data_.vel:p.v;
+		if (open_space_execution_mode) {
+			// 仅泊车传递规划曲率，道路轨迹转换保持原行为。
+			point.kappa = p.kappa;
+		}
 		trajectoryPtr->points.push_back(point);
     }
 	
@@ -895,8 +899,34 @@ void Controller::latControl()
 		return;
 	}
 
-	// 原地停车段的弧长为零，不能送入 MPC 的距离重采样，否则插值会收到空点集。
-	// 保持实际前轮角，纵向仍由停车逻辑制动；不沿用上一运动段的横向输出。
+	if (open_space_execution_mode && open_space_longitudinal_controller_) {
+		double curvature = 0.0;
+		std::size_t end_index = 0;
+		if (open_space_longitudinal_controller_->GetStationarySteeringReference(
+			&curvature, &end_index)) {
+			// 空间重采样会合并原地调轮点，停稳期间直接执行规划转角。
+			const double target = std::atan(vehcileInfo->wheel_base_m * curvature);
+			const double actual = publishOpenSpaceSteeringCommand(target);
+			if (std::fabs(input_data_.vel) <= open_space_stop_speed_tolerance &&
+				std::fabs(actual - target) <= open_space_steering_prepare_tolerance) {
+				open_space_longitudinal_controller_->CompleteStationarySteering();
+				// 后续横向匹配从调轮末点开始，避免再次选中同位置的旧转角。
+				boost::shared_ptr<autoware_msgs::TrajectoryPointArray> remaining(
+					new autoware_msgs::TrajectoryPointArray(current_waypoints_));
+				remaining->points.erase(remaining->points.begin(), remaining->points.begin() + end_index);
+				input_data_.current_trajectory_ptr = remaining;
+				const auto mpc = std::dynamic_pointer_cast<
+					trajectory_follower::OpenSpaceMpcLateralController>(lateral_controller_);
+				if (mpc && input_data_.current_steering_ptr) {
+					mpc->resetForNewTrajectory(*input_data_.current_steering_ptr);
+				}
+				ROS_INFO("[open_space_control] stationary steering complete; resume segment");
+			}
+			return;
+		}
+	}
+
+	// 原地停车段不做距离重采样，保持实际前轮角，纵向仍执行制动。
 	if (open_space_execution_mode && isOpenSpaceStopTrajectory(sim_trajectory)) {
 		lateral_output_ = boost::none;
 		const double actual_tire_angle = input_data_.current_steering_ptr
