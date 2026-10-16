@@ -97,11 +97,13 @@ Simulate::Simulate(ros::NodeHandle &nh) : nh_(nh), private_nh_("~")
 		parking_grid_timer_ = nh_.createTimer(
 			ros::Duration(0.1), &Simulate::parkingGridTimer, this);
 		goal_sub_ = nh_.subscribe(
-			"/clicked_point", 1, &Simulate::callBackgoal, this);
+			"/clicked_point", 1, &Simulate::addParkingObstacle, this);
 	} else {
-		// 道路仿真保留原有“第一次2D Nav Goal设置车辆位置”的入口。
+		// 道路仿真沿用手动设点：首次 Nav Goal 放车，Publish Point 后允许重新放车。
 		initialPose_sub_ = nh_.subscribe(
 			"/move_base_simple/goal", 1, &Simulate::callBackinitialPose, this);
+		goal_sub_ = nh_.subscribe(
+			"/clicked_point", 1, &Simulate::callBackgoal, this);
 	}
 
 	std::string vehicle_platform_file;
@@ -858,6 +860,13 @@ void Simulate::callBackMultiPointPlanning(const route_msgs::MultiPoint::ConstPtr
 }
 
 void Simulate::callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg)
+{
+	(void)msg;
+	// 非泊车场景提交本轮终点后，下一次 Nav Goal 重新作为车辆起点。
+	plan_point_count = 0;
+}
+
+void Simulate::addParkingObstacle(const geometry_msgs::PointStamped::ConstPtr msg)
 {
 	if (!inited)
 	{

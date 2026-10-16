@@ -90,6 +90,7 @@ enum PLANNER_TYPE {
   REF_LINE,
   REVERSE,
   OPEN_SPACE,
+  UNSUPPORTED_PLATOON_PARKING,
   NONE_PLANNER
 };
 
@@ -237,6 +238,8 @@ private:
 	void resetOpenSpaceTask(bool wait_for_new_map, const char *reason);
 	void loadPlanningParam(ros::NodeHandle &private_nh_);
 	PLANNER_TYPE plannerTypeDecision();
+	/** @brief 编队集合/分散泊车暂不可用，持续交付零速轨迹覆盖旧运动指令。 */
+	void publishPlatoonParkingStop();
 	void generateBound(ReferenceLine &refLine,PathBoundary &boundry,
     std::vector<geometry_msgs::Point> &left,std::vector<geometry_msgs::Point> &right);
     std::map<PLANNER_TYPE,std::shared_ptr<BasePlanner>> planners;

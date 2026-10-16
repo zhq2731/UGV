@@ -155,6 +155,8 @@ public:
 	void callbackPlatoonConfig(const platoon_msgs::PlatoonConfig::ConstPtr &msg);
 	void callBackinitialPose(const geometry_msgs::PoseStamped::ConstPtr msg);
 	void callBackgoal(const geometry_msgs::PointStamped::ConstPtr msg);
+	/** @brief 仅泊车模式订阅 Publish Point，将点击位置添加为栅格障碍物。 */
+	void addParkingObstacle(const geometry_msgs::PointStamped::ConstPtr msg);
 	void motionStartCallback(const driver_msgs::MotionStartCmd::ConstPtr &msg);
 	/** @brief 新泊车任务到来时停止车辆并清除上一轮运动命令状态。 */
 	void openSpaceTaskResetCallback(const std_msgs::Empty::ConstPtr &msg);

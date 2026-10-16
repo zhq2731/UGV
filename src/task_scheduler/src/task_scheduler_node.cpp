@@ -956,26 +956,10 @@ void sleepWithCallbacks(double duration_sec) {
     ros::spinOnce();
 }
 
-std_msgs::ColorRGBA vehicle_color(int vehicle_id,
-                                 double alpha,
-                                 const std::string& color_scheme) {
+std_msgs::ColorRGBA vehicle_color(int vehicle_id, double alpha) {
     std_msgs::ColorRGBA color;
     color.a = alpha;
-    if (color_scheme == "blue_yellow_red") {
-        if (vehicle_id == 2) {
-            color.r = 1.0;
-            color.g = 0.82;
-            color.b = 0.05;
-        } else if (vehicle_id == 3) {
-            color.r = 1.0;
-            color.g = 0.15;
-            color.b = 0.12;
-        } else {
-            color.r = 0.05;
-            color.g = 0.35;
-            color.b = 1.0;
-        }
-    } else if (vehicle_id == 2) {
+    if (vehicle_id == 2) {
         color.r = 1.0;
         color.g = 0.18;
         color.b = 0.12;
@@ -1000,8 +984,7 @@ visualization_msgs::Marker make_marker_base(const std::string& ns, int id, int t
 }
 
 visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution,
-                                                        const std::vector<Vehicle>& vehicles,
-                                                        const std::string& color_scheme) {
+                                                        const std::vector<Vehicle>& vehicles) {
     visualization_msgs::MarkerArray markers;
 
     visualization_msgs::Marker clear;
@@ -1012,7 +995,7 @@ visualization_msgs::MarkerArray build_task_marker_array(const Solution& solution
     for (std::size_t vehicle_index = 0; vehicle_index < solution.routes.size(); ++vehicle_index) {
         const int vehicle_id = vehicles[vehicle_index].id;
         const std::string vehicle_ns = "/task_scheduler/vehicle_" + std::to_string(vehicle_id);
-        const auto color = vehicle_color(vehicle_id, 0.95, color_scheme);
+        const auto color = vehicle_color(vehicle_id, 0.95);
 
         for (std::size_t sequence = 0; sequence < solution.routes[vehicle_index].size(); ++sequence) {
             const auto& item = solution.routes[vehicle_index][sequence];
@@ -1108,7 +1091,6 @@ bool wait_for_start_command(ros::NodeHandle& nh,
 SolutionPublishers publish_solution(ros::NodeHandle& nh,
                                     const Solution& solution,
                                     const std::vector<Vehicle>& vehicles,
-                                    const std::string& marker_color_scheme,
                                     double wait_for_subscribers_sec,
                                     double initial_delay_sec,
                                     int repeat_count,
@@ -1148,7 +1130,7 @@ SolutionPublishers publish_solution(ros::NodeHandle& nh,
     const int actual_repeat_count = std::max(1, repeat_count);
     for (int repeat = 0; repeat < actual_repeat_count && ros::ok(); ++repeat) {
         publishers.task_marker_publisher.publish(
-            build_task_marker_array(solution, vehicles, marker_color_scheme));
+            build_task_marker_array(solution, vehicles));
         for (std::size_t vehicle_index = 0; vehicle_index < vehicles.size(); ++vehicle_index) {
             const auto& vehicle = vehicles[vehicle_index];
 
@@ -1191,7 +1173,6 @@ int main(int argc, char** argv) {
         std::string offline_points_file;
         std::string output_file;
         std::string distance_table_file;
-        std::string marker_color_scheme = "legacy_two_vehicle";
         int offline_point_count = 50;
         int offline_point_seed = 20260622;
         int population = 120;
@@ -1217,7 +1198,6 @@ int main(int argc, char** argv) {
         private_nh.param<std::string>("offline_points_file", offline_points_file, ros::package::getPath("task_scheduler") + "/config/offline_points_50.csv");
         private_nh.param<std::string>("output_file", output_file, "/tmp/ugv_schedule_solution.csv");
         private_nh.param<std::string>("distance_table_file", distance_table_file, ros::package::getPath("task_scheduler") + "/config/offline_distance_table_50.csv");
-        private_nh.param<std::string>("marker_color_scheme", marker_color_scheme, marker_color_scheme);
         private_nh.param("offline_point_count", offline_point_count, offline_point_count);
         private_nh.param("offline_point_seed", offline_point_seed, offline_point_seed);
         private_nh.param("population", population, population);
@@ -1292,7 +1272,6 @@ int main(int argc, char** argv) {
             publishers = publish_solution(nh,
                                           solution,
                                           vehicles,
-                                          marker_color_scheme,
                                           publish_wait_for_subscribers_sec,
                                           publish_initial_delay_sec,
                                           publish_repeat_count,

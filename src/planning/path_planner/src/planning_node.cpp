@@ -192,9 +192,10 @@ PlanningNode::PlanningNode(ros::NodeHandle &nh): nh_(nh),private_nh("~")
 	 }
 
 	 if (open_simulate){
-	     clickPoint_sub_ = nh_.subscribe(
-			 "/move_base_simple/goal", 1, &PlanningNode::callBackGoal, this);
 	     if (planning_config->enable_open_space_planner) {
+				 // 泊车终点与任务重置入口只在单车泊车模式启用；道路设点由 route 处理。
+				 clickPoint_sub_ = nh_.subscribe(
+					 "/move_base_simple/goal", 1, &PlanningNode::callBackGoal, this);
 			 initialPose_sub_ = nh_.subscribe(
 				 "/initialpose", 1,
 				 &PlanningNode::callBackOpenSpaceInitialPose, this);
@@ -362,16 +363,8 @@ void  PlanningNode::mass(const platoon_msgs::PlatoonMission::ConstPtr &msg){
 }
 
 void  PlanningNode::distrubute(const platoon_msgs::PlatoonMission::ConstPtr &msg){
-    
-	auto selfIndex = platoonGetNumIndex(vehicle_num_list,platformParam.num);
-	if (PlanningConfig::get_instance()->enable_open_space_planner) {
-		resetOpenSpaceTask(false, "formation goal updated");
-	}
-	inputData.goalState.x = msg->distributePoints[selfIndex].position.x;
-	inputData.goalState.y = msg->distributePoints[selfIndex].position.y;
-	inputData.goalState.heading = amathutils::normalizeRadian(amathutils::getPoseYawAngle(msg->distributePoints[selfIndex]));
-	openSpaceGoalSet = true;
-    return ;
+	// 尚未接入编队泊车，不读取分散目标；规划周期统一发布停车轨迹。
+	(void)msg;
 }
 
 
@@ -403,6 +396,10 @@ void PlanningNode::callbackPlatoonMember(const platoon_msgs::PlatoonMember::Cons
 
 
 void PlanningNode::callbackPlatoonMission(const platoon_msgs::PlatoonMission::ConstPtr &msg) {
+	if (PlanningConfig::get_instance()->enable_open_space_planner) {
+		ROS_WARN_THROTTLE(5.0, "[open_space] single-vehicle parking ignores formation missions");
+		return;
+	}
 	assert(msg->command_type>=PlatoonType::BUILD);
 	assert(msg->command_type<=PlatoonType::RUNNING);
     
@@ -548,6 +545,10 @@ void PlanningNode::callbackPlanningTimer(const ros::TimerEvent &event)
 		return ;
     PlanningConfig *planning_config = PlanningConfig::get_instance();
     PLANNER_TYPE planner_type = plannerTypeDecision();
+	if (planner_type == UNSUPPORTED_PLATOON_PARKING) {
+		publishPlatoonParkingStop();
+		return;
+	}
 
     if (planner_type != OPEN_SPACE){
         if (!newTrajectory)
@@ -1440,17 +1441,16 @@ PLANNER_TYPE PlanningNode::plannerTypeDecision()
 	if (planning_config->enable_open_space_planner) {
 		return OPEN_SPACE;
 	}
+	// 集合/分散暂不进入开放空间规划；在参考线类型检查前拦截，避免沿用旧轨迹。
+	if (trajectoryType == PlatoonType::MASS || trajectoryType == PlatoonType::DISTRIBUTE) {
+		return UNSUPPORTED_PLATOON_PARKING;
+	}
 
     if (trajectoryType != inputData.refArray.type){
 		std::cout <<"condition 1 "<<std::endl;
 	    return NONE_PLANNER;
     }
 	
-    if (((trajectoryType == PlatoonType::DISTRIBUTE)|| (trajectoryType == PlatoonType::MASS))
-		&& platoonMembers[platformParam.num].role == FOLLOWER){
-		platoonMassPoint();
-		return OPEN_SPACE;
-	}
 		
      //队形发生了改变.
     if (shape != inputData.refArray.shape && 
@@ -1508,6 +1508,34 @@ PLANNER_TYPE PlanningNode::plannerTypeDecision()
 
 	return REF_LINE;
 	
+}
+
+void PlanningNode::publishPlatoonParkingStop()
+{
+	ROS_WARN_THROTTLE(5.0, "[planner] formation parking unavailable (MASS/DISTRIBUTE); holding vehicle stopped");
+	planning_msgs::TrajectoryPointArray stop;
+	stop.header.stamp = ros::Time::now();
+	stop.header.frame_id = "map";
+	stop.type = trajectoryType;
+	stop.shape = inputData.refArray.shape;
+	stop.is_forward_shift = current_velocity >= 0.0;
+	stop.close_to_end = true;
+	// 零速点保留短直线几何，兼容道路 MPC 重采样；不使用重合点或空轨迹停车。
+	for (int index = 0; index < 20; ++index) {
+		planning_msgs::TrajectoryPoint point;
+		point.s = index * 0.2;
+		point.x = inputData.vehicleState.x + point.s * std::cos(inputData.vehicleState.heading);
+		point.y = inputData.vehicleState.y + point.s * std::sin(inputData.vehicleState.heading);
+		point.theta = inputData.vehicleState.heading;
+		point.relative_time = index * 0.1;
+		stop.points.push_back(point);
+	}
+	last_trajectory.clear();
+	newTrajectory = false;
+	if (conflict_constraint_processor_.enabled()) {
+		trajectoryCandidatePub.publish(stop);
+	}
+	trajectoryPub.publish(stop);
 }
 
 void PlanningNode::vehicleStateInfo(VehicleState &state,int num) {
