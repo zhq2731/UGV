@@ -972,7 +972,7 @@ src/planning/open_space_planner/param/openspace_lite.yaml
 
 ## 21. 2026-10-16：合并主分支前的兼容收尾与回归
 
-目标：同一主仓库分别支持双车道路冲突预判/消解和单车泊车；暂不支持编队泊车。本轮修改位于 `/home/zhq/UGV` 的 `openspaceplanner` 分支，尚未提交、合并或推送。
+目标：同一主仓库分别支持双车道路冲突预判/消解和单车泊车；暂不支持编队泊车。本节记录 `/home/zhq/UGV` 在 `openspaceplanner` 分支完成的合并前收尾与回归；提交、分支合并和远端同步状态以实际 Git 为准。
 
 ### 已完成的修改
 
@@ -1006,4 +1006,4 @@ src/planning/open_space_planner/param/openspace_lite.yaml
 
 原有泊车脚本：`src/planning/open_space_planner/test/liom_closedloop_check.launch` 和 `.py`。本次临时双车/弯道驱动及原始日志在 `/tmp/ugv-merge-regression.CN7oCS/`，交互隔离检查在 `/tmp/ugv-ui-check.PH2e5b/`；临时目录不进入 Git，测试结束后已关闭各自启动的 ROS 实例。
 
-范围说明：这是代表性仿真闭环回归，不是与 master 逐采样 A/B 等价性证明，也不是实车安全验证。下一步先审查并提交当前差异，再决定合并 master；不要恢复三车演示或提前实现编队泊车。
+范围说明：这是代表性仿真闭环回归，不是与 master 逐采样 A/B 等价性证明，也不是实车安全验证。合并采用收尾独立提交、再将 `openspaceplanner` 快进合入 `master` 的方式，保留原提交历史；远端推送另行处理。不要恢复三车演示或提前实现编队泊车。
